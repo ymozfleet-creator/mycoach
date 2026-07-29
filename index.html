@@ -363,7 +363,12 @@ const FIREBASE_CONFIG = {
   storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
 }; */
 
-const PLATFORM_FEE_RATE = 0.15;   // プラットフォーム手数料率（15%）
+const PLAYER_FEE_RATE = 0.05;  // 受講者システム利用料（レッスン料に上乗せ・5%）
+const COACH_FEE_RATE  = 0.15;  // コーチ事務手数料（レッスン料から控除・15%）
+/* 手数料計算（例: レッスン料5,000円 → 受講者支払 5,250円 / コーチ受取 4,250円 / 事務局 1,000円） */
+const feeCalc = f => { f=Number(f)||0;
+  const playerFee=Math.round(f*PLAYER_FEE_RATE), coachFee=Math.round(f*COACH_FEE_RATE);
+  return { base:f, playerFee, coachFee, charge:f+playerFee, net:f-coachFee, fee:playerFee+coachFee }; };
 const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
 const STRIPE_CHECKOUT_ENDPOINT = null; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
 const STRIPE_CONNECT_ENDPOINT = null;  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
@@ -447,10 +452,11 @@ const LEGAL = {
 <h2>第5条（手数料・料金）</h2>
 <p>本サービスの利用に関する手数料は以下の通りです。表示金額はすべて税込です。</p>
 <ul>
-<li><b>サービス利用料</b>：受講者がコーチに支払うレッスン料の15%（税込）。レッスン料に含まれ、当社がこれを控除した金額をコーチに支払います。</li>
+<li><b>受講者システム利用料</b>：レッスン料の5%（税込）。レッスン料に上乗せして受講者にご負担いただきます。</li>
+<li><b>コーチ事務手数料</b>：レッスン料の15%（税込）。当社がレッスン料から控除した金額をコーチに支払います。</li>
 <li><b>無料機能</b>：登録・コーチ／受講者の検索・いいね・マッチング・メッセージ</li>
 </ul>
-<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,000（税込）、コーチ受取額 ¥4,250、サービス利用料 ¥750（税込）</p>
+<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,250（税込）、コーチ受取額 ¥4,250、当社手数料合計 ¥1,000（税込）</p>
 <p>手数料の変更は、変更日の30日前までに本サービス上で通知します。</p>
 <p>なお、コーチへの報酬は受講者とコーチ間の契約に基づくものであり、源泉徴収義務の有無については各自の税務状況に応じて判断してください。</p>
 <h2>第6条（決済）</h2>
@@ -604,7 +610,7 @@ const LEGAL = {
 <tr><th>運営統括責任者</th><td>茂住 雄太</td></tr>
 <tr><th>所在地</th><td>〒165-0023 東京都中野区江原町2-13-13</td></tr>
 <tr><th>お問い合わせ</th><td>メール：kanri&#64;mycoach-myteam.com<br>電話番号：請求があった場合に遅滞なく開示いたします。<br><span class="hint">※お問い合わせはメールにて承ります。原則5営業日以内に返信いたします。</span></td></tr>
-<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. サービス利用料（税込）：</b>レッスン料の15%。レッスン料に含まれ、当社が控除した金額をコーチに支払います。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,000、コーチ受取額 ¥4,250、サービス利用料 ¥750<br><b>3. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
+<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. 受講者システム利用料（税込）：</b>レッスン料の5%。レッスン料に上乗せしてご請求します。<br><b>3. コーチ事務手数料（税込）：</b>レッスン料の15%。当社がレッスン料から控除してコーチにお支払いします（受講者のご負担はありません）。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,250、コーチ受取額 ¥4,250<br><b>4. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
 <tr><th>支払方法</th><td>クレジットカード決済（Visa, Mastercard, JCB, American Express）<br><span class="hint">※決済処理は Stripe, Inc. を通じて行われます。当社が認める場合、銀行振込等によることができます。</span></td></tr>
 <tr><th>支払時期</th><td>・都度契約：契約成立後、本サービス上の案内に従いお支払いください<br>・月額契約：毎月、本サービス上の支払い手続きによりお支払いください</td></tr>
 <tr><th>役務の提供時期</th><td>・レッスン：決済完了後、コーチと合意した日時に提供<br>・無料機能：アカウント登録完了後、直ちに利用可能</td></tr>
@@ -714,8 +720,8 @@ function seedDB(){
      fee:4500, unit:'per', period:'5回', status:'completed', ts:t-86400000*12, decidedTs:t-86400000*11, log:[]},
   ];
   const payments = [
-    {id:'pay1', contractId:'ct3', coach:'c5', player:'p4', amount:4500, fee:675, net:3825, ts:t-86400000*11, method:'demo'},
-    {id:'pay2', contractId:'ct1', coach:'c2', player:'p2', amount:24000, fee:3600, net:20400, ts:t-86400000, method:'demo'},
+    {id:'pay1', contractId:'ct3', coach:'c5', player:'p4', amount:4725, base:4500, playerFee:225, coachFee:675, fee:900, net:3825, ts:t-86400000*11, method:'demo'},
+    {id:'pay2', contractId:'ct1', coach:'c2', player:'p2', amount:25200, base:24000, playerFee:1200, coachFee:3600, fee:4800, net:20400, ts:t-86400000, method:'demo'},
   ];
   const reviews = [
     {id:'rv1', contractId:'ct3', from:'p4', to:'c5', rating:5, comment:'子どもが毎回楽しみにしていて、目標だった25m完泳を達成できました！', ts:t-86400000*4},
@@ -1605,12 +1611,19 @@ const App = {
       <p class="hint" style="margin-bottom:14px">相手が承諾すると契約成立となります。内容はメッセージで事前にすり合わせておくとスムーズです。</p>
       <div class="field"><label>契約タイトル</label><input id="ct-title" placeholder="例：${esc(coach.sport)}個人レッスン（月4回）"></div>
       <div class="field"><label>レッスン内容・条件</label><textarea id="ct-detail" placeholder="回数・時間・場所・持ち物・キャンセル規定など"></textarea></div>
-      <div class="field"><label>料金（税込）</label><input id="ct-fee" type="number" min="0" step="100" value="${iAmCoach?(this.me.fee||''):(other?.fee||'')}"></div>
+      <div class="field"><label>料金（税込）</label><input id="ct-fee" type="number" min="0" step="100" value="${iAmCoach?(this.me.fee||''):(other?.fee||'')}" oninput="App.updateCtFeeHint()"><div class="hint" id="ct-fee-hint" style="margin-top:4px"></div></div>
       <div class="field"><label>料金単位</label><select id="ct-unit"><option value="per">1回あたり</option><option value="monthly">月額</option></select></div>
       <div class="field"><label>期間</label><input id="ct-period" placeholder="例：3ヶ月 / 1回 / 継続"></div>
       <button class="btn btn-turf btn-block" onclick="App.submitContract('${matchId}','${coach.id}','${player.id}')">この内容で送信する</button>`);
   },
 
+  updateCtFeeHint(){
+    const el=document.getElementById('ct-fee-hint'); if(!el) return;
+    const v=Number(document.getElementById('ct-fee')?.value)||0;
+    if(!v){ el.textContent=''; return; }
+    const k=feeCalc(v);
+    el.textContent=`受講者の支払額 ${yen(k.charge)}（システム利用料5%込）／ コーチ受取額 ${yen(k.net)}（事務手数料15%控除後）`;
+  },
   async submitContract(matchId, coachId, playerId){
     const v=id=>document.getElementById(id).value.trim();
     const title=v('ct-title'), detail=v('ct-detail'), fee=Number(v('ct-fee')), unit=v('ct-unit'), period=v('ct-period');
@@ -1654,7 +1667,8 @@ const App = {
           <div><div class="k">${c.status==='active'?'成立日':'更新日'}</div><div class="v">${c.decidedTs?fmtD(c.decidedTs):'—'}</div></div>
         </div>
         <p style="font-size:13px;color:var(--ink2);white-space:pre-wrap;margin-bottom:8px">${esc(c.detail)}</p>
-        ${pays.length?`<div class="hint" style="margin-bottom:8px">${ic('card',12)} 支払い ${pays.length}回・合計 ${yen(pays.reduce((s,p)=>s+p.amount,0))}（最終 ${fmtD(pays[0].ts)}）</div>`:''}
+        ${this.me.id===c.coach&&(c.status==='active'||c.status==='proposed')?`<div class="hint" style="margin-bottom:8px">あなたの受取額：${yen(feeCalc(c.fee).net)}${c.unit==='monthly'?' /月':' /回'}（事務手数料${Math.round(COACH_FEE_RATE*100)}%控除後）</div>`:''}
+        ${pays.length?`<div class="hint" style="margin-bottom:8px">${ic('card',12)} 支払い ${pays.length}回・${this.me.id===c.coach?`受取合計 ${yen(pays.reduce((s,p)=>s+(p.net!=null?p.net:p.amount),0))}`:`支払合計 ${yen(pays.reduce((s,p)=>s+p.amount,0))}`}（最終 ${fmtD(pays[0].ts)}）</div>`:''}
         <div class="ct-actions">${actions}
           <button class="btn btn-sm btn-ghost" onclick="location.hash='#chat/${c.matchId}'">${ic('chat',15)} トークへ</button></div>
       </div>`;
@@ -1751,7 +1765,7 @@ const App = {
             <div class="verify-box" style="border-color:var(--turf)">
               <div class="vb-t" style="color:#0B7A57">${ic('card',14)} レッスン料の受取口座（Stripe）</div>
               ${u.stripeChargesEnabled
-                ?`<span class="pill pill-turf">自動受取 設定済み</span><div class="hint" style="margin-top:6px">決済のたびに、手数料${Math.round(PLATFORM_FEE_RATE*100)}%を差し引いた受取分が登録口座へ自動で送金されます。</div>`
+                ?`<span class="pill pill-turf">自動受取 設定済み</span><div class="hint" style="margin-top:6px">決済のたびに、事務手数料${Math.round(COACH_FEE_RATE*100)}%を差し引いた受取分が登録口座へ自動で送金されます。</div>`
                 :`<div class="hint" style="margin-bottom:10px">Stripeで本人確認と口座登録を行うと、レッスン料の受取分が自動で振り込まれるようになります。未設定の間は事務局からの振込（月次精算）です。</div>
                   <button class="btn btn-sm btn-turf" onclick="App.connectOnboard()">受取口座を設定する（Stripeへ移動）</button>`}
             </div>`:''}`:''}
@@ -1809,15 +1823,14 @@ const App = {
   async openPay(ctId){
     const cts=await DB.listContracts(this.me.id);
     const c=cts.find(x=>x.id===ctId); if(!c) return;
-    const fee=Math.round(c.fee*PLATFORM_FEE_RATE), net=c.fee-fee;
+    const k=feeCalc(c.fee);
     this.modal(`
       <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('card',16)} レッスン料のお支払い</h3>
       <p class="hint">${esc(c.title)}</p>
       <div class="pay-brk">
-        <div class="row"><span>レッスン料</span><span>${yen(c.fee)}${c.unit==='monthly'?' /月':' /回'}</span></div>
-        <div class="row"><span>うちコーチ受取額</span><span>${yen(net)}</span></div>
-        <div class="row"><span>うちサービス利用料（${Math.round(PLATFORM_FEE_RATE*100)}%）</span><span>${yen(fee)}</span></div>
-        <div class="row tot"><span>お支払い合計</span><span>${yen(c.fee)}</span></div>
+        <div class="row"><span>レッスン料</span><span>${yen(k.base)}${c.unit==='monthly'?' /月':' /回'}</span></div>
+        <div class="row"><span>システム利用料（${Math.round(PLAYER_FEE_RATE*100)}%）</span><span>${yen(k.playerFee)}</span></div>
+        <div class="row tot"><span>お支払い合計</span><span>${yen(k.charge)}</span></div>
       </div>
       ${DB.mode==='demo'?`
         <div class="field"><label>カード番号（デモのため実際の決済は行われません）</label><input id="pay-card" inputmode="numeric" placeholder="4242 4242 4242 4242"></div>
@@ -1825,7 +1838,7 @@ const App = {
           <div class="field" style="flex:1"><label>有効期限</label><input id="pay-exp" placeholder="12/28"></div>
           <div class="field" style="flex:1"><label>CVC</label><input id="pay-cvc" placeholder="123"></div>
         </div>
-        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">${yen(c.fee)} を支払う</button>`
+        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">${yen(k.charge)} を支払う</button>`
       :STRIPE_CHECKOUT_ENDPOINT?`
         <button class="btn btn-turf btn-block" onclick="App.stripeCheckout('${c.id}')">Stripeで安全に支払う</button>
         <p class="hint" style="margin-top:8px">Stripeの決済ページに移動します。完了後、自動で支払いが記録されます。</p>`
@@ -1844,9 +1857,9 @@ const App = {
       const card=(document.getElementById('pay-card')?.value||'').replace(/[^0-9]/g,'');
       if(card.length<14){ this.toast('カード番号を入力してください（デモ用のダミーで構いません）'); return; }
     }
-    const fee=Math.round(c.fee*PLATFORM_FEE_RATE);
-    await DB.addPayment({contractId:c.id, coach:c.coach, player:c.player, amount:c.fee, fee, net:c.fee-fee, method:DB.mode==='demo'?'demo':'manual'});
-    DB.notify(c.coach,'pay',`${this.me.name}さんから ${yen(c.fee)} のお支払いがありました`,'#contracts');
+    const k=feeCalc(c.fee);
+    await DB.addPayment({contractId:c.id, coach:c.coach, player:c.player, amount:k.charge, base:k.base, playerFee:k.playerFee, coachFee:k.coachFee, fee:k.fee, net:k.net, method:DB.mode==='demo'?'demo':'manual'});
+    DB.notify(c.coach,'pay',`${this.me.name}さんからお支払いがありました（あなたの受取額 ${yen(k.net)}）`,'#contracts');
     this.closeModal(); this.toast('お支払いが完了しました'); this.viewContracts();
   },
 
@@ -2168,7 +2181,7 @@ const App = {
     return `<div class="wrap">
       <div class="stats">
         <div class="stat"><div class="n" style="font-size:22px">${yen(total)}</div><div class="l">決済総額</div></div>
-        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（${Math.round(PLATFORM_FEE_RATE*100)}%）</div></div>
+        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（受講者5%＋コーチ15%）</div></div>
         <div class="stat"><div class="n">${ps.length}</div><div class="l">決済件数</div></div>
       </div>
       <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">コーチ精算（未払い ${yen(unTotal)}）</h2>
@@ -2190,7 +2203,7 @@ const App = {
         <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payouts')">精算CSV</button>
         <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payments')">決済CSV</button></div>
       <div class="tbl-wrap"><table>
-        <tr><th>日付</th><th>コーチ</th><th>受講者</th><th>金額</th><th>手数料</th><th>コーチ受取</th><th>方法</th></tr>
+        <tr><th>日付</th><th>コーチ</th><th>受講者</th><th>支払総額</th><th>手数料計</th><th>コーチ受取</th><th>方法</th></tr>
         ${ps.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${esc(us[p.coach]||'-')}</td><td>${esc(us[p.player]||'-')}</td>
           <td class="num">${yen(p.amount)}</td><td class="num">${yen(p.fee)}</td><td class="num">${yen(p.net)}</td>
           <td>${p.method==='demo'?'デモ決済':p.method==='manual'?'手動記録':'Stripe'}${p.payoutId==='stripe_connect'?'<div class="hint">自動分配済</div>':p.payoutId?'<div class="hint">精算済</div>':''}</td></tr>`).join('')||'<tr><td colspan="7">決済データがありません</td></tr>'}
@@ -2297,8 +2310,8 @@ const App = {
     }else if(kind==='payments'){
       name='mycoach_payments.csv';
       const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
-      rows=[['ID','日付','コーチ','受講者','金額','手数料','コーチ受取','方法','精算ID']]
-        .concat((await DB.allPayments()).map(p=>[p.id,fmtD(p.ts),us[p.coach]||'-',us[p.player]||'-',p.amount,p.fee,p.net,p.method,p.payoutId||'']));
+      rows=[['ID','日付','コーチ','受講者','支払総額','レッスン料','受講者手数料5%','コーチ手数料15%','コーチ受取','方法','精算ID']]
+        .concat((await DB.allPayments()).map(p=>[p.id,fmtD(p.ts),us[p.coach]||'-',us[p.player]||'-',p.amount,p.base!=null?p.base:'',p.playerFee!=null?p.playerFee:'',p.coachFee!=null?p.coachFee:p.fee,p.net,p.method,p.payoutId||'']));
     }else{
       name='mycoach_payouts.csv';
       const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
