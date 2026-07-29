@@ -333,11 +333,14 @@ footer a{color:var(--ink2)}
                 または STRIPE_PAYMENT_LINK に固定額のPayment Link URLを設定（簡易）
         - メール通知: Firebase Extensions「Trigger Email」の導入を推奨
    ========================================================================= */
-const FIREBASE_CONFIG = null; /* 例:
 const FIREBASE_CONFIG = {
-  apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx",
-  storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
-}; */
+  apiKey: "（自分の値）",
+  authDomain: "xxxx.firebaseapp.com",
+  projectId: "xxxx",
+  storageBucket: "xxxx.appspot.com",
+  messagingSenderId: "0000000000",
+  appId: "1:0000000000:web:xxxx"
+};
 
 const PLATFORM_FEE_RATE = 0.15;   // プラットフォーム手数料率（15%）
 const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
