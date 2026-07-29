@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MyCOACH | スポーツ指導者マッチング</title>
+<meta name="description" content="スポーツを教えたい人と学びたい人をつなぐマッチングサービス MyCOACH">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B2239; --ink2:#4A607A; --court:#0E7CD6; --court-deep:#0A5FA8; --court-soft:#D6ECFF;
+  --sky:#EAF5FF; --bg:#F4FAFF; --white:#FFFFFF; --turf:#12B27C; --turf-soft:#DDF6EE;
+  --flag:#FF6B4A; --flag-soft:#FFE9E3; --gold:#FFB020; --line:#D9E8F6; --danger:#E24A4A;
+  --radius:16px; --shadow:0 6px 24px rgba(14,124,214,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+a{color:var(--court);text-decoration:none}
+.rounded{font-family:'M PLUS Rounded 1c',sans-serif}
+.num{font-family:'Oswald',sans-serif;letter-spacing:.02em}
+
+/* ---------- 共通レイアウト ---------- */
+.wrap{max-width:1060px;margin:0 auto;padding:0 18px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar-in{display:flex;align-items:center;justify-content:space-between;height:60px;max-width:1060px;margin:0 auto;padding:0 18px}
+.logo{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:22px;color:var(--court);display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo .ball{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--court),#3FB2FF);display:grid;place-items:center;color:#fff;font-size:15px}
+.top-actions{display:flex;gap:10px;align-items:center}
+.demo-chip{background:var(--gold);color:#5b3c00;font-size:11px;font-weight:700;border-radius:99px;padding:3px 10px}
+main{min-height:calc(100vh - 60px);padding-bottom:90px}
+
+/* タブナビ */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:60;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center}
+.tabbar-in{display:flex;width:100%;max-width:640px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 calc(9px + env(safe-area-inset-bottom));color:var(--ink2);font-size:10.5px;font-weight:600;position:relative}
+.tab .ic{font-size:20px;line-height:1}
+.tab.active{color:var(--court)}
+.tab .badge{position:absolute;top:4px;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:99px;background:var(--flag);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+
+/* ボタン */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;border-radius:99px;padding:11px 22px;font-size:14.5px;transition:transform .12s ease, box-shadow .12s ease}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--court),#2CA1F2);color:#fff;box-shadow:0 4px 14px rgba(14,124,214,.35)}
+.btn-turf{background:var(--turf);color:#fff;box-shadow:0 4px 14px rgba(18,178,124,.3)}
+.btn-flag{background:var(--flag);color:#fff}
+.btn-ghost{background:#fff;color:var(--court);border:1.5px solid var(--court)}
+.btn-soft{background:var(--sky);color:var(--court)}
+.btn-danger-soft{background:#FDEBEB;color:var(--danger)}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+
+/* カード・フォーム */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--court)}
+.field textarea{min-height:96px;resize:vertical}
+.hint{font-size:12px;color:var(--ink2)}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 10px}
+.pill-blue{background:var(--court-soft);color:var(--court-deep)}
+.pill-turf{background:var(--turf-soft);color:#0B7A56}
+.pill-gold{background:#FFF3DC;color:#8a5b00}
+.pill-flag{background:var(--flag-soft);color:#C2400E}
+.pill-gray{background:#EEF2F7;color:var(--ink2)}
+.pill-red{background:#FDEBEB;color:var(--danger)}
+
+/* ---------- ランディング ---------- */
+.lanes{background:repeating-linear-gradient(-55deg,transparent 0 26px,rgba(255,255,255,.10) 26px 30px)}
+.hero{background:linear-gradient(135deg,#0A5FA8 0%,#0E7CD6 55%,#2CA1F2 100%);color:#fff;position:relative;overflow:hidden}
+.hero-in{max-width:1060px;margin:0 auto;padding:66px 18px 74px;position:relative;z-index:1}
+.hero h1{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:clamp(28px,5.4vw,46px);line-height:1.35;letter-spacing:.01em}
+.hero p.lead{margin-top:14px;font-size:clamp(14px,2.4vw,17px);opacity:.94;max-width:560px}
+.hero-cta{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap}
+.hero .btn-primary{background:#fff;color:var(--court);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.hero .btn-ghost{border-color:rgba(255,255,255,.7);color:#fff;background:transparent}
+.hero-stats{margin-top:34px;display:flex;gap:26px;flex-wrap:wrap}
+.hstat .n{font-family:'Oswald',sans-serif;font-size:32px;font-weight:600;line-height:1}
+.hstat .l{font-size:12px;opacity:.85;margin-top:4px}
+.sec{padding:56px 0}
+.sec h2{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:clamp(21px,3.4vw,28px);text-align:center}
+.sec .sub{text-align:center;color:var(--ink2);margin-top:8px;font-size:14px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+.step{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px 20px;text-align:center;box-shadow:var(--shadow)}
+.step .ic{font-size:34px}
+.step h3{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;margin-top:10px;font-size:16.5px}
+.step p{font-size:13.5px;color:var(--ink2);margin-top:6px}
+.step .no{font-family:'Oswald',sans-serif;color:var(--court);font-size:13px;font-weight:600;letter-spacing:.14em}
+.sportchips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:26px;max-width:760px;margin-left:auto;margin-right:auto}
+.sportchip{background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 15px;font-size:13.5px;font-weight:600;color:var(--ink)}
+.cta-band{background:linear-gradient(135deg,var(--turf),#2BD09A);color:#fff;border-radius:20px;padding:34px 26px;text-align:center;margin:10px 0 40px}
+.cta-band h3{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:21px}
+.cta-band p{font-size:14px;opacity:.94;margin-top:6px}
+.cta-band .btn{margin-top:16px;background:#fff;color:#0B7A56}
+footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;color:var(--ink2);font-size:12.5px}
+@media(max-width:720px){.steps{grid-template-columns:1fr}}
+
+/* ---------- 認証 ---------- */
+.auth-wrap{max-width:440px;margin:34px auto;padding:0 18px}
+.auth-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px 24px;box-shadow:var(--shadow)}
+.auth-tabs{display:flex;background:var(--sky);border-radius:12px;padding:4px;margin-bottom:22px}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:9px;font-weight:700;font-size:14px;color:var(--ink2)}
+.auth-tab.active{background:#fff;color:var(--court);box-shadow:0 2px 8px rgba(14,124,214,.15)}
+.role-sel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.role-opt{border:2px solid var(--line);border-radius:14px;padding:15px 10px;text-align:center;cursor:pointer;transition:.15s}
+.role-opt .ic{font-size:26px}
+.role-opt .t{font-weight:800;font-size:14px;margin-top:5px;font-family:'M PLUS Rounded 1c',sans-serif}
+.role-opt .d{font-size:11px;color:var(--ink2)}
+.role-opt.sel{border-color:var(--court);background:var(--sky)}
+.demo-box{margin-top:18px;background:#FFF8EA;border:1px dashed var(--gold);border-radius:12px;padding:14px}
+.demo-box .t{font-size:12.5px;font-weight:700;color:#8a5b00;margin-bottom:8px}
+.demo-box .btn{margin:3px 4px 3px 0}
+
+/* ---------- 検索 ---------- */
+.page-head{padding:24px 0 6px}
+.page-head h1{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:800;font-size:22px}
+.page-head p{color:var(--ink2);font-size:13.5px}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 20px}
+.filters select,.filters input{border:1.5px solid var(--line);border-radius:99px;padding:9px 16px;background:#fff;outline:none;font-size:13.5px}
+.filters input{flex:1;min-width:150px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:15px}
+.ucard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;position:relative;transition:transform .15s}
+.ucard:hover{transform:translateY(-2px)}
+.ucard .hd{display:flex;gap:12px;align-items:center}
+.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--court-soft),#fff);border:2px solid var(--court-soft);display:grid;place-items:center;font-size:25px;flex-shrink:0}
+.avatar.lg{width:74px;height:74px;font-size:36px}
+.ucard .nm{font-weight:800;font-size:15.5px;font-family:'M PLUS Rounded 1c',sans-serif}
+.ucard .meta{font-size:12px;color:var(--ink2)}
+.ucard .intro{font-size:13px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px}
+.ucard .ft{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.fee{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;color:var(--court)}
+.fee small{font-family:'Noto Sans JP';font-size:11px;color:var(--ink2);font-weight:500}
+.likedby{position:absolute;top:-9px;right:12px}
+.empty{padding:56px 20px;text-align:center;color:var(--ink2)}
+.empty .ic{font-size:42px;margin-bottom:8px}
+
+/* ---------- モーダル ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(11,34,57,.5);z-index:100;display:grid;place-items:center;padding:18px;animation:fade .18s ease}
+.modal{background:#fff;border-radius:20px;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;padding:26px 24px;position:relative;animation:pop .2s ease}
+.modal .close{position:absolute;top:12px;right:14px;font-size:22px;color:var(--ink2);padding:6px}
+@keyframes fade{from{opacity:0}} @keyframes pop{from{transform:scale(.94);opacity:0}}
+
+/* MATCH演出 */
+.match-fx{position:fixed;inset:0;z-index:200;background:linear-gradient(135deg,#0A5FA8,#2CA1F2);display:grid;place-items:center;animation:fade .25s ease}
+.match-fx .in{text-align:center;color:#fff}
+.match-fx .avs{display:flex;justify-content:center;align-items:center;gap:-10px}
+.match-fx .avatar{width:92px;height:92px;font-size:44px;border:4px solid #fff;background:#fff}
+.match-fx .av-l{animation:slideL .5s cubic-bezier(.2,.9,.3,1.2)}
+.match-fx .av-r{animation:slideR .5s cubic-bezier(.2,.9,.3,1.2);margin-left:-14px}
+.match-fx h2{font-family:'Oswald',sans-serif;font-size:56px;font-weight:600;letter-spacing:.1em;margin-top:18px;animation:pop .4s .3s both}
+.match-fx p{opacity:.9;margin-top:6px;animation:fade .4s .45s both}
+.match-fx .btn{margin-top:22px;background:#fff;color:var(--court)}
+@keyframes slideL{from{transform:translateX(-120px);opacity:0}}
+@keyframes slideR{from{transform:translateX(120px);opacity:0}}
+
+/* ---------- リスト（マッチ/メッセージ/契約） ---------- */
+.list{display:flex;flex-direction:column;gap:11px}
+.lrow{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:.12s}
+.lrow:hover{border-color:var(--court)}
+.lrow .bd{flex:1;min-width:0}
+.lrow .nm{font-weight:700;font-size:14.5px}
+.lrow .sub{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .rt{text-align:right;flex-shrink:0}
+.lrow .tm{font-size:11px;color:var(--ink2)}
+.subtabs{display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap}
+.subtab{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 16px;font-size:13px;font-weight:700;color:var(--ink2)}
+.subtab.active{background:var(--court);border-color:var(--court);color:#fff}
+
+/* ---------- チャット ---------- */
+.chat{max-width:640px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 60px)}
+.chat-hd{display:flex;align-items:center;gap:11px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}
+.chat-hd .back{font-size:20px;color:var(--court);padding:4px 8px}
+.chat-hd .nm{font-weight:800;font-size:15px}
+.chat-hd .sub{font-size:11.5px;color:var(--ink2)}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;background:var(--bg)}
+.msg{max-width:76%;padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word}
+.msg.me{align-self:flex-end;background:var(--court);color:#fff;border-bottom-right-radius:5px}
+.msg.you{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg .tm{display:block;font-size:10px;opacity:.65;margin-top:2px;text-align:right}
+.chat-ct-banner{margin:0 16px;padding:10px 14px;border-radius:12px;background:var(--turf-soft);color:#0B7A56;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chat-in{display:flex;gap:9px;padding:11px 14px calc(11px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}
+.chat-in textarea{flex:1;border:1.5px solid var(--line);border-radius:20px;padding:10px 15px;resize:none;height:44px;max-height:110px;outline:none}
+.chat-in .send{width:44px;height:44px;border-radius:50%;background:var(--court);color:#fff;font-size:17px;flex-shrink:0}
+.sysmsg{align-self:center;background:#E7F0FA;color:var(--ink2);font-size:11.5px;border-radius:99px;padding:4px 14px}
+
+/* ---------- 契約 ---------- */
+.ct-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.ct-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ct-card h3{font-size:15.5px;font-weight:800;font-family:'M PLUS Rounded 1c',sans-serif}
+.ct-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:12px 0;font-size:13px}
+.ct-meta .k{color:var(--ink2);font-size:11.5px}
+.ct-meta .v{font-weight:700}
+.ct-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+/* ---------- 管理画面 ---------- */
+.adm-head{background:var(--ink);color:#fff;padding:20px 0}
+.adm-head h1{font-family:'M PLUS Rounded 1c',sans-serif;font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
+.adm-tabs{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.adm-tab{background:rgba(255,255,255,.12);color:#cfe3f5;border-radius:99px;padding:7px 16px;font-size:13px;font-weight:700}
+.adm-tab.active{background:#fff;color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin:22px 0}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.stat .n{font-family:'Oswald',sans-serif;font-size:30px;font-weight:600;color:var(--court);line-height:1.1}
+.stat .l{font-size:12px;color:var(--ink2);font-weight:600;margin-top:3px}
+.tbl-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th{background:var(--sky);color:var(--ink2);font-size:11.5px;text-align:left;padding:10px 13px;white-space:nowrap}
+td{padding:11px 13px;border-top:1px solid var(--line);vertical-align:middle}
+.tbl-actions{display:flex;gap:6px;flex-wrap:nowrap}
+.adm-toolbar{display:flex;gap:9px;align-items:center;margin:18px 0 12px;flex-wrap:wrap}
+.adm-toolbar input,.adm-toolbar select{border:1.5px solid var(--line);border-radius:99px;padding:8px 14px;font-size:13px;background:#fff}
+
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:99px;padding:10px 22px;font-size:13.5px;font-weight:600;z-index:300;animation:fade .2s ease;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.notice{background:#FFF8EA;border:1px solid #F3D9A0;border-radius:12px;padding:12px 15px;font-size:12.5px;color:#6b4a00;margin:14px 0}
+
+/* ピクトグラム */
+svg.pict{vertical-align:-0.18em}
+.avatar{color:var(--court-deep)}
+.avatar svg{width:56%;height:56%}
+.tab .ic svg{width:20px;height:20px;display:block}
+.step .ic svg{width:36px;height:36px;color:var(--court)}
+.empty .ic svg{width:44px;height:44px;color:#9DB8D2}
+.role-opt .ic svg{width:26px;height:26px;color:var(--court)}
+.btn svg{flex-shrink:0}
+.chat-in .send{display:grid;place-items:center}
+.match-fx .avatar{color:var(--court)}
+.sportchip svg{width:16px;height:16px;color:var(--court);vertical-align:-0.22em}
+.demo-box svg{vertical-align:-0.18em}
+/* 通知・写真・評価・決済 */
+.avatar{overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.bell{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--court);background:var(--sky)}
+.bell .badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;border-radius:99px;background:var(--flag);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.notif{display:flex;gap:10px;padding:11px 8px;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;align-items:flex-start}
+.notif.unread{background:var(--sky);border-radius:10px}
+.notif .tx{flex:1}
+.notif .tm{font-size:11px;color:var(--ink2);white-space:nowrap}
+.st{color:#D3DFEC;display:inline-flex}.st.on{color:var(--gold)}
+.st svg{fill:currentColor;stroke:currentColor}
+.rate{font-size:12px;font-weight:700;color:var(--ink2);display:inline-flex;align-items:center;gap:3px}
+.starpick{display:flex;gap:6px;justify-content:center;margin:10px 0 16px}
+.starpick button{color:#D3DFEC;padding:2px}
+.starpick button.on{color:var(--gold)}
+.starpick svg{width:32px;height:32px;fill:currentColor;stroke:currentColor}
+.idthumb{max-width:100%;border-radius:10px;border:1px solid var(--line)}
+.pay-brk{background:var(--sky);border-radius:12px;padding:13px 15px;font-size:13px;margin:12px 0}
+.pay-brk .row{display:flex;justify-content:space-between;padding:2px 0}
+.pay-brk .row.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:800}
+.vbadge{display:inline-flex;align-items:center;gap:3px;vertical-align:2px}
+
+/* --- 受講形態・認証申請 --- */
+.seg{display:flex;gap:8px}
+.seg-btn{flex:1;padding:11px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
+.seg-btn.sel{border-color:var(--court);background:var(--sky);color:var(--court-deep)}
+.verify-box{border:1.5px dashed var(--court);background:var(--sky);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.verify-box .vb-t{font-weight:800;font-size:13.5px;color:var(--court-deep);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+/* --- Landing v2 --- */
+.hero2{position:relative;overflow:hidden;background:linear-gradient(135deg,#052747 0%,#0A4E8F 55%,#0E7CD6 100%);color:#fff;padding:72px 22px 0}
+.hero2 .bgline{position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 90px,rgba(255,255,255,.045) 90px 96px);pointer-events:none}
+.hero2-in{position:relative;max-width:1060px;margin:0 auto;display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center;padding-bottom:56px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.16em;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:7px 14px;border-radius:99px;margin-bottom:24px}
+.copy-main{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:900;font-size:clamp(38px,5.6vw,62px);line-height:1.3;letter-spacing:.01em}
+.copy-main .accent{background:linear-gradient(transparent 68%, rgba(18,178,124,.55) 68%)}
+.copy-sub{font-size:15.5px;line-height:2.05;color:rgba(255,255,255,.9);margin:20px 0 28px;max-width:33em}
+.hero2-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.btn-hero{font-size:15.5px;padding:16px 28px;border-radius:14px;font-weight:800;border:none;cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .15s}
+.btn-hero:hover{transform:translateY(-2px)}
+.btn-hero.primary{background:var(--turf);color:#fff;box-shadow:0 10px 26px rgba(18,178,124,.4)}
+.btn-hero.ghost{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.55);color:#fff}
+.trustline{display:flex;gap:8px;flex-wrap:wrap}
+.trust{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:6px 13px;border-radius:99px}
+.hero2-visual{position:relative;height:420px}
+.orb{position:absolute;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.09);border:1.5px solid rgba(255,255,255,.3);animation:float 6s ease-in-out infinite;color:#fff}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.marquee{position:relative;overflow:hidden;border-top:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.14)}
+.marquee-in{display:inline-flex;gap:36px;white-space:nowrap;padding:13px 0;animation:mar 36s linear infinite;font-weight:700;font-size:13px;color:rgba(255,255,255,.85)}
+.marquee-in span{display:inline-flex;align-items:center;gap:7px}
+.marquee-in svg{color:rgba(255,255,255,.9)}
+@keyframes mar{to{transform:translateX(-50%)}}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.duo-card{border-radius:22px;padding:32px 30px;color:#fff;position:relative;overflow:hidden}
+.duo-card.ind{background:linear-gradient(135deg,#0E7CD6,#0A4E8F)}
+.duo-card.team{background:linear-gradient(135deg,#12B27C,#0B7A57)}
+.duo-card h3{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:900;font-size:21px;margin:14px 0 8px}
+.duo-card p{font-size:13.5px;line-height:2;color:rgba(255,255,255,.94)}
+.duo-ic{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.16);display:grid;place-items:center;color:#fff}
+.safe3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.safe{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 24px;box-shadow:var(--shadow)}
+.safe .ic{width:46px;height:46px;border-radius:13px;background:var(--sky);display:grid;place-items:center;color:var(--court);margin-bottom:13px}
+.safe h3{font-size:15.5px;font-weight:800;margin-bottom:7px}
+.safe p{font-size:13px;color:var(--ink2);line-height:1.95}
+@media(max-width:860px){
+  .hero2{padding-top:54px}
+  .hero2-in{grid-template-columns:1fr;padding-bottom:40px}
+  .hero2-visual{display:none}
+  .duo,.safe3{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================================
+   MyCOACH v2 ― スポーツ指導者マッチングプラットフォーム
+   -------------------------------------------------------------------------
+   ■ 動作モード
+     1) デモモード（初期状態）: このファイルを開くだけで全機能を体験可能。
+        データはブラウザ(localStorage)に保存されます。
+     2) 本番モード: 下の FIREBASE_CONFIG に Firebase コンソールの設定を
+        貼り付けると、Firebase Auth + Firestore で動作します。
+        - Authentication: メール/パスワードを有効化
+        - Firestore: users / likes / matches / contracts / reports /
+                     notifications / payments / reviews コレクション
+        - 管理者: Firestore の users/{uid} に isAdmin: true を手動設定
+        - 決済: 同梱の functions/ をデプロイし STRIPE_CHECKOUT_ENDPOINT にURLを設定（推奨）
+                または STRIPE_PAYMENT_LINK に固定額のPayment Link URLを設定（簡易）
+        - メール通知: Firebase Extensions「Trigger Email」の導入を推奨
+   ========================================================================= */
+const FIREBASE_CONFIG = null; /* 例:
+const FIREBASE_CONFIG = {
+  apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx",
+  storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
+}; */
+
+const PLATFORM_FEE_RATE = 0.15;   // プラットフォーム手数料率（15%）
+const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
+const STRIPE_CHECKOUT_ENDPOINT = null; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
+const STRIPE_CONNECT_ENDPOINT = null;  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
+
+const SPORTS = ['サッカー','フットサル','野球','ソフトボール','テニス','バドミントン','卓球','バスケットボール','バレーボール','陸上・かけっこ','マラソン','水泳','ゴルフ','空手','柔道','剣道','ボクシング','ダンス','体操','スキー','スノーボード','筋力トレーニング','ヨガ・ストレッチ','その他'];
+const PICT = {
+  bell:'<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/>',
+  star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9L6.6 19.6l1.1-6L3.2 9.4l6.1-.8z"/>',
+  camera:'<path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/>',
+  card:'<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><line x1="2.5" y1="10" x2="21.5" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>',
+  shield:'<path d="M12 3l7 2.8v5.4c0 4.6-3 8-7 9.8-4-1.8-7-5.2-7-9.8V5.8z"/><polyline points="9 11.8 11.2 14 15.2 9.5"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  search:'<circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>',
+  link:'<circle cx="8.5" cy="12" r="5.5"/><circle cx="15.5" cy="12" r="5.5"/>',
+  chat:'<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>',
+  doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/>',
+  gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
+  thumb:'<path d="M7 11l4.2-7.6c1.3.1 2.3 1.2 2.3 2.6V10h4.6a2 2 0 0 1 2 2.4l-1.1 6A2.3 2.3 0 0 1 16.7 21H7"/><path d="M7 11H3.5v10H7z"/>',
+  heart:'<path d="M12 20.8C7.4 17.3 3 13.9 3 9.6 3 6.9 5.1 5 7.5 5c1.9 0 3.5 1.1 4.5 2.8C13 6.1 14.6 5 16.5 5 18.9 5 21 6.9 21 9.6c0 4.3-4.4 7.7-9 11.2z"/>',
+  check:'<polyline points="4.5 12.5 10 18 19.5 7"/>',
+  send:'<path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4z"/>',
+  flag:'<path d="M5 21V4"/><path d="M5 4c5-2.5 9 2.5 14 0v9c-5 2.5-9-2.5-14 0"/>',
+  ticket:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M15 6v12" stroke-dasharray="2.5 2.5"/>',
+  megaphone:'<path d="M18 4L7 9H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h3l11 5z"/><path d="M8.5 15.5L10 21h2.5l-1.2-5.4"/>',
+  refresh:'<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><polyline points="20.5 3 20.5 8 15.5 8"/>',
+  warn:'<path d="M12 3L1.8 20.5h20.4z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><line x1="12" y1="17.2" x2="12" y2="17.3"/>',
+  soccer:'<circle cx="12" cy="12" r="9"/><path d="M12 8l3.6 2.6-1.4 4.3h-4.4L8.4 10.6z"/><path d="M12 3v5M8.4 10.6L3.6 9.4M15.6 10.6l4.8-1.2M10.2 14.9L7.6 19M13.8 14.9l2.6 4.1"/>',
+  baseball:'<circle cx="12" cy="12" r="9"/><path d="M5.2 5.8c2.6 1.6 2.6 10.8 0 12.4"/><path d="M18.8 5.8c-2.6 1.6-2.6 10.8 0 12.4"/>',
+  tennis:'<ellipse cx="9.5" cy="9.5" rx="5.2" ry="6.5" transform="rotate(-45 9.5 9.5)"/><line x1="13.6" y1="13.6" x2="19.5" y2="19.5"/><circle cx="18" cy="6.5" r="2"/>',
+  badminton:'<circle cx="12" cy="18" r="2.5"/><path d="M10.4 16L6 5M12 15.5V4.5M13.6 16L18 5"/><path d="M6 5h12"/>',
+  pingpong:'<circle cx="9.5" cy="9" r="6"/><line x1="14" y1="13.2" x2="19" y2="18.5"/><circle cx="19" cy="6" r="1.8"/>',
+  basketball:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/><path d="M5.5 5.5c3 2.5 3 10.5 0 13M18.5 5.5c-3 2.5-3 10.5 0 13"/>',
+  volleyball:'<circle cx="12" cy="12" r="9"/><path d="M12 3c1.5 4 1.5 8-1 12"/><path d="M20.5 9c-4 1.8-8.5 1.3-12-1.5"/><path d="M6 19c2.5-3.5 7-5.5 12-4.5"/>',
+  run:'<circle cx="14.6" cy="4.2" r="1.9"/><path d="M13.9 7.4l-2.1 5 3.4 2.6-1.2 5.6"/><path d="M13.9 8.3l3.6 1.8 2.6-.9"/><path d="M13 9.4l-3.8.3-2.2 2.9"/><path d="M11.8 12.4l-3.4 4-2 .7"/>',
+  swim:'<circle cx="17" cy="7" r="2"/><path d="M3 12.5l6.5-3.5 4.5 2.5 4.5-1.8"/><path d="M2.5 18c2-1.6 4-1.6 6 0s4 1.6 6 0 4-1.6 6 0"/>',
+  golf:'<path d="M8 3.5v13"/><path d="M8 4l7 2.5L8 9"/><circle cx="16" cy="17.5" r="1.7"/><path d="M4 20.5c1.5-1.6 4-2.6 8-2.6"/>',
+  martial:'<circle cx="8.6" cy="4.6" r="1.9"/><path d="M9.2 7.3l1.6 5"/><path d="M10.8 12.3l7.6-2.2"/><path d="M10.8 12.3l-2.4 7"/><path d="M9.4 8.4l4 1.8"/><path d="M9.4 8.4l-4.2 1.2"/>',
+  boxing:'<path d="M7 12.5V9a5 5 0 0 1 10 0v3.5a5 5 0 0 1-10 0z"/><path d="M9 17h6v3.5H9z"/><path d="M7 10.5H5.6a1.4 1.4 0 0 0 0 2.8H7"/>',
+  dance:'<circle cx="12.5" cy="4" r="1.9"/><path d="M12.2 6.8c.3 2.6-.3 4.4-1 6.6"/><path d="M12.4 8.4l5-3"/><path d="M12.2 8.8l-4.6.8"/><path d="M11.2 13.4l4.2 5.4"/><path d="M11.2 13.4l-3.2 5.8"/>',
+  gym:'<circle cx="12" cy="4.3" r="1.9"/><path d="M12 6.9v6"/><path d="M12 8l-5.3-2.6M12 8l5.3-2.6"/><path d="M12 12.9l-4 6.3M12 12.9l4 6.3"/>',
+  ski:'<circle cx="13.2" cy="4.4" r="1.9"/><path d="M12.6 7.1l-2.2 4.4 3.2 2.3-.5 4"/><path d="M12.4 8.3l4 2.2 2.2 3"/><path d="M3.5 19l17 1.8"/>',
+  snowboard:'<circle cx="12" cy="4.4" r="1.9"/><path d="M11.6 7.1l-1 5 2.8 1.6-.4 3.8"/><path d="M11.3 8.6l-3.9 1.4M11.5 8.4l4.2.6"/><path d="M4 18.2c5.5 3 10.5 3 16 0"/>',
+  weight:'<path d="M7.5 12h9"/><path d="M6 7.5v9M18 7.5v9"/><path d="M3 9.5v5M21 9.5v5"/>',
+  yoga:'<circle cx="12" cy="4.6" r="1.9"/><path d="M12 7.2v5.2"/><path d="M12 9.2l5.4 2.6M12 9.2L6.6 11.8"/><path d="M12 12.4c-3.9.2-6.3 1.7-7.5 3.9h15c-1.2-2.2-3.6-3.7-7.5-3.9z"/>',
+  jersey:'<path d="M8.5 3.5L12 5l3.5-1.5L20 6.5l-2.2 3-1.8-1.2V20H8V8.3L6.2 9.5 4 6.5z"/>',
+};
+const ic = (name, s=18) => `<svg class="pict" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PICT[name]||PICT.jersey}</svg>`;
+const SPORT_PICT = {'サッカー':'soccer','フットサル':'soccer','野球':'baseball','ソフトボール':'baseball','テニス':'tennis','バドミントン':'badminton','卓球':'pingpong','バスケットボール':'basketball','バレーボール':'volleyball','陸上・かけっこ':'run','マラソン':'run','水泳':'swim','ゴルフ':'golf','空手':'martial','柔道':'martial','剣道':'martial','ボクシング':'boxing','ダンス':'dance','体操':'gym','スキー':'ski','スノーボード':'snowboard','筋力トレーニング':'weight','ヨガ・ストレッチ':'yoga','その他':'jersey'};
+const SPORT_ICON = {}; SPORTS.forEach(s => SPORT_ICON[s] = ic(SPORT_PICT[s]||'jersey', 24));
+const AREAS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県','オンライン'];
+const CTARGET = {both:'個人・チームどちらも', individual:'個人レッスンのみ', team:'チーム指導のみ'};
+const CTARGET_S = {both:'個人/チーム', individual:'個人のみ', team:'チームのみ'};
+const CT_STATUS = {proposed:'提案中', active:'契約中', declined:'辞退', completed:'完了', cancelled:'解約'};
+const CT_PILL = {proposed:'pill-gold', active:'pill-turf', declined:'pill-gray', completed:'pill-blue', cancelled:'pill-red'};
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen = n => '¥' + Number(n||0).toLocaleString('ja-JP');
+const fmtT = ts => { const d=new Date(ts); const now=new Date();
+  const same = d.toDateString()===now.toDateString();
+  const hm = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return same ? hm : `${d.getMonth()+1}/${d.getDate()} ${hm}`; };
+const fmtD = ts => { const d=new Date(ts); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; };
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const avatarOf = u => (u && u.photo) ? `<img src="${u.photo}" alt="">` : (SPORT_ICON[u?.sport]||SPORT_ICON['その他']);
+const stars = (n, s=13) => Array.from({length:5},(_,i)=>`<span class="${i<Math.round(n)?'st on':'st'}">${ic('star',s)}</span>`).join('');
+function resizeImage(file, max=480){ return new Promise((res,rej)=>{
+  const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{
+      const sc=Math.min(1, max/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas'); cv.width=Math.round(img.width*sc)||1; cv.height=Math.round(img.height*sc)||1;
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      res(cv.toDataURL('image/jpeg',0.82)); };
+    img.onerror=rej; img.src=r.result; };
+  r.onerror=rej; r.readAsDataURL(file); }); }
+
+/* =========================================================================
+   デモ用DB（localStorage）
+   ========================================================================= */
+const LS_DB='mycoach_db_v3', LS_SES='mycoach_session_v3';
+
+function seedDB(){
+  const t = Date.now();
+  const U = (id,role,name,sport,area,fee,exp,intro,email,pw,extra={})=>({
+    id, role, name, sport, area, fee, exp, intro, email, pw,
+    suspended:false, isAdmin:false, createdAt:t-86400000*30, ...extra });
+  const users = {};
+  [
+    U('c1','coach','田中 翔太','サッカー','東京都',5000,'指導歴8年','元Jクラブユース出身。ドリブル・1対1の突破を得意とし、小中学生の個人レッスンを中心に活動しています。楽しみながら上達する練習メニューが強みです。','demo-coach@mycoach.jp','demo1234'),
+    U('c2','coach','佐藤 美咲','テニス','神奈川県',6000,'指導歴6年','インカレ出場経験あり。初心者〜中級者のフォーム作りが専門です。ラケットの持ち方から試合の戦術まで、段階に合わせて丁寧に指導します。','coach2@mycoach.jp','demo1234'),
+    U('c3','coach','鈴木 大輔','野球','埼玉県',5000,'指導歴10年','甲子園出場経験あり。バッティングフォームの改善と守備の基礎づくりが得意です。少年野球チームの外部コーチも務めています。','coach3@mycoach.jp','demo1234'),
+    U('c4','coach','高橋 健','バスケットボール','東京都',5500,'指導歴7年','Bリーグ育成組織でのコーチ経験あり。ハンドリング・シュートフォームの基礎から、実戦的な判断力まで指導します。','coach4@mycoach.jp','demo1234'),
+    U('c5','coach','伊藤 さくら','水泳','千葉県',4500,'指導歴5年','元県代表スイマー。水慣れから4泳法の習得まで、お子様のペースに合わせたレッスンが好評です。大人の方も歓迎します。','coach5@mycoach.jp','demo1234'),
+    U('c6','coach','渡辺 剛','陸上・かけっこ','東京都',4000,'指導歴9年','短距離専門。スタートダッシュと正しい腕振りで、運動会前の「足が速くなりたい」を全力サポートします。','coach6@mycoach.jp','demo1234'),
+    U('c7','coach','山本 玲奈','ヨガ・ストレッチ','神奈川県',3500,'指導歴4年','姿勢改善と柔軟性向上が専門。スポーツのパフォーマンスアップにつながる身体づくりを、オンラインでも指導しています。','coach7@mycoach.jp','demo1234'),
+    U('c8','coach','中村 一馬','ゴルフ','東京都',8000,'指導歴12年','レッスンプロ。スコア100切りを目指す社会人ゴルファーの指導実績多数。スイング解析を使った論理的なレッスンです。','coach8@mycoach.jp','demo1234'),
+    U('p1','player','小林 蓮','サッカー','東京都',0,'','小学5年生の息子のドリブル強化をお願いできるコーチを探しています。週1回・土日希望です。','demo-player@mycoach.jp','demo1234'),
+    U('p2','player','加藤 陽菜','テニス','神奈川県',0,'','社会人からテニスを始めました。フォームを基礎から見直したいです。平日夜かオンライン希望。','player2@mycoach.jp','demo1234'),
+    U('p3','player','吉田 悠人','野球','埼玉県',0,'','中学の部活でレギュラーを目指しています。バッティングを集中的に教えてほしいです。','player3@mycoach.jp','demo1234'),
+    U('p4','player','松本 結衣','水泳','千葉県',0,'','子ども（小2）がクロールで25m泳げるようになるのが目標です。','player4@mycoach.jp','demo1234'),
+    U('p5','player','FC小金井 ジュニア','サッカー','東京都',0,'','小学生12名のクラブチームです。月2回ほど、チーム練習を見ていただける外部コーチを探しています。守備の連携と声かけを強化したいです。','team1@mycoach.jp','demo1234'),
+    U('adm','admin','MyCOACH 運営','その他','東京都',0,'','運営管理者アカウント','admin@mycoach.jp','admin1234',{isAdmin:true}),
+  ].forEach(u=>users[u.id]=u);
+  Object.values(users).forEach(u=>{ if(u.role==='coach'){ u.verified='approved'; u.coachTarget='both'; } else { u.playerType='individual'; } });
+  users['c2'].coachTarget='individual'; users['c4'].coachTarget='individual'; users['c6'].coachTarget='individual';
+  users['c7'].coachTarget='team';
+  users['c8'].verified='pending'; users['c8'].verifiedAppliedTs=Date.now()-86400000*2;
+  users['c5'].ratingAvg=5; users['c5'].ratingCount=1;
+  users['p5'].playerType='team'; users['p5'].teamName='FC小金井 ジュニア'; users['p5'].teamSize=12;
+
+  const likes = [
+    {from:'c1', to:'p1', ts:t-3600000*5},           // デモ受講者はいいねを返すと即マッチ
+    {from:'c2', to:'p2', ts:t-86400000*3},
+    {from:'p2', to:'c2', ts:t-86400000*3+60000},
+    {from:'p3', to:'c3', ts:t-86400000*2},
+    {from:'c3', to:'p3', ts:t-86400000*2+120000},
+    {from:'p4', to:'c5', ts:t-86400000*12},
+    {from:'c5', to:'p4', ts:t-86400000*12},
+  ];
+  const matches = [
+    {id:'m_c2_p2', users:['c2','p2'], ts:t-86400000*3+60000},
+    {id:'m_c3_p3', users:['c3','p3'], ts:t-86400000*2+120000},
+    {id:'m_c5_p4', users:['c5','p4'], ts:t-86400000*12},
+  ];
+  const messages = {
+    'm_c2_p2':[
+      {id:'ms1',from:'p2',text:'はじめまして！プロフィールを拝見して、ぜひフォームの基礎からお願いしたいと思いました。',ts:t-86400000*3+300000},
+      {id:'ms2',from:'c2',text:'マッチありがとうございます！大歓迎です。まずは現在のレベル感を教えていただけますか？',ts:t-86400000*3+600000},
+      {id:'ms3',from:'p2',text:'ラケットを握って3ヶ月ほどで、ストロークがまだ安定しません。平日夜に横浜周辺で可能でしょうか？',ts:t-86400000*3+900000},
+      {id:'ms4',from:'c2',text:'承知しました。それでは月4回・平日夜のプランで契約をご提案しますね。',ts:t-86400000*2},
+    ],
+    'm_c3_p3':[
+      {id:'ms5',from:'p3',text:'バッティング指導をお願いしたいです！',ts:t-86400000*2+300000},
+      {id:'ms6',from:'c3',text:'ありがとうございます。まずは体験レッスンからいかがでしょう？条件を契約提案として送ります。',ts:t-86400000*2+600000},
+    ],
+    'm_c5_p4':[
+      {id:'ms7',from:'p4',text:'5回コースありがとうございました！子どもがすっかり水泳好きになりました。',ts:t-86400000*4},
+    ],
+  };
+  const contracts = [
+    {id:'ct1', matchId:'m_c2_p2', coach:'c2', player:'p2', proposer:'c2',
+     title:'テニス基礎レッスン（月4回）', detail:'平日夜・横浜周辺のコートにて60分×月4回。フォーム作りと基礎ストローク中心。コート代は別途実費。',
+     fee:24000, unit:'monthly', period:'3ヶ月', status:'active', ts:t-86400000*2, decidedTs:t-86400000*2+3600000, log:[]},
+    {id:'ct2', matchId:'m_c3_p3', coach:'c3', player:'p3', proposer:'c3',
+     title:'バッティング体験レッスン', detail:'土曜午前・60分の体験レッスン。バッティングフォームのチェックと課題整理を行います。',
+     fee:5000, unit:'per', period:'1回', status:'proposed', ts:t-86400000, decidedTs:null, log:[]},
+    {id:'ct3', matchId:'m_c5_p4', coach:'c5', player:'p4', proposer:'c5',
+     title:'水泳ベーシック5回コース', detail:'土曜午前・45分×5回。水慣れからクロール25m完泳まで、お子様のペースに合わせて進めます。',
+     fee:4500, unit:'per', period:'5回', status:'completed', ts:t-86400000*12, decidedTs:t-86400000*11, log:[]},
+  ];
+  const payments = [
+    {id:'pay1', contractId:'ct3', coach:'c5', player:'p4', amount:4500, fee:675, net:3825, ts:t-86400000*11, method:'demo'},
+    {id:'pay2', contractId:'ct1', coach:'c2', player:'p2', amount:24000, fee:3600, net:20400, ts:t-86400000, method:'demo'},
+  ];
+  const reviews = [
+    {id:'rv1', contractId:'ct3', from:'p4', to:'c5', rating:5, comment:'子どもが毎回楽しみにしていて、目標だった25m完泳を達成できました！', ts:t-86400000*4},
+  ];
+  const notifications = [
+    {id:'n1', to:'p1', type:'like', text:'田中 翔太さんからいいねが届きました', link:'#matches', ts:t-3600000*5, read:false},
+  ];
+  const reports = [
+    {id:'r1', from:'p4', target:'c8', reason:'返信がない', detail:'いいねのお礼メッセージを送りましたが1週間返信がありません。', ts:t-86400000*2, status:'open'},
+  ];
+  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[]};
+}
+
+const LocalDB = {
+  mode:'demo',
+  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts'].forEach(k=>{ if(!d[k]) d[k]=[]; }); return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
+  _save(db){ localStorage.setItem(LS_DB, JSON.stringify(db)); },
+  async init(){},
+  async signUp(email,pw,profile){
+    const db=this._load();
+    if(Object.values(db.users).some(u=>u.email===email)) throw new Error('このメールアドレスは既に登録されています');
+    const id=uid('u'); const user={id, email, pw, suspended:false, isAdmin:false, createdAt:Date.now(), ...profile};
+    db.users[id]=user; this._save(db); localStorage.setItem(LS_SES,id); return user;
+  },
+  async signIn(email,pw){
+    const db=this._load();
+    const u=Object.values(db.users).find(u=>u.email===email&&u.pw===pw);
+    if(!u) throw new Error('メールアドレスまたはパスワードが正しくありません');
+    if(u.suspended) throw new Error('このアカウントは停止されています。運営までお問い合わせください');
+    localStorage.setItem(LS_SES,u.id); return u;
+  },
+  async signOutUser(){ localStorage.removeItem(LS_SES); },
+  async currentUser(){ const id=localStorage.getItem(LS_SES); if(!id) return null; const db=this._load(); const u=db.users[id]; return (u&&!u.suspended)?u:null; },
+  async getUser(id){ return this._load().users[id]||null; },
+  async updateUser(id,patch){ const db=this._load(); Object.assign(db.users[id],patch); this._save(db); return db.users[id]; },
+  async listUsers(role){ return Object.values(this._load().users).filter(u=>u.role===role&&!u.suspended); },
+  async allUsers(){ return Object.values(this._load().users); },
+  async like(from,to){
+    const db=this._load();
+    if(!db.likes.some(l=>l.from===from&&l.to===to)) db.likes.push({from,to,ts:Date.now()});
+    const mutual=db.likes.some(l=>l.from===to&&l.to===from);
+    let matchId=null;
+    if(mutual){
+      const ex=db.matches.find(m=>m.users.includes(from)&&m.users.includes(to));
+      if(ex) matchId=ex.id;
+      else{ matchId=uid('m'); db.matches.push({id:matchId,users:[from,to],ts:Date.now()}); db.messages[matchId]=[]; }
+    }
+    this._save(db); return {matched:mutual, matchId};
+  },
+  async getLikes(me){
+    const db=this._load();
+    return { sent:db.likes.filter(l=>l.from===me), received:db.likes.filter(l=>l.to===me) };
+  },
+  async listMatches(me){
+    const db=this._load();
+    return db.matches.filter(m=>m.users.includes(me)).map(m=>{
+      const other=db.users[m.users.find(u=>u!==me)];
+      const msgs=db.messages[m.id]||[];
+      return {...m, other, lastMsg:msgs[msgs.length-1]||null};
+    }).sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
+  },
+  async getMatch(id){ const db=this._load(); const m=db.matches.find(x=>x.id===id); return m||null; },
+  async sendMessage(matchId,from,text){
+    const db=this._load();
+    (db.messages[matchId]=db.messages[matchId]||[]).push({id:uid('ms'),from,text,ts:Date.now()});
+    this._save(db);
+  },
+  listenMessages(matchId,cb){
+    const read=()=>cb((this._load().messages[matchId]||[]).slice());
+    read();
+    const iv=setInterval(read,1500);
+    const onS=e=>{ if(e.key===LS_DB) read(); };
+    window.addEventListener('storage',onS);
+    return ()=>{ clearInterval(iv); window.removeEventListener('storage',onS); };
+  },
+  async createContract(c){ const db=this._load(); const ct={id:uid('ct'),ts:Date.now(),decidedTs:null,status:'proposed',log:[],...c}; db.contracts.push(ct); this._save(db); return ct; },
+  async updateContract(id,patch){ const db=this._load(); const ct=db.contracts.find(c=>c.id===id); Object.assign(ct,patch); this._save(db); return ct; },
+  async listContracts(me){ return this._load().contracts.filter(c=>c.coach===me||c.player===me).sort((a,b)=>b.ts-a.ts); },
+  async allContracts(){ return this._load().contracts.slice().sort((a,b)=>b.ts-a.ts); },
+  async contractForMatch(matchId){ const cs=this._load().contracts.filter(c=>c.matchId===matchId); return cs.sort((a,b)=>b.ts-a.ts)[0]||null; },
+  async report(from,target,reason,detail){ const db=this._load(); db.reports.push({id:uid('r'),from,target,reason,detail,ts:Date.now(),status:'open'}); this._save(db); },
+  async listReports(){ return this._load().reports.slice().sort((a,b)=>b.ts-a.ts); },
+  async updateReport(id,patch){ const db=this._load(); const r=db.reports.find(x=>x.id===id); Object.assign(r,patch); this._save(db); },
+  async stats(){
+    const db=this._load(); const us=Object.values(db.users);
+    return {
+      coaches:us.filter(u=>u.role==='coach').length,
+      players:us.filter(u=>u.role==='player').length,
+      matches:db.matches.length,
+      likes:db.likes.length,
+      active:db.contracts.filter(c=>c.status==='active').length,
+      proposed:db.contracts.filter(c=>c.status==='proposed').length,
+      gmv:db.contracts.filter(c=>c.status==='active'||c.status==='completed').reduce((s,c)=>s+Number(c.fee||0),0),
+      payments:db.payments.length,
+      feeRevenue:db.payments.reduce((s,p)=>s+Number(p.fee||0),0),
+      pendingCoaches:us.filter(u=>u.role==='coach'&&u.verified==='pending'&&!u.deleted).length,
+      openReports:db.reports.filter(r=>r.status==='open').length,
+    };
+  },
+  async notify(to,type,text,link,dedupe){ const db=this._load();
+    if(dedupe && db.notifications.some(n=>n.to===to&&!n.read&&n.link===link&&n.type===type)) return;
+    db.notifications.push({id:uid('n'),to,type,text,link,ts:Date.now(),read:false}); this._save(db); },
+  async listNotifications(me){ return this._load().notifications.filter(n=>n.to===me).sort((a,b)=>b.ts-a.ts).slice(0,50); },
+  async unreadNotifCount(me){ return this._load().notifications.filter(n=>n.to===me&&!n.read).length; },
+  async markNotifsRead(me){ const db=this._load(); db.notifications.forEach(n=>{ if(n.to===me) n.read=true; }); this._save(db); },
+  async addPayment(p){ const db=this._load(); const pay={id:uid('pay'),ts:Date.now(),...p}; db.payments.push(pay); this._save(db); return pay; },
+  async paymentsForContract(ctId){ return this._load().payments.filter(p=>p.contractId===ctId).sort((a,b)=>b.ts-a.ts); },
+  async allPayments(){ return this._load().payments.slice().sort((a,b)=>b.ts-a.ts); },
+  async addReview(r){ const db=this._load(); const rv={id:uid('rv'),ts:Date.now(),...r}; db.reviews.push(rv);
+    const list=db.reviews.filter(x=>x.to===r.to); const avg=list.reduce((s,x)=>s+x.rating,0)/list.length;
+    db.users[r.to].ratingAvg=Math.round(avg*10)/10; db.users[r.to].ratingCount=list.length; this._save(db); return rv; },
+  async listReviews(target){ return this._load().reviews.filter(r=>r.to===target).sort((a,b)=>b.ts-a.ts); },
+  async hasReview(contractId,from){ return this._load().reviews.some(r=>r.contractId===contractId&&r.from===from); },
+  async unsettledByCoach(){ const db=this._load(); const map={};
+    db.payments.filter(p=>!p.payoutId).forEach(p=>{ const m=map[p.coach]=map[p.coach]||{coach:p.coach,net:0,count:0}; m.net+=Number(p.net||0); m.count++; });
+    return Object.values(map).sort((a,b)=>b.net-a.net); },
+  async settleCoach(coach){ const db=this._load();
+    const targets=db.payments.filter(p=>p.coach===coach&&!p.payoutId);
+    if(!targets.length) return null;
+    const id=uid('po'); const total=targets.reduce((s,p)=>s+Number(p.net||0),0);
+    db.payouts=db.payouts||[];
+    db.payouts.push({id,coach,amount:total,count:targets.length,paymentIds:targets.map(p=>p.id),ts:Date.now()});
+    targets.forEach(p=>p.payoutId=id);
+    this._save(db); return {id,amount:total,count:targets.length}; },
+  async allPayouts(){ const db=this._load(); return (db.payouts||[]).slice().sort((a,b)=>b.ts-a.ts); },
+  async myUnsettled(coach){ return this._load().payments.filter(p=>p.coach===coach&&!p.payoutId).reduce((s,p)=>s+Number(p.net||0),0); },
+  async resetPassword(email,newPw){ const db=this._load(); const u=Object.values(db.users).find(x=>x.email===email&&!x.deleted); if(!u) throw new Error('このメールアドレスの登録が見つかりません'); u.pw=newPw; this._save(db); },
+  async deleteAccount(id){ const db=this._load(); const u=db.users[id]; u.deleted=true; u.suspended=true; this._save(db); localStorage.removeItem(LS_SES); },
+  resetDemo(){ localStorage.removeItem(LS_DB); localStorage.removeItem(LS_SES); location.hash=''; location.reload(); }
+};
+
+/* =========================================================================
+   Firebase DB（FIREBASE_CONFIG 設定時に有効化）
+   ========================================================================= */
+const FireDB = {
+  mode:'firebase', _auth:null, _fs:null,
+  async init(){
+    const load=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+    await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js');
+    await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
+    firebase.initializeApp(FIREBASE_CONFIG);
+    this._auth=firebase.auth(); this._fs=firebase.firestore();
+    await new Promise(res=>{ const un=this._auth.onAuthStateChanged(()=>{un();res();}); });
+  },
+  async signUp(email,pw,profile){
+    const cred=await this._auth.createUserWithEmailAndPassword(email,pw);
+    const user={id:cred.user.uid,email,suspended:false,isAdmin:false,createdAt:Date.now(),...profile};
+    await this._fs.collection('users').doc(user.id).set(user); return user;
+  },
+  async signIn(email,pw){
+    const cred=await this._auth.signInWithEmailAndPassword(email,pw);
+    const d=await this._fs.collection('users').doc(cred.user.uid).get();
+    const u=d.exists?d.data():null;
+    if(!u) throw new Error('ユーザー情報が見つかりません');
+    if(u.deleted){ await this._auth.signOut(); throw new Error('退会済みのアカウントです'); }
+    if(u.suspended){ await this._auth.signOut(); throw new Error('このアカウントは停止されています'); }
+    this._uc[u.id]={u,t:Date.now()};
+    return u;
+  },
+  async signOutUser(){ await this._auth.signOut(); },
+  async currentUser(){ const cu=this._auth.currentUser; if(!cu) return null; const u=await this.getUser(cu.uid); return (u&&!u.suspended)?u:null; },
+  _uc:{}, /* 30秒ユーザーキャッシュ（読取コスト削減） */
+  async getUser(id){
+    const c=this._uc[id]; if(c && Date.now()-c.t<30000) return c.u;
+    const d=await this._fs.collection('users').doc(id).get(); const u=d.exists?d.data():null;
+    this._uc[id]={u,t:Date.now()}; return u; },
+  async updateUser(id,patch){ await this._fs.collection('users').doc(id).update(patch); delete this._uc[id]; return this.getUser(id); },
+  async listUsers(role){ const q=await this._fs.collection('users').where('role','==',role).get(); return q.docs.map(d=>d.data()).filter(u=>!u.suspended&&!u.deleted); },
+  async allUsers(){ const q=await this._fs.collection('users').get(); return q.docs.map(d=>d.data()); },
+  async like(from,to){
+    await this._fs.collection('likes').doc(`${from}_${to}`).set({from,to,ts:Date.now()});
+    const rev=await this._fs.collection('likes').doc(`${to}_${from}`).get();
+    let matchId=null;
+    if(rev.exists){
+      matchId=[from,to].sort().join('__');
+      const m=this._fs.collection('matches').doc(matchId);
+      if(!(await m.get()).exists) await m.set({id:matchId,users:[from,to],ts:Date.now()});
+    }
+    return {matched:rev.exists, matchId};
+  },
+  async getLikes(me){
+    const s=await this._fs.collection('likes').where('from','==',me).get();
+    const r=await this._fs.collection('likes').where('to','==',me).get();
+    return {sent:s.docs.map(d=>d.data()), received:r.docs.map(d=>d.data())};
+  },
+  async listMatches(me){
+    const q=await this._fs.collection('matches').where('users','array-contains',me).get();
+    const out=[];
+    for(const d of q.docs){
+      const m=d.data();
+      const other=await this.getUser(m.users.find(u=>u!==me));
+      const lm=await this._fs.collection('matches').doc(m.id).collection('messages').orderBy('ts','desc').limit(1).get();
+      out.push({...m, other, lastMsg:lm.docs[0]?lm.docs[0].data():null});
+    }
+    return out.sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
+  },
+  async getMatch(id){ const d=await this._fs.collection('matches').doc(id).get(); return d.exists?d.data():null; },
+  async sendMessage(matchId,from,text){
+    await this._fs.collection('matches').doc(matchId).collection('messages').add({from,text,ts:Date.now()});
+  },
+  listenMessages(matchId,cb){
+    return this._fs.collection('matches').doc(matchId).collection('messages').orderBy('ts')
+      .onSnapshot(s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))), err=>console.error('メッセージ購読エラー:', err));
+  },
+  async createContract(c){ const id=uid('ct'); const ct={id,ts:Date.now(),decidedTs:null,status:'proposed',log:[],...c}; await this._fs.collection('contracts').doc(id).set(ct); return ct; },
+  async updateContract(id,patch){ await this._fs.collection('contracts').doc(id).update(patch); const d=await this._fs.collection('contracts').doc(id).get(); return d.data(); },
+  async listContracts(me){
+    const a=await this._fs.collection('contracts').where('coach','==',me).get();
+    const b=await this._fs.collection('contracts').where('player','==',me).get();
+    return [...a.docs,...b.docs].map(d=>d.data()).sort((x,y)=>y.ts-x.ts);
+  },
+  async allContracts(){ const q=await this._fs.collection('contracts').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async contractForMatch(matchId){ const q=await this._fs.collection('contracts').where('matchId','==',matchId).get(); const cs=q.docs.map(d=>d.data()); return cs.sort((a,b)=>b.ts-a.ts)[0]||null; },
+  async report(from,target,reason,detail){ const id=uid('r'); await this._fs.collection('reports').doc(id).set({id,from,target,reason,detail,ts:Date.now(),status:'open'}); },
+  async listReports(){ const q=await this._fs.collection('reports').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async updateReport(id,patch){ await this._fs.collection('reports').doc(id).update(patch); },
+  async notify(to,type,text,link,dedupe){
+    if(dedupe){ const q=await this._fs.collection('notifications').where('to','==',to).where('read','==',false).get();
+      if(q.docs.some(d=>{const n=d.data();return n.link===link&&n.type===type;})) return; }
+    const id=uid('n'); await this._fs.collection('notifications').doc(id).set({id,to,type,text,link,ts:Date.now(),read:false}); },
+  async listNotifications(me){ const q=await this._fs.collection('notifications').where('to','==',me).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts).slice(0,50); },
+  async unreadNotifCount(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); return q.size; },
+  async markNotifsRead(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); await Promise.all(q.docs.map(d=>d.ref.update({read:true}))); },
+  async addPayment(p){ const id=uid('pay'); const pay={id,ts:Date.now(),...p}; await this._fs.collection('payments').doc(id).set(pay); return pay; },
+  async paymentsForContract(ctId){ const q=await this._fs.collection('payments').where('contractId','==',ctId).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async allPayments(){ const q=await this._fs.collection('payments').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async addReview(r){ const id=uid('rv'); const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
+    const q=await this._fs.collection('reviews').where('to','==',r.to).get(); const list=q.docs.map(d=>d.data());
+    const avg=list.reduce((s,x)=>s+x.rating,0)/list.length;
+    await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length}); return rv; },
+  async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
+  async unsettledByCoach(){ const q=await this._fs.collection('payments').get(); const map={};
+    q.docs.map(d=>d.data()).filter(p=>!p.payoutId).forEach(p=>{ const m=map[p.coach]=map[p.coach]||{coach:p.coach,net:0,count:0}; m.net+=Number(p.net||0); m.count++; });
+    return Object.values(map).sort((a,b)=>b.net-a.net); },
+  async settleCoach(coach){ const q=await this._fs.collection('payments').where('coach','==',coach).get();
+    const targets=q.docs.map(d=>d.data()).filter(p=>!p.payoutId);
+    if(!targets.length) return null;
+    const id=uid('po'); const total=targets.reduce((s,p)=>s+Number(p.net||0),0);
+    await this._fs.collection('payouts').doc(id).set({id,coach,amount:total,count:targets.length,paymentIds:targets.map(p=>p.id),ts:Date.now()});
+    await Promise.all(targets.map(p=>this._fs.collection('payments').doc(p.id).update({payoutId:id})));
+    return {id,amount:total,count:targets.length}; },
+  async allPayouts(){ const q=await this._fs.collection('payouts').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async myUnsettled(coach){ const q=await this._fs.collection('payments').where('coach','==',coach).get();
+    return q.docs.map(d=>d.data()).filter(p=>!p.payoutId).reduce((s,p)=>s+Number(p.net||0),0); },
+  async resetPassword(email){ await this._auth.sendPasswordResetEmail(email); },
+  async deleteAccount(id){ await this._fs.collection('users').doc(id).update({deleted:true,suspended:true}); delete this._uc[id]; await this._auth.signOut(); },
+  async stats(){
+    const [us,ms,ls,cs,rs,ps]=await Promise.all([this.allUsers(),this._fs.collection('matches').get(),this._fs.collection('likes').get(),this.allContracts(),this.listReports(),this.allPayments()]);
+    return {
+      coaches:us.filter(u=>u.role==='coach').length, players:us.filter(u=>u.role==='player').length,
+      matches:ms.size, likes:ls.size,
+      active:cs.filter(c=>c.status==='active').length, proposed:cs.filter(c=>c.status==='proposed').length,
+      gmv:cs.filter(c=>c.status==='active'||c.status==='completed').reduce((s,c)=>s+Number(c.fee||0),0),
+      payments:ps.length,
+      feeRevenue:ps.reduce((s,p)=>s+Number(p.fee||0),0),
+      pendingCoaches:us.filter(u=>u.role==='coach'&&u.verified==='pending'&&!u.deleted).length,
+      openReports:rs.filter(r=>r.status==='open').length,
+    };
+  },
+};
+
+const DB = FIREBASE_CONFIG ? FireDB : LocalDB;
+
+/* =========================================================================
+   アプリ本体
+   ========================================================================= */
+const App = {
+  me:null, unsubChat:null, badgeTimer:null,
+
+  readMap(){ try{return JSON.parse(localStorage.getItem('mycoach_read_'+(this.me?.id||'')))||{};}catch(e){return {};} },
+  setRead(matchId){ if(!this.me) return; const m=this.readMap(); m[matchId]=Date.now(); localStorage.setItem('mycoach_read_'+this.me.id, JSON.stringify(m)); },
+
+  async boot(){
+    try{
+      await DB.init();
+      this.me = await DB.currentUser();
+    }catch(e){
+      console.error(e);
+      document.body.innerHTML='<div style="max-width:560px;margin:80px auto;padding:28px;font-family:sans-serif;border:1px solid #ddd;border-radius:14px"><h2 style="margin-bottom:10px">接続エラー</h2><p style="line-height:1.9">データベースへの接続に失敗しました。ネットワーク接続と、ファイル冒頭の FIREBASE_CONFIG の設定内容をご確認ください。</p><p style="color:#888;font-size:12px;margin-top:10px">'+String((e&&e.message)||e).replace(/</g,"&lt;")+'</p></div>';
+      return;
+    }
+    window.addEventListener('hashchange',()=>this.route());
+    this.route();
+    if(this.badgeTimer) clearInterval(this.badgeTimer);
+    this.badgeTimer=setInterval(()=>{ if(this.me && (document.getElementById('badge-bell')||document.getElementById('badge-msg'))) this.updateBadges(); }, DB.mode==='demo'?5000:30000);
+  },
+
+  toast(msg){ document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2600); },
+
+  route(){
+    if(this.unsubChat){ this.unsubChat(); this.unsubChat=null; }
+    const h=location.hash;
+    if(!this.me){
+      if(h==='#login') return this.viewAuth();
+      return this.viewLanding();
+    }
+    if(this.me.isAdmin && (h===''||h==='#admin'||h.startsWith('#admin'))) return this.viewAdmin(h.split('/')[1]||'dash');
+    if(h.startsWith('#chat/')) return this.viewChat(h.slice(6));
+    switch(h){
+      case '#matches': return this.viewMatches('match');
+      case '#likes': return this.viewMatches('likes');
+      case '#messages': return this.viewMessages();
+      case '#contracts': return this.viewContracts();
+      case '#me': return this.viewMe();
+      case '#admin': return this.viewAdmin('dash');
+      default: return this.viewBrowse();
+    }
+  },
+
+  shell(content, tab){
+    const demo = DB.mode==='demo' ? `<span class="demo-chip">デモモード</span>` : '';
+    const nav = this.me ? `
+      <div class="tabbar"><div class="tabbar-in">
+        ${this.me.isAdmin ? `
+          <button class="tab ${tab==='admin'?'active':''}" onclick="location.hash='#admin'"><span class="ic">${ic('gear',20)}</span>管理</button>
+          <button class="tab ${tab==='browse'?'active':''}" onclick="location.hash='#browse2'"><span class="ic">${ic('search',20)}</span>サイト</button>
+        `:`
+          <button class="tab ${tab==='browse'?'active':''}" onclick="location.hash='#browse'"><span class="ic">${ic('search',20)}</span>さがす</button>
+          <button class="tab ${tab==='matches'?'active':''}" onclick="location.hash='#matches'"><span class="ic">${ic('link',20)}</span>マッチ<span class="badge" id="badge-like" style="display:none"></span></button>
+          <button class="tab ${tab==='messages'?'active':''}" onclick="location.hash='#messages'"><span class="ic">${ic('chat',20)}</span>メッセージ<span class="badge" id="badge-msg" style="display:none"></span></button>
+          <button class="tab ${tab==='contracts'?'active':''}" onclick="location.hash='#contracts'"><span class="ic">${ic('doc',20)}</span>契約</button>
+          <button class="tab ${tab==='me'?'active':''}" onclick="location.hash='#me'"><span class="ic">${ic('user',20)}</span>マイページ</button>
+        `}
+      </div></div>` : '';
+    document.getElementById('app').innerHTML = `
+      <div class="topbar"><div class="topbar-in">
+        <div class="logo" onclick="location.hash=''"><span class="ball">M</span>MyCOACH ${demo}</div>
+        <div class="top-actions">
+          ${this.me
+            ? `<button class="bell" onclick="App.openNotifs()" aria-label="通知">${ic('bell',19)}<span class="badge" id="badge-bell" style="display:none"></span></button><span class="hint">${esc(this.me.name)} さん</span>`
+            : `<button class="btn btn-ghost btn-sm" onclick="location.hash='#login'">ログイン / 登録</button>`}
+        </div>
+      </div></div>
+      <main>${content}</main>${nav}`;
+    if(this.me) this.updateBadges();
+  },
+
+  async updateBadges(){
+    try{
+      const [likes, matches] = await Promise.all([DB.getLikes(this.me.id), DB.listMatches(this.me.id)]);
+      const matchedIds = new Set(); matches.forEach(m=>m.users.forEach(u=>matchedIds.add(u)));
+      const newLikes = likes.received.filter(l=>!matchedIds.has(l.from)).length;
+      const read=this.readMap();
+      const unread = matches.filter(m=>m.lastMsg && m.lastMsg.from!==this.me.id && m.lastMsg.ts>(read[m.id]||0)).length;
+      const bl=document.getElementById('badge-like'), bm=document.getElementById('badge-msg');
+      if(bl){ bl.style.display=newLikes?'grid':'none'; bl.textContent=newLikes; }
+      if(bm){ bm.style.display=unread?'grid':'none'; bm.textContent=unread; }
+      const nb=await DB.unreadNotifCount(this.me.id);
+      const bb=document.getElementById('badge-bell');
+      if(bb){ bb.style.display=nb?'grid':'none'; bb.textContent=nb; }
+    }catch(e){}
+  },
+
+  /* ---------- ランディング ---------- */
+  viewLanding(){
+    const demoBox = DB.mode==='demo' ? `
+      <div class="wrap"><div class="demo-box" style="max-width:640px;margin:26px auto">
+        <div class="t">${ic('ticket',14)} デモアカウントですぐに体験できます</div>
+        <button class="btn btn-sm btn-primary" onclick="App.demoLogin('demo-player@mycoach.jp')">受講者として体験</button>
+        <button class="btn btn-sm btn-turf" onclick="App.demoLogin('demo-coach@mycoach.jp')">コーチとして体験</button>
+        <button class="btn btn-sm btn-ghost" onclick="App.demoLogin('admin@mycoach.jp')">管理者として体験</button>
+        <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。</div>
+      </div></div>`:'';
+    const orb=(name,size,style)=>`<div class="orb" style="${style}">${ic(name,Math.round(size*0.46))}</div>`;
+    const marItems = SPORTS.map(s=>`<span>${SPORT_ICON[s]} ${esc(s)}</span>`).join('');
+    this.shell(`
+      <div class="hero2">
+        <div class="bgline"></div>
+        <div class="hero2-in">
+          <div>
+            <div class="eyebrow">SPORTS COACH MATCHING</div>
+            <h1 class="copy-main">出会った日から、<br><span class="accent">伸びはじめる。</span></h1>
+            <p class="copy-sub">うまくなりたい個人にも、強くなりたいチームにも。競技経験と指導力をもつコーチが、あなたの目標に伴走します。さがす、マッチする、はじめる。ぜんぶ、ここで。</p>
+            <div class="hero2-cta">
+              <button class="btn-hero primary" onclick="App.gotoSignup('player')">無料でコーチをさがす</button>
+              <button class="btn-hero ghost" onclick="App.gotoSignup('coach')">コーチとして参加する</button>
+            </div>
+            <div class="trustline">
+              <span class="trust">${ic('shield',13)} 認証コーチ制度</span>
+              <span class="trust">${ic('link',13)} 個人もチームもOK</span>
+              <span class="trust">${ic('card',13)} 契約・決済までアプリ内</span>
+            </div>
+          </div>
+          <div class="hero2-visual">
+            ${orb('run',150,'width:150px;height:150px;top:26px;left:34%;animation-delay:0s;background:rgba(255,255,255,.16)')}
+            ${orb('soccer',86,'width:86px;height:86px;top:0;left:2%;animation-delay:.8s')}
+            ${orb('tennis',72,'width:72px;height:72px;top:120px;right:0;animation-delay:1.6s')}
+            ${orb('swim',78,'width:78px;height:78px;bottom:66px;left:0;animation-delay:2.4s')}
+            ${orb('basketball',64,'width:64px;height:64px;bottom:120px;right:18%;animation-delay:3.2s')}
+            ${orb('shield',58,'width:58px;height:58px;bottom:0;left:40%;animation-delay:4s;background:rgba(18,178,124,.35);border-color:rgba(127,216,169,.7)')}
+          </div>
+        </div>
+        <div class="marquee"><div class="marquee-in">${marItems}${marItems}</div></div>
+      </div>
+      ${demoBox}
+      <div class="wrap">
+        <div class="sec">
+          <h2>個人でも、チームでも。</h2>
+          <p class="sub">受講スタイルとコーチの「指導形態」で、ぴったりの相手を探せます。</p>
+          <div class="duo">
+            <div class="duo-card ind">
+              <div class="duo-ic">${ic('user',26)}</div>
+              <h3>マンツーマンで、最短距離。</h3>
+              <p>フォームのクセも、伸び悩みの理由も、一人ひとり違う。目標と現在地に合わせた完全個別メニューで、上達までの距離を縮めます。</p>
+            </div>
+            <div class="duo-card team">
+              <div class="duo-ic">${ic('jersey',26)}</div>
+              <h3>チームに、プロの視点を。</h3>
+              <p>部活・クラブ・サークルに外部コーチを。練習設計から戦術、声かけの文化づくりまで、チーム単位でそのまま契約できます。</p>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>マッチから契約まで、3ステップ</h2>
+          <p class="sub">連絡先の交換も、料金の言い出しにくさもいらない。ぜんぶアプリの中で完結します。</p>
+          <div class="steps">
+            <div class="step"><div class="no">STEP 01</div><div class="ic">${ic('search',36)}</div><h3>さがして、いいね</h3><p>競技×エリア×指導形態で検索。写真とレビューで人柄まで見えるから、選ぶのに迷わない。</p></div>
+            <div class="step"><div class="no">STEP 02</div><div class="ic">${ic('link',36)}</div><h3>想いが重なったら、マッチ</h3><p>お互いに「いいね」で成立。メッセージで日程や目標をすり合わせできます。</p></div>
+            <div class="step"><div class="no">STEP 03</div><div class="ic">${ic('doc',36)}</div><h3>決めて、はじめる</h3><p>回数・料金・期間を契約提案として送信。承諾すれば契約成立、支払いもアプリ内で。</p></div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>「はじめて」を、安心が支える。</h2>
+          <div class="safe3">
+            <div class="safe"><div class="ic">${ic('shield',22)}</div><h3>認証コーチ制度</h3><p>コーチの申請にもとづき、事務局が本人確認書類を1件ずつ審査。承認されたコーチだけが認証バッジを掲げられます。</p></div>
+            <div class="safe"><div class="ic">${ic('flag',22)}</div><h3>事務局の見守り</h3><p>通報窓口を常設し、事務局が対応。安心して使える場を保つことも、私たちの仕事です。</p></div>
+            <div class="safe"><div class="ic">${ic('card',22)}</div><h3>決済もアプリ内で</h3><p>現金の手渡しは不要。支払いはすべて記録に残り、あとから確認できます。</p></div>
+          </div>
+        </div>
+        <div class="sec" style="padding-top:0">
+          <h2>対応競技</h2>
+          <div class="sportchips">${SPORTS.map(s=>`<span class="sportchip">${SPORT_ICON[s]} ${esc(s)}</span>`).join('')}</div>
+        </div>
+        <div class="cta-band lanes">
+          <h3>その経験は、誰かの伸びしろだ。</h3>
+          <p>競技経験・指導経験をレッスンに。料金も、日程も、あなたのペースで。登録は無料です。</p>
+          <button class="btn" onclick="App.gotoSignup('coach')">コーチとして参加する</button>
+        </div>
+      </div>
+      <footer>© 2026 MyCOACH ― 出会った日から、伸びはじめる。</footer>
+    `, null);
+  },
+
+  gotoSignup(role){ this._signupRole=role; location.hash='#login'; setTimeout(()=>{ this.viewAuth('signup'); },0); },
+  async demoLogin(email){
+    try{ this.me=await DB.signIn(email,'demo1234'); }catch(e){ try{ this.me=await DB.signIn(email,'admin1234'); }catch(e2){ this.toast(e2.message); return; } }
+    location.hash = this.me.isAdmin ? '#admin' : '#browse'; this.route();
+  },
+
+  /* ---------- 認証 ---------- */
+  viewAuth(mode){
+    mode = mode || this._authMode || 'login';
+    this._authMode = mode;
+    const role = this._signupRole || 'player';
+    const isCoach = role==='coach';
+    this.shell(`
+      <div class="auth-wrap">
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button class="auth-tab ${mode==='login'?'active':''}" onclick="App.viewAuth('login')">ログイン</button>
+            <button class="auth-tab ${mode==='signup'?'active':''}" onclick="App.viewAuth('signup')">新規登録</button>
+          </div>
+          ${mode==='signup'?`
+            <div class="role-sel">
+              <div class="role-opt ${!isCoach?'sel':''}" onclick="App._signupRole='player';App.viewAuth('signup')">
+                <div class="ic">${ic('run',26)}</div><div class="t">指導を受けたい</div><div class="d">コーチをさがす</div></div>
+              <div class="role-opt ${isCoach?'sel':''}" onclick="App._signupRole='coach';App.viewAuth('signup')">
+                <div class="ic">${ic('megaphone',26)}</div><div class="t">指導したい</div><div class="d">コーチとして活動</div></div>
+            </div>
+            <div class="field"><label>${isCoach?'顔写真（掲載を強く推奨。信頼が伝わり、マッチ率が大きく上がります）':'プロフィール写真（任意）'}</label><input id="f-photo" type="file" accept="image/*"></div>
+            ${!isCoach?`
+              <div class="field"><label>受講形態</label>
+                <div class="seg" id="f-ptype">
+                  <button type="button" class="seg-btn ${this._ptype!=='team'?'sel':''}" data-v="individual" onclick="App.pickPtype(this)">個人で受ける</button>
+                  <button type="button" class="seg-btn ${this._ptype==='team'?'sel':''}" data-v="team" onclick="App.pickPtype(this)">チームで受ける</button>
+                </div></div>
+              <div id="f-teamfields" style="display:${this._ptype==='team'?'block':'none'}">
+                <div class="field"><label>チーム名</label><input id="f-teamname" placeholder="例：FC小金井 ジュニア"></div>
+                <div class="field"><label>人数（目安）</label><input id="f-teamsize" type="number" min="2" placeholder="12"></div>
+              </div>`:''}
+            <div class="field"><label>お名前（ニックネーム可）</label><input id="f-name" placeholder="例：山田 太郎"></div>
+            <div class="field"><label>競技</label><select id="f-sport">${SPORTS.map(s=>`<option>${s}</option>`).join('')}</select></div>
+            <div class="field"><label>エリア</label><select id="f-area">${AREAS.map(a=>`<option ${a==='東京都'?'selected':''}>${a}</option>`).join('')}</select></div>
+            ${isCoach?`
+              <div class="field"><label>レッスン料金（1回・税込）</label><input id="f-fee" type="number" min="0" step="100" placeholder="5000"></div>
+              <div class="field"><label>指導歴</label><input id="f-exp" placeholder="例：指導歴5年"></div>
+              <div class="field"><label>指導形態</label><select id="f-ctarget">
+                <option value="both">個人・チームどちらも</option>
+                <option value="individual">個人レッスンのみ</option>
+                <option value="team">チーム指導のみ</option></select></div>
+              <div class="field"><label>本人確認書類（任意）</label><input id="f-iddoc" type="file" accept="image/*"><div class="hint">運転免許証や指導者資格証など。提出するとそのまま認証申請となり、事務局の審査後に「認証コーチ」バッジが付きます。書類は運営のみ閲覧します。登録後にマイページからも申請できます。</div></div>`:''}
+            <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label>
+              <textarea id="f-intro" placeholder="${isCoach?'経歴や得意な指導内容、レッスンの進め方など':'例：週1回、基礎から教えてほしい 等'}"></textarea></div>
+          `:''}
+          <div class="field"><label>メールアドレス</label><input id="f-email" type="email" autocomplete="email" placeholder="mail@example.com"></div>
+          <div class="field"><label>パスワード（6文字以上）</label><input id="f-pw" type="password" autocomplete="${mode==='login'?'current-password':'new-password'}"></div>
+          ${mode==='login'?`<div style="text-align:right;margin:-6px 0 12px"><a href="javascript:void(0)" onclick="App.openPwReset()" style="font-size:12.5px">パスワードをお忘れですか？</a></div>`:''}
+          <button class="btn btn-primary btn-block" onclick="App.submitAuth('${mode}')">${mode==='login'?'ログイン':'登録してはじめる'}</button>
+          ${DB.mode==='demo'?`
+          <div class="demo-box">
+            <div class="t">${ic('ticket',14)} デモアカウント（パスワード: demo1234 / 管理者: admin1234）</div>
+            <button class="btn btn-sm btn-soft" onclick="App.demoLogin('demo-player@mycoach.jp')">受講者</button>
+            <button class="btn btn-sm btn-soft" onclick="App.demoLogin('demo-coach@mycoach.jp')">コーチ</button>
+            <button class="btn btn-sm btn-soft" onclick="App.demoLogin('admin@mycoach.jp')">管理者</button>
+          </div>`:''}
+        </div>
+      </div>`, null);
+  },
+
+  async submitAuth(mode){
+    const v=id=>document.getElementById(id)?.value.trim();
+    const email=v('f-email'), pw=v('f-pw');
+    try{
+      if(!email||!pw) throw new Error('メールアドレスとパスワードを入力してください');
+      if(mode==='signup'){
+        if(pw.length<6) throw new Error('パスワードは6文字以上で設定してください');
+        const role=this._signupRole||'player';
+        const name=v('f-name'); if(!name) throw new Error('お名前を入力してください');
+        const profile={ role, name, sport:v('f-sport'), area:v('f-area'),
+          fee: role==='coach'?Number(v('f-fee')||0):0,
+          exp: role==='coach'?(v('f-exp')||''):'', intro:v('f-intro')||'' };
+        if(role==='player'){
+          profile.playerType=this._ptype||'individual';
+          if(profile.playerType==='team'){
+            profile.teamName=v('f-teamname')||''; profile.teamSize=Number(v('f-teamsize')||0);
+            if(!profile.teamName) throw new Error('チーム名を入力してください');
+          }
+        }else{
+          profile.coachTarget=v('f-ctarget')||'both';
+        }
+        if(role==='coach' && !profile.fee) throw new Error('レッスン料金を入力してください');
+        const pf=document.getElementById('f-photo')?.files[0];
+        if(pf) profile.photo=await resizeImage(pf,480).catch(()=>{ throw new Error('写真の読み込みに失敗しました。JPEGまたはPNG画像をご利用ください'); });
+        if(role==='coach'){
+          const idf=document.getElementById('f-iddoc')?.files[0];
+          if(idf){ profile.idDoc=await resizeImage(idf,900).catch(()=>{ throw new Error('本人確認書類の読み込みに失敗しました。JPEGまたはPNG画像をご利用ください'); }); profile.verified='pending'; profile.verifiedAppliedTs=Date.now(); }
+          else profile.verified='none';
+        }
+        this.me=await DB.signUp(email,pw,profile);
+        this.toast('登録が完了しました！');
+      }else{
+        this.me=await DB.signIn(email,pw);
+      }
+      location.hash=this.me.isAdmin?'#admin':'#browse'; this.route();
+    }catch(e){ this.toast(e.message||'エラーが発生しました'); }
+  },
+
+  async logout(){ await DB.signOutUser(); this.me=null; location.hash=''; this.route(); },
+
+  /* ---------- 検索 ---------- */
+  async viewBrowse(){
+    const isPlayer = this.me.role!=='coach';
+    const targetRole = isPlayer?'coach':'player';
+    const [users, likes, matches] = await Promise.all([DB.listUsers(targetRole), DB.getLikes(this.me.id), DB.listMatches(this.me.id)]);
+    this._browse={users, likes, matchedIds:new Set(matches.flatMap(m=>m.users))};
+    this.shell(`
+      <div class="wrap">
+        <div class="page-head">
+          <h1>${isPlayer?'コーチをさがす':'指導を受けたい人をさがす'}</h1>
+          <p>${isPlayer?'気になるコーチに「いいね」を送りましょう。お互いにいいねするとマッチ成立です。':'あなたの指導を待っている人に「いいね」を送りましょう。'}</p>
+        </div>
+        <div class="filters">
+          <select id="fl-sport" onchange="App.renderBrowse()"><option value="">すべての競技</option>${SPORTS.map(s=>`<option>${s}</option>`).join('')}</select>
+          <select id="fl-area" onchange="App.renderBrowse()"><option value="">すべてのエリア</option>${AREAS.map(a=>`<option>${a}</option>`).join('')}</select>
+          <select id="fl-type" onchange="App.renderBrowse()">
+            ${isPlayer
+              ?`<option value="">指導形態：すべて</option><option value="fit">自分に合うコーチ（${this.me.playerType==='team'?'チーム':'個人'}対応）</option>`
+              :`<option value="">受講形態：すべて</option><option value="individual">個人</option><option value="team">チーム</option>`}
+          </select>
+          <input id="fl-q" placeholder="キーワード検索" oninput="App.renderBrowse()">
+        </div>
+        <div class="grid" id="browse-grid"></div>
+      </div>`, 'browse');
+    this.renderBrowse();
+  },
+
+  renderBrowse(){
+    const {users, likes, matchedIds}=this._browse;
+    const sp=document.getElementById('fl-sport').value, ar=document.getElementById('fl-area').value, q=document.getElementById('fl-q').value.trim();
+    const tp=document.getElementById('fl-type')?.value||'';
+    const sentTo=new Set(likes.sent.map(l=>l.to));
+    const recvFrom=new Set(likes.received.map(l=>l.from));
+    const list=users.filter(u=>u.id!==this.me.id)
+      .filter(u=>(!sp||u.sport===sp)&&(!ar||u.area===ar)&&(!q||(u.name+u.intro+u.sport).includes(q)))
+      .filter(u=>{
+        if(!tp) return true;
+        if(this.me.role!=='coach'){
+          const myType=this.me.playerType==='team'?'team':'individual';
+          const ct=u.coachTarget||'both';
+          return ct==='both'||ct===myType;
+        }
+        return (u.playerType||'individual')===tp;
+      });
+    const grid=document.getElementById('browse-grid');
+    if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ic">${ic('search',44)}</div>条件に合うユーザーが見つかりませんでした。<br>条件を変えて再検索してみてください。</div>`; return; }
+    grid.innerHTML=list.map(u=>{
+      const matched=matchedIds.has(u.id), sent=sentTo.has(u.id), recv=recvFrom.has(u.id);
+      return `<div class="ucard">
+        ${recv&&!matched?`<span class="likedby pill pill-flag">${ic('heart',12)} あなたに興味あり</span>`:''}
+        <div class="hd" style="cursor:pointer" onclick="App.openProfile('${u.id}')">
+          <div class="avatar">${avatarOf(u)}</div>
+          <div><div class="nm">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</div>
+          <div class="meta">${esc(u.sport)}・${esc(u.area)}${u.exp?`・${esc(u.exp)}`:''}${u.role==='coach'?`・${CTARGET_S[u.coachTarget||'both']}対応`:''}</div>
+          ${u.ratingCount?`<span class="rate">${stars(u.ratingAvg,12)} ${u.ratingAvg}（${u.ratingCount}）</span>`:''}</div>
+        </div>
+        <div class="intro">${esc(u.intro)}</div>
+        <div class="ft">
+          ${u.role==='coach'?`<div class="fee">${yen(u.fee)}<small> /回</small></div>`
+            :`<span class="pill pill-blue">${u.playerType==='team'?`チーム${u.teamSize?`・${u.teamSize}名`:''}`:'個人'}で受講希望</span>`}
+          ${matched?`<span class="pill pill-turf">${ic('check',12)} マッチ済み</span>`
+            : sent?`<button class="btn btn-sm btn-soft" disabled>いいね済み</button>`
+            : `<button class="btn btn-sm ${recv?'btn-flag':'btn-primary'}" onclick="App.sendLike('${u.id}')">${recv?ic('heart',15)+' いいねを返す':ic('thumb',15)+' いいね'}</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  async openProfile(id){
+    const u=await DB.getUser(id); if(!u) return;
+    const isCoach=u.role==='coach';
+    const rvs=await DB.listReviews(id);
+    const rvHtml=(await Promise.all(rvs.slice(0,3).map(async r=>{ const f=await DB.getUser(r.from);
+      return `<div style="border-top:1px solid var(--line);padding:8px 0;font-size:12.5px"><span class="rate">${stars(r.rating,11)}</span> <b>${esc(f?.name||'退会ユーザー')}</b><div style="color:var(--ink2)">${esc(r.comment||'')}</div></div>`; }))).join('');
+    this.modal(`
+      <div style="text-align:center">
+        <div class="avatar lg" style="margin:0 auto">${avatarOf(u)}</div>
+        <h3 class="rounded" style="font-size:19px;font-weight:800;margin-top:10px">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</h3>
+        <div class="hint">${esc(u.sport)}・${esc(u.area)}${u.exp?`・${esc(u.exp)}`:''}</div>
+        <div class="hint" style="margin-top:2px">${u.role==='coach'
+          ?`指導形態：${CTARGET[u.coachTarget||'both']}`
+          :`受講形態：${u.playerType==='team'?`チーム（${esc(u.teamName||u.name)}${u.teamSize?`・約${u.teamSize}名`:''}）`:'個人'}`}</div>
+        ${u.ratingCount?`<div class="rate" style="justify-content:center;margin-top:4px">${stars(u.ratingAvg,13)} ${u.ratingAvg}（${u.ratingCount}件）</div>`:''}
+        ${isCoach?`<div class="fee" style="font-size:24px;margin-top:8px">${yen(u.fee)}<small> /回</small></div>`:''}
+      </div>
+      <p style="margin:16px 0;font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(u.intro)}</p>
+      ${rvs.length?`<div style="margin:0 0 14px"><div style="font-weight:800;font-size:13px">レビュー（${rvs.length}件）</div>${rvHtml}</div>`:''}
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('thumb')} いいねを送る</button>
+        <button class="btn btn-danger-soft btn-sm" onclick="App.openReport('${u.id}')">通報</button>
+      </div>`);
+  },
+
+  async sendLike(to){
+    const r=await DB.like(this.me.id,to);
+    if(r.matched){
+      const other=await DB.getUser(to);
+      this.showMatchFX(other, r.matchId);
+      DB.notify(to,'match',`${this.me.name}さんとマッチが成立しました！メッセージで挨拶しましょう`,'#messages');
+    }else{
+      DB.notify(to,'like',`${this.me.name}さんからいいねが届きました`,'#matches');
+      this.toast('いいねを送りました！');
+      if(location.hash===''||location.hash==='#browse') this.viewBrowse(); else this.route();
+    }
+  },
+
+  showMatchFX(other, matchId){
+    const el=document.createElement('div');
+    el.className='match-fx lanes';
+    el.innerHTML=`<div class="in">
+      <div class="avs">
+        <div class="avatar av-l">${avatarOf(this.me)}</div>
+        <div class="avatar av-r">${avatarOf(other)}</div>
+      </div>
+      <h2>MATCH!</h2>
+      <p>${esc(other.name)} さんとマッチしました<br>メッセージで挨拶してみましょう。</p>
+      <button class="btn" onclick="this.closest('.match-fx').remove();location.hash='#chat/${matchId}'">${ic('chat')} メッセージを送る</button>
+      <div><button class="btn btn-sm" style="color:#fff;opacity:.8" onclick="this.closest('.match-fx').remove();App.route()">あとで</button></div>
+    </div>`;
+    document.body.appendChild(el);
+  },
+
+  /* ---------- マッチ / いいね ---------- */
+  async viewMatches(tab){
+    const [matches, likes]=await Promise.all([DB.listMatches(this.me.id), DB.getLikes(this.me.id)]);
+    const matchedIds=new Set(matches.flatMap(m=>m.users));
+    const recv=likes.received.filter(l=>!matchedIds.has(l.from));
+    const sent=likes.sent.filter(l=>!matchedIds.has(l.to));
+    let body='';
+    if(tab==='match'){
+      body = matches.length ? `<div class="list">${matches.map(m=>`
+        <div class="lrow" onclick="location.hash='#chat/${m.id}'">
+          <div class="avatar">${avatarOf(m.other)}</div>
+          <div class="bd"><div class="nm">${esc(m.other?.name||'退会ユーザー')}</div>
+          <div class="sub">${esc(m.other?.sport||'')}・${esc(m.other?.area||'')}</div></div>
+          <div class="rt"><span class="pill pill-turf">マッチ中</span><div class="tm">${fmtD(m.ts)}</div></div>
+        </div>`).join('')}</div>`
+        : `<div class="empty"><div class="ic">${ic('link',44)}</div>まだマッチがありません。<br>「さがす」から気になる相手にいいねを送りましょう。</div>`;
+    }else{
+      const recvRows = await Promise.all(recv.map(async l=>{ const u=await DB.getUser(l.from); return u?`
+        <div class="lrow">
+          <div class="avatar" onclick="App.openProfile('${u.id}')">${avatarOf(u)}</div>
+          <div class="bd" onclick="App.openProfile('${u.id}')"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.sport)}・${esc(u.area)}</div></div>
+          <button class="btn btn-sm btn-flag" onclick="App.sendLike('${u.id}')">${ic('heart',15)} いいねを返す</button>
+        </div>`:''; }));
+      const sentRows = await Promise.all(sent.map(async l=>{ const u=await DB.getUser(l.to); return u?`
+        <div class="lrow" onclick="App.openProfile('${u.id}')">
+          <div class="avatar">${avatarOf(u)}</div>
+          <div class="bd"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.sport)}・${esc(u.area)}</div></div>
+          <span class="pill pill-gray">返事待ち</span>
+        </div>`:''; }));
+      body = `
+        <h3 style="font-size:14px;font-weight:800;margin:6px 0 10px">${ic('heart',15)} もらったいいね（${recv.length}）</h3>
+        ${recv.length?`<div class="list">${recvRows.join('')}</div>`:`<p class="hint">まだいいねは届いていません。</p>`}
+        <h3 style="font-size:14px;font-weight:800;margin:22px 0 10px">${ic('thumb',15)} 送ったいいね（${sent.length}）</h3>
+        ${sent.length?`<div class="list">${sentRows.join('')}</div>`:`<p class="hint">送ったいいねはありません。</p>`}`;
+    }
+    this.shell(`
+      <div class="wrap">
+        <div class="page-head"><h1>マッチ</h1><p>お互いにいいねするとマッチ成立。メッセージから契約まで進めます。</p></div>
+        <div class="subtabs">
+          <button class="subtab ${tab==='match'?'active':''}" onclick="App.viewMatches('match')">マッチ一覧（${matches.length}）</button>
+          <button class="subtab ${tab==='likes'?'active':''}" onclick="App.viewMatches('likes')">いいね</button>
+        </div>
+        ${body}
+      </div>`, 'matches');
+  },
+
+  /* ---------- メッセージ一覧 ---------- */
+  async viewMessages(){
+    const matches=await DB.listMatches(this.me.id);
+    const read=this.readMap();
+    const body = matches.length ? `<div class="list">${matches.map(m=>{
+      const unread = m.lastMsg && m.lastMsg.from!==this.me.id && m.lastMsg.ts>(read[m.id]||0);
+      return `<div class="lrow" onclick="location.hash='#chat/${m.id}'">
+        <div class="avatar">${avatarOf(m.other)}</div>
+        <div class="bd"><div class="nm">${esc(m.other?.name||'退会ユーザー')} ${unread?'<span class="pill pill-flag">新着</span>':''}</div>
+        <div class="sub">${m.lastMsg?esc(m.lastMsg.text):'マッチしました！挨拶してみましょう'}</div></div>
+        <div class="rt"><div class="tm">${m.lastMsg?fmtT(m.lastMsg.ts):fmtD(m.ts)}</div></div>
+      </div>`;}).join('')}</div>`
+      : `<div class="empty"><div class="ic">${ic('chat',44)}</div>マッチするとここでメッセージができます。</div>`;
+    this.shell(`<div class="wrap"><div class="page-head"><h1>メッセージ</h1><p>マッチした相手と日程・内容を相談しましょう。</p></div>${body}</div>`, 'messages');
+  },
+
+  /* ---------- チャット ---------- */
+  async viewChat(matchId){
+    const m=await DB.getMatch(matchId);
+    if(!m || !m.users.includes(this.me.id)){ this.toast('このトークにはアクセスできません'); location.hash='#messages'; return; }
+    const other=await DB.getUser(m.users.find(u=>u!==this.me.id));
+    this._chatOther=other;
+    const ct=await DB.contractForMatch(matchId);
+    const iAmCoach = this.me.role==='coach';
+    let banner='';
+    if(ct){
+      if(ct.status==='proposed'){
+        banner = ct.proposer===this.me.id
+          ? `<div class="chat-ct-banner">${ic('doc',14)} 契約を提案中です（相手の承諾待ち）<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">内容を見る</button></div>`
+          : `<div class="chat-ct-banner">${ic('doc',14)} 契約の提案が届いています<button class="btn btn-sm btn-turf" onclick="location.hash='#contracts'">確認して返答</button></div>`;
+      }else if(ct.status==='active'){
+        banner = `<div class="chat-ct-banner">${ic('check',14)} 契約中：${esc(ct.title)}<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">詳細</button></div>`;
+      }
+    }
+    const canPropose = !ct || ['declined','completed','cancelled'].includes(ct.status);
+    document.getElementById('app').innerHTML=`
+      <div class="topbar"><div class="topbar-in">
+        <div class="logo" onclick="location.hash=''"><span class="ball">M</span>MyCOACH</div>
+        <div class="top-actions"><span class="hint">${esc(this.me.name)} さん</span></div>
+      </div></div>
+      <div class="chat">
+        <div class="chat-hd">
+          <button class="back" onclick="location.hash='#messages'">←</button>
+          <div class="avatar" style="width:40px;height:40px;font-size:20px">${avatarOf(other)}</div>
+          <div style="flex:1"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${esc(other?.sport||'')}・${esc(other?.area||'')}</div></div>
+          ${canPropose?`<button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${iAmCoach?ic('doc',14)+' 契約を提案':ic('doc',14)+' 契約を依頼'}</button>`:''}
+          <button class="btn btn-sm btn-danger-soft" onclick="App.openReport('${other?.id}')">通報</button>
+        </div>
+        ${banner}
+        <div class="chat-body" id="chat-body"></div>
+        <div class="chat-in">
+          <textarea id="chat-text" placeholder="メッセージを入力" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();App.sendChat('${matchId}')}"></textarea>
+          <button class="send" onclick="App.sendChat('${matchId}')">${ic('send')}</button>
+        </div>
+      </div>`;
+    this.setRead(matchId);
+    this.unsubChat = DB.listenMessages(matchId, msgs=>{
+      const body=document.getElementById('chat-body'); if(!body) return;
+      const html = [`<div class="sysmsg">${fmtD(m.ts)} にマッチしました</div>`]
+        .concat(msgs.map(ms=>`<div class="msg ${ms.from===this.me.id?'me':'you'}">${esc(ms.text)}<span class="tm">${fmtT(ms.ts)}</span></div>`));
+      if(body.dataset.n!==String(msgs.length)){
+        body.innerHTML=html.join(''); body.dataset.n=String(msgs.length);
+        body.scrollTop=body.scrollHeight;
+        this.setRead(matchId);
+      }
+    });
+  },
+
+  async sendChat(matchId){
+    const ta=document.getElementById('chat-text');
+    const text=ta.value.trim(); if(!text) return;
+    ta.value='';
+    await DB.sendMessage(matchId, this.me.id, text);
+    if(this._chatOther) DB.notify(this._chatOther.id,'msg',`${this.me.name}さんから新着メッセージがあります`,`#chat/${matchId}`,true);
+  },
+
+  /* ---------- 契約 ---------- */
+  async openContractForm(matchId, otherId){
+    const other=await DB.getUser(otherId);
+    const iAmCoach=this.me.role==='coach';
+    const coach=iAmCoach?this.me:other, player=iAmCoach?other:this.me;
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('doc',16)} 契約を${iAmCoach?'提案':'依頼'}する</h3>
+      <p class="hint" style="margin-bottom:14px">相手が承諾すると契約成立となります。内容はメッセージで事前にすり合わせておくとスムーズです。</p>
+      <div class="field"><label>契約タイトル</label><input id="ct-title" placeholder="例：${esc(coach.sport)}個人レッスン（月4回）"></div>
+      <div class="field"><label>レッスン内容・条件</label><textarea id="ct-detail" placeholder="回数・時間・場所・持ち物・キャンセル規定など"></textarea></div>
+      <div class="field"><label>料金（税込）</label><input id="ct-fee" type="number" min="0" step="100" value="${iAmCoach?(this.me.fee||''):(other?.fee||'')}"></div>
+      <div class="field"><label>料金単位</label><select id="ct-unit"><option value="per">1回あたり</option><option value="monthly">月額</option></select></div>
+      <div class="field"><label>期間</label><input id="ct-period" placeholder="例：3ヶ月 / 1回 / 継続"></div>
+      <button class="btn btn-turf btn-block" onclick="App.submitContract('${matchId}','${coach.id}','${player.id}')">この内容で送信する</button>`);
+  },
+
+  async submitContract(matchId, coachId, playerId){
+    const v=id=>document.getElementById(id).value.trim();
+    const title=v('ct-title'), detail=v('ct-detail'), fee=Number(v('ct-fee')), unit=v('ct-unit'), period=v('ct-period');
+    if(!title||!detail||!fee||!period){ this.toast('すべての項目を入力してください'); return; }
+    await DB.createContract({matchId, coach:coachId, player:playerId, proposer:this.me.id, title, detail, fee, unit, period});
+    await DB.sendMessage(matchId, this.me.id, `契約の提案を送りました：「${title}」（${yen(fee)}${unit==='monthly'?'/月':'/回'}・${period}）\n契約ページからご確認ください。`);
+    const partner = coachId===this.me.id?playerId:coachId;
+    DB.notify(partner,'contract',`${this.me.name}さんから契約の提案が届きました`,'#contracts');
+    this.closeModal(); this.toast('契約の提案を送信しました');
+    this.route();
+  },
+
+  async viewContracts(){
+    const cts=await DB.listContracts(this.me.id);
+    const rows = await Promise.all(cts.map(async c=>{
+      const other=await DB.getUser(c.coach===this.me.id?c.player:c.coach);
+      const mine=c.proposer===this.me.id;
+      const pays=await DB.paymentsForContract(c.id);
+      let actions='';
+      if(c.status==='proposed'){
+        actions = mine
+          ? `<button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','cancelled')">提案を取り下げる</button>`
+          : `<button class="btn btn-sm btn-turf" onclick="App.ctAction('${c.id}','active')">${ic('check',15)} 承諾して契約する</button>
+             <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','declined')">辞退する</button>`;
+      }else if(c.status==='active'){
+        actions = `${this.me.id===c.player?`<button class="btn btn-sm btn-turf" onclick="App.openPay('${c.id}')">${ic('card',15)} 支払う</button>`:''}
+                   <button class="btn btn-sm btn-soft" onclick="App.ctAction('${c.id}','completed')">契約を完了にする</button>
+                   <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','cancelled')">解約する</button>`;
+      }else if(c.status==='completed'){
+        const done=await DB.hasReview(c.id,this.me.id);
+        actions = done?`<span class="pill pill-gray">レビュー済み</span>`
+          :`<button class="btn btn-sm btn-primary" onclick="App.openReview('${c.id}','${c.coach===this.me.id?c.player:c.coach}')">${ic('star',14)} レビューを書く</button>`;
+      }
+      return `<div class="ct-card">
+        <div class="top"><h3>${esc(c.title)}</h3><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></div>
+        <div class="hint">相手：${esc(other?.name||'退会ユーザー')}（${c.coach===this.me.id?'受講者':'コーチ'}）</div>
+        <div class="ct-meta">
+          <div><div class="k">料金</div><div class="v fee" style="font-size:17px">${yen(c.fee)}<small> ${c.unit==='monthly'?'/月':'/回'}</small></div></div>
+          <div><div class="k">期間</div><div class="v">${esc(c.period)}</div></div>
+          <div><div class="k">提案日</div><div class="v">${fmtD(c.ts)}</div></div>
+          <div><div class="k">${c.status==='active'?'成立日':'更新日'}</div><div class="v">${c.decidedTs?fmtD(c.decidedTs):'—'}</div></div>
+        </div>
+        <p style="font-size:13px;color:var(--ink2);white-space:pre-wrap;margin-bottom:8px">${esc(c.detail)}</p>
+        ${pays.length?`<div class="hint" style="margin-bottom:8px">${ic('card',12)} 支払い ${pays.length}回・合計 ${yen(pays.reduce((s,p)=>s+p.amount,0))}（最終 ${fmtD(pays[0].ts)}）</div>`:''}
+        <div class="ct-actions">${actions}
+          <button class="btn btn-sm btn-ghost" onclick="location.hash='#chat/${c.matchId}'">${ic('chat',15)} トークへ</button></div>
+      </div>`;
+    }));
+    this.shell(`
+      <div class="wrap">
+        <div class="page-head"><h1>契約</h1><p>提案の確認・承諾、契約中レッスンの管理ができます。</p></div>
+        ${cts.length?`<div class="list">${rows.join('')}</div>`:`<div class="empty"><div class="ic">${ic('doc',44)}</div>まだ契約はありません。<br>マッチした相手とのトーク画面から契約を提案できます。</div>`}
+      </div>`, 'contracts');
+  },
+
+  async ctAction(id, status){
+    const labels={active:'この契約を承諾します。よろしいですか？', declined:'この提案を辞退します。よろしいですか？', completed:'この契約を完了にします。よろしいですか？', cancelled:'解約（または提案の取り下げ）を行います。よろしいですか？'};
+    if(!confirm(labels[status])) return;
+    const ct=await DB.updateContract(id,{status, decidedTs:Date.now()});
+    const msgMap={active:'契約が成立しました！レッスン開始に向けて詳細を相談しましょう。', declined:'今回の契約提案は辞退となりました。', completed:'契約が完了しました。お疲れさまでした！', cancelled:'契約（提案）がキャンセルされました。'};
+    try{ await DB.sendMessage(ct.matchId, this.me.id, msgMap[status]); }catch(e){}
+    const partner = ct.coach===this.me.id?ct.player:ct.coach;
+    DB.notify(partner,'contract',({active:'契約が成立しました！',declined:'契約提案は辞退されました',completed:'契約が完了しました。レビューを書きましょう',cancelled:'契約がキャンセルされました'})[status],'#contracts');
+    this.toast(status==='active'?'契約が成立しました！':'更新しました');
+    this.viewContracts();
+  },
+
+  /* ---------- 通報 ---------- */
+  async openReport(targetId){
+    this.closeModal();
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('flag',16)} 運営に通報する</h3>
+      <p class="hint" style="margin-bottom:14px">内容は運営のみが確認します。相手には通知されません。</p>
+      <div class="field"><label>理由</label><select id="rp-reason">
+        <option>不適切なメッセージ</option><option>プロフィールの虚偽</option><option>直接取引の勧誘</option><option>返信がない</option><option>その他</option></select></div>
+      <div class="field"><label>詳細（任意）</label><textarea id="rp-detail" placeholder="状況をできるだけ具体的にお書きください"></textarea></div>
+      <button class="btn btn-flag btn-block" onclick="App.submitReport('${targetId}')">通報を送信</button>`);
+  },
+  async submitReport(targetId){
+    await DB.report(this.me.id, targetId, document.getElementById('rp-reason').value, document.getElementById('rp-detail').value.trim());
+    this.closeModal(); this.toast('通報を受け付けました。運営が確認します。');
+  },
+
+  /* ---------- マイページ ---------- */
+  async viewMe(){
+    const u=this.me;
+    const isCoach=u.role==='coach';
+    const unsettled=isCoach?await DB.myUnsettled(u.id):0;
+    this.shell(`
+      <div class="wrap" style="max-width:560px">
+        <div class="page-head"><h1>マイページ</h1></div>
+        <div class="card" style="padding:22px">
+          <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+            <div style="text-align:center;flex-shrink:0">
+              <div class="avatar lg" onclick="document.getElementById('me-photo').click()" title="写真を変更" style="cursor:pointer">${avatarOf(u)}</div>
+              <a href="javascript:void(0)" onclick="document.getElementById('me-photo').click()" style="font-size:11.5px">${ic('camera',11)} 写真を変更</a>
+              <input id="me-photo" type="file" accept="image/*" style="display:none" onchange="App.changePhoto(this)">
+            </div>
+            <div><div class="rounded" style="font-weight:800;font-size:18px">${esc(u.name)}</div>
+            <span class="pill ${isCoach?'pill-turf':'pill-blue'}">${isCoach?'コーチ':'受講者'}</span>
+            <div class="hint">${esc(u.email)}</div>
+            ${isCoach?`<div style="margin-top:3px">${
+              u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証済みコーチ</span>`
+              :u.verified==='pending'?`<span class="pill pill-gold">認証審査中</span>`
+              :u.verified==='rejected'?`<span class="pill pill-red">認証見送り（再申請できます）</span>`
+              :`<span class="pill pill-gray">未認証</span>`}</div>
+            ${unsettled?`<div style="margin-top:4px"><span class="pill pill-gold">精算待ちの受取額 ${yen(unsettled)}（事務局から振込予定）</span></div>`:''}`:''}</div>
+          </div>
+          <div class="field"><label>お名前</label><input id="me-name" value="${esc(u.name)}"></div>
+          <div class="field"><label>競技</label><select id="me-sport">${SPORTS.map(s=>`<option ${s===u.sport?'selected':''}>${s}</option>`).join('')}</select></div>
+          <div class="field"><label>エリア</label><select id="me-area">${AREAS.map(a=>`<option ${a===u.area?'selected':''}>${a}</option>`).join('')}</select></div>
+          ${!isCoach?`
+            <div class="field"><label>受講形態</label><select id="me-ptype" onchange="document.getElementById('me-teamfields').style.display=this.value==='team'?'block':'none'">
+              <option value="individual" ${u.playerType!=='team'?'selected':''}>個人</option>
+              <option value="team" ${u.playerType==='team'?'selected':''}>チーム</option></select></div>
+            <div id="me-teamfields" style="display:${u.playerType==='team'?'block':'none'}">
+              <div class="field"><label>チーム名</label><input id="me-teamname" value="${esc(u.teamName||'')}"></div>
+              <div class="field"><label>人数（目安）</label><input id="me-teamsize" type="number" min="2" value="${u.teamSize||''}"></div>
+            </div>`:''}
+          ${isCoach?`
+            <div class="field"><label>レッスン料金（1回・税込）</label><input id="me-fee" type="number" min="0" step="100" value="${u.fee||0}"></div>
+            <div class="field"><label>指導歴</label><input id="me-exp" value="${esc(u.exp)}"></div>
+            <div class="field"><label>指導形態</label><select id="me-ctarget">
+              <option value="both" ${(u.coachTarget||'both')==='both'?'selected':''}>個人・チームどちらも</option>
+              <option value="individual" ${u.coachTarget==='individual'?'selected':''}>個人レッスンのみ</option>
+              <option value="team" ${u.coachTarget==='team'?'selected':''}>チーム指導のみ</option></select></div>
+            ${u.verified!=='approved'?`
+            <div class="verify-box">
+              <div class="vb-t">${ic('shield',14)} コーチ認証${u.verified==='pending'?'（事務局で審査中）':''}</div>
+              ${u.verified==='pending'
+                ?`<div class="hint">本人確認書類を受け付けました。事務局の審査完了後、結果を通知でお知らせします。</div>`
+                :`<div class="hint" style="margin-bottom:10px">本人確認書類（運転免許証・指導者資格証など）を添えて申請すると、事務局が審査のうえ「認証コーチ」バッジを付与します。認証コーチは検索で目立ち、マッチ率が上がります。</div>
+                  <div class="field" style="margin-bottom:10px"><label>本人確認書類</label><input id="me-iddoc" type="file" accept="image/*"></div>
+                  <button class="btn btn-sm btn-primary" onclick="App.applyVerify()">${u.verified==='rejected'?'再申請する':'認証を申請する'}</button>`}
+            </div>`:''}
+            ${STRIPE_CONNECT_ENDPOINT?`
+            <div class="verify-box" style="border-color:var(--turf)">
+              <div class="vb-t" style="color:#0B7A57">${ic('card',14)} レッスン料の受取口座（Stripe）</div>
+              ${u.stripeChargesEnabled
+                ?`<span class="pill pill-turf">自動受取 設定済み</span><div class="hint" style="margin-top:6px">決済のたびに、手数料${Math.round(PLATFORM_FEE_RATE*100)}%を差し引いた受取分が登録口座へ自動で送金されます。</div>`
+                :`<div class="hint" style="margin-bottom:10px">Stripeで本人確認と口座登録を行うと、レッスン料の受取分が自動で振り込まれるようになります。未設定の間は事務局からの振込（月次精算）です。</div>
+                  <button class="btn btn-sm btn-turf" onclick="App.connectOnboard()">受取口座を設定する（Stripeへ移動）</button>`}
+            </div>`:''}`:''}
+          <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label><textarea id="me-intro">${esc(u.intro)}</textarea></div>
+          <button class="btn btn-primary btn-block" onclick="App.saveMe()">プロフィールを保存</button>
+          <button class="btn btn-ghost btn-block" style="margin-top:10px" onclick="App.logout()">ログアウト</button>
+          <button class="btn btn-danger-soft btn-block btn-sm" style="margin-top:10px" onclick="App.deleteMe()">退会する</button>
+          ${DB.mode==='demo'?`<button class="btn btn-danger-soft btn-block btn-sm" style="margin-top:10px" onclick="if(confirm('デモデータを初期状態に戻します。よろしいですか？'))LocalDB.resetDemo()">${ic('refresh',14)} デモデータをリセット</button>`:''}
+        </div>
+      </div>`, 'me');
+  },
+
+  async saveMe(){
+    const v=id=>document.getElementById(id)?.value.trim();
+    const patch={name:v('me-name'), sport:v('me-sport'), area:v('me-area'), intro:v('me-intro')};
+    if(this.me.role==='coach'){
+      patch.fee=Number(v('me-fee')||0); patch.exp=v('me-exp');
+      patch.coachTarget=v('me-ctarget')||'both';
+    }else{
+      patch.playerType=v('me-ptype')||'individual';
+      if(patch.playerType==='team'){ patch.teamName=v('me-teamname')||''; patch.teamSize=Number(v('me-teamsize')||0); }
+      else{ patch.teamName=''; patch.teamSize=0; }
+    }
+    if(!patch.name){ this.toast('お名前を入力してください'); return; }
+    this.me=await DB.updateUser(this.me.id, patch);
+    this.toast('プロフィールを保存しました');
+  },
+
+  /* ---------- 通知 ---------- */
+  async openNotifs(){
+    const ns=await DB.listNotifications(this.me.id);
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:10px">${ic('bell',16)} 通知</h3>
+      ${ns.length?ns.map(n=>`
+        <div class="notif ${n.read?'':'unread'}" onclick="App.closeModal();${n.link?`location.hash='${n.link}';App.route&&App.route()`:''}">
+          <div class="tx">${esc(n.text)}</div><div class="tm">${fmtT(n.ts)}</div>
+        </div>`).join(''):'<p class="hint">通知はまだありません。いいねやマッチ、契約の更新があるとここに届きます。</p>'}`);
+    await DB.markNotifsRead(this.me.id);
+    this.updateBadges();
+  },
+
+  /* ---------- 決済 ---------- */
+  async openPay(ctId){
+    const cts=await DB.listContracts(this.me.id);
+    const c=cts.find(x=>x.id===ctId); if(!c) return;
+    const fee=Math.round(c.fee*PLATFORM_FEE_RATE), net=c.fee-fee;
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('card',16)} レッスン料のお支払い</h3>
+      <p class="hint">${esc(c.title)}</p>
+      <div class="pay-brk">
+        <div class="row"><span>レッスン料</span><span>${yen(c.fee)}${c.unit==='monthly'?' /月':' /回'}</span></div>
+        <div class="row"><span>うちコーチ受取額</span><span>${yen(net)}</span></div>
+        <div class="row"><span>うちサービス利用料（${Math.round(PLATFORM_FEE_RATE*100)}%）</span><span>${yen(fee)}</span></div>
+        <div class="row tot"><span>お支払い合計</span><span>${yen(c.fee)}</span></div>
+      </div>
+      ${DB.mode==='demo'?`
+        <div class="field"><label>カード番号（デモのため実際の決済は行われません）</label><input id="pay-card" inputmode="numeric" placeholder="4242 4242 4242 4242"></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>有効期限</label><input id="pay-exp" placeholder="12/28"></div>
+          <div class="field" style="flex:1"><label>CVC</label><input id="pay-cvc" placeholder="123"></div>
+        </div>
+        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">${yen(c.fee)} を支払う</button>`
+      :STRIPE_CHECKOUT_ENDPOINT?`
+        <button class="btn btn-turf btn-block" onclick="App.stripeCheckout('${c.id}')">Stripeで安全に支払う</button>
+        <p class="hint" style="margin-top:8px">Stripeの決済ページに移動します。完了後、自動で支払いが記録されます。</p>`
+      :STRIPE_PAYMENT_LINK?`
+        <a class="btn btn-turf btn-block" href="${STRIPE_PAYMENT_LINK}" target="_blank" rel="noopener">Stripeで支払う（別タブ）</a>
+        <button class="btn btn-soft btn-block" style="margin-top:8px" onclick="App.submitPay('${c.id}')">支払い済みとして記録する</button>`
+      :`
+        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">支払いを記録する（銀行振込など）</button>
+        <p class="hint" style="margin-top:8px">オンライン決済は未設定です。支払いの記録のみ行われます。</p>`}
+      <p class="hint" style="margin-top:10px">お支払いは契約履歴に記録され、コーチに通知されます。</p>`);
+  },
+  async submitPay(ctId){
+    const cts=await DB.listContracts(this.me.id);
+    const c=cts.find(x=>x.id===ctId); if(!c) return;
+    if(DB.mode==='demo'){
+      const card=(document.getElementById('pay-card')?.value||'').replace(/[^0-9]/g,'');
+      if(card.length<14){ this.toast('カード番号を入力してください（デモ用のダミーで構いません）'); return; }
+    }
+    const fee=Math.round(c.fee*PLATFORM_FEE_RATE);
+    await DB.addPayment({contractId:c.id, coach:c.coach, player:c.player, amount:c.fee, fee, net:c.fee-fee, method:DB.mode==='demo'?'demo':'manual'});
+    DB.notify(c.coach,'pay',`${this.me.name}さんから ${yen(c.fee)} のお支払いがありました`,'#contracts');
+    this.closeModal(); this.toast('お支払いが完了しました'); this.viewContracts();
+  },
+
+  _nav(url){ location.href=url; },
+  async connectOnboard(){
+    try{
+      const res=await fetch(STRIPE_CONNECT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({uid:this.me.id, origin:location.origin+location.pathname})});
+      const d=await res.json();
+      if(d.url) this._nav(d.url); else throw new Error(d.error||'設定ページの作成に失敗しました');
+    }catch(e){ this.toast(e.message||'設定ページの作成に失敗しました'); }
+  },
+  async stripeCheckout(ctId){
+    try{
+      const res=await fetch(STRIPE_CHECKOUT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contractId:ctId, uid:this.me.id, origin:location.origin+location.pathname})});
+      const d=await res.json();
+      if(d.url) this._nav(d.url); else throw new Error(d.error||'決済ページの作成に失敗しました');
+    }catch(e){ this.toast(e.message||'決済ページの作成に失敗しました'); }
+  },
+
+  /* ---------- レビュー ---------- */
+  openReview(ctId, targetId){
+    this._reviewStars=5;
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('star',16)} レビューを書く</h3>
+      <p class="hint">レッスンの感想を評価してください。相手のプロフィールに公開されます。</p>
+      <div class="starpick" id="star-pick"></div>
+      <div class="field"><label>コメント（任意）</label><textarea id="rv-comment" placeholder="指導内容・人柄・成果など"></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="App.submitReview('${ctId}','${targetId}')">投稿する</button>`);
+    this.renderStarPick();
+  },
+  renderStarPick(){
+    const el=document.getElementById('star-pick'); if(!el) return;
+    el.innerHTML=[1,2,3,4,5].map(i=>`<button class="${i<=this._reviewStars?'on':''}" onclick="App._reviewStars=${i};App.renderStarPick()" aria-label="星${i}">${ic('star',30)}</button>`).join('');
+  },
+  async submitReview(ctId,targetId){
+    const comment=document.getElementById('rv-comment').value.trim();
+    await DB.addReview({contractId:ctId, from:this.me.id, to:targetId, rating:this._reviewStars, comment});
+    DB.notify(targetId,'review',`${this.me.name}さんからレビュー（星${this._reviewStars}）が投稿されました`,'#me');
+    this.closeModal(); this.toast('レビューを投稿しました'); this.viewContracts();
+  },
+
+  /* ---------- 写真・退会・パスワード ---------- */
+  pickPtype(btn){
+    document.querySelectorAll('#f-ptype .seg-btn').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel'); this._ptype=btn.dataset.v;
+    const tf=document.getElementById('f-teamfields'); if(tf) tf.style.display=this._ptype==='team'?'block':'none';
+  },
+  async applyVerify(){
+    const f=document.getElementById('me-iddoc')?.files[0];
+    if(!f){ this.toast('本人確認書類の画像を選択してください'); return; }
+    try{
+      const idDoc=await resizeImage(f,900);
+      this.me=await DB.updateUser(this.me.id,{idDoc, verified:'pending', verifiedAppliedTs:Date.now()});
+      this.toast('認証を申請しました。事務局の審査結果をお待ちください');
+      this.viewMe();
+    }catch(e){ this.toast('画像の読み込みに失敗しました'); }
+  },
+  async changePhoto(input){
+    const f=input.files[0]; if(!f) return;
+    try{
+      const photo=await resizeImage(f,480);
+      this.me=await DB.updateUser(this.me.id,{photo});
+      this.toast('写真を更新しました'); this.viewMe();
+    }catch(e){ this.toast('画像の読み込みに失敗しました'); }
+  },
+  async deleteMe(){
+    if(!confirm('退会すると、プロフィールは非公開になりログインできなくなります。よろしいですか？')) return;
+    if(!confirm('本当に退会しますか？この操作は取り消せません。')) return;
+    await DB.deleteAccount(this.me.id);
+    this.me=null; location.hash=''; this.route();
+    this.toast('退会処理が完了しました。ご利用ありがとうございました');
+  },
+  openPwReset(){
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">パスワードの再設定</h3>
+      ${DB.mode==='demo'
+        ?`<p class="hint" style="margin-bottom:14px">デモモードのため、その場で新しいパスワードを設定できます（本番ではメールで再設定リンクをお送りします）。</p>
+          <div class="field"><label>登録メールアドレス</label><input id="pr-email" type="email"></div>
+          <div class="field"><label>新しいパスワード（6文字以上）</label><input id="pr-pw" type="password"></div>`
+        :`<p class="hint" style="margin-bottom:14px">登録メールアドレス宛に再設定用のリンクをお送りします。</p>
+          <div class="field"><label>登録メールアドレス</label><input id="pr-email" type="email"></div>`}
+      <button class="btn btn-primary btn-block" onclick="App.submitPwReset()">送信する</button>`);
+  },
+  async submitPwReset(){
+    const email=document.getElementById('pr-email').value.trim();
+    try{
+      if(DB.mode==='demo'){
+        const pw=document.getElementById('pr-pw').value;
+        if(pw.length<6){ this.toast('パスワードは6文字以上で設定してください'); return; }
+        await DB.resetPassword(email,pw);
+        this.closeModal(); this.toast('パスワードを再設定しました。ログインしてください');
+      }else{
+        await DB.resetPassword(email);
+        this.closeModal(); this.toast('再設定メールを送信しました。メールをご確認ください');
+      }
+    }catch(e){ this.toast(e.message||'エラーが発生しました'); }
+  },
+
+  /* ---------- 管理画面 ---------- */
+  async viewAdmin(tab){
+    if(!this.me?.isAdmin){ this.toast('管理者権限がありません'); location.hash='#browse'; return; }
+    tab=tab||'dash';
+    const head=`
+      <div class="adm-head"><div class="wrap">
+        <h1>${ic('gear',20)} MyCOACH 運営管理 <span class="pill pill-gold">ADMIN</span></h1>
+        <div class="adm-tabs">
+          ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['reports','通報対応']].map(([k,l])=>
+            `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash='#admin/${k}'">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}</button>`).join('')}
+          <button class="adm-tab" onclick="App.logout()">ログアウト</button>
+        </div>
+      </div></div>`;
+    let body='<div class="wrap">読み込み中...</div>';
+    this.shell(head+body,'admin');
+
+    if(tab==='dash') body=await this.admDash();
+    if(tab==='users') body=await this.admUsers();
+    if(tab==='contracts') body=await this.admContracts();
+    if(tab==='payments') body=await this.admPayments();
+    if(tab==='verify') body=await this.admVerify();
+    if(tab==='reports') body=await this.admReports();
+    this.shell(head+body,'admin');
+  },
+
+  async admDash(){
+    const s=await DB.stats(); this._openReports=s.openReports; this._pendingCoaches=s.pendingCoaches;
+    const cts=(await DB.allContracts()).slice(0,5);
+    const rows=await Promise.all(cts.map(async c=>{
+      const co=await DB.getUser(c.coach), pl=await DB.getUser(c.player);
+      return `<tr><td>${esc(c.title)}</td><td>${esc(co?.name||'-')}</td><td>${esc(pl?.name||'-')}</td>
+        <td class="num">${yen(c.fee)}</td><td><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></td><td>${fmtD(c.ts)}</td></tr>`;}));
+    return `<div class="wrap">
+      <div class="stats">
+        <div class="stat"><div class="n">${s.coaches}</div><div class="l">コーチ数</div></div>
+        <div class="stat"><div class="n">${s.players}</div><div class="l">受講者数</div></div>
+        <div class="stat"><div class="n">${s.likes}</div><div class="l">いいね総数</div></div>
+        <div class="stat"><div class="n">${s.matches}</div><div class="l">マッチ数</div></div>
+        <div class="stat"><div class="n">${s.active}</div><div class="l">契約中</div></div>
+        <div class="stat"><div class="n" style="font-size:22px">${yen(s.gmv)}</div><div class="l">成立契約 流通額</div></div>
+        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(s.feeRevenue)}</div><div class="l">手数料収益（決済ベース）</div></div>
+        <div class="stat"><div class="n" style="color:${s.pendingCoaches?'var(--gold)':'var(--court)'}">${s.pendingCoaches}</div><div class="l">審査待ちコーチ</div></div>
+        <div class="stat"><div class="n" style="color:${s.openReports?'var(--flag)':'var(--court)'}">${s.openReports}</div><div class="l">未対応の通報</div></div>
+      </div>
+      ${s.openReports?`<div class="notice">${ic('warn',14)} 未対応の通報が ${s.openReports} 件あります。「通報対応」タブから確認してください。</div>`:''}
+      ${s.pendingCoaches?`<div class="notice">${ic('warn',14)} 審査待ちのコーチが ${s.pendingCoaches} 名います。「コーチ審査」タブから確認してください。</div>`:''}
+      <h3 style="font-weight:800;margin:8px 0 10px">最近の契約</h3>
+      <div class="tbl-wrap"><table>
+        <tr><th>タイトル</th><th>コーチ</th><th>受講者</th><th>料金</th><th>状態</th><th>提案日</th></tr>
+        ${rows.join('')||'<tr><td colspan="6">契約データがありません</td></tr>'}
+      </table></div>
+    </div>`;
+  },
+
+  async admUsers(){
+    const users=(await DB.allUsers()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    this._admUsers=users;
+    return `<div class="wrap">
+      <div class="adm-toolbar">
+        <input id="au-q" placeholder="名前・メールで検索" oninput="App.renderAdmUsers()">
+        <select id="au-role" onchange="App.renderAdmUsers()">
+          <option value="">すべての区分</option><option value="coach">コーチ</option><option value="player">受講者</option><option value="admin">管理者</option></select>
+        <button class="btn btn-sm btn-soft" onclick="App.exportCSV('users')">CSVエクスポート</button>
+      </div>
+      <div class="tbl-wrap"><table id="au-table"></table></div>
+    </div>`;
+  },
+  renderAdmUsers(){
+    const q=(document.getElementById('au-q')?.value||'').trim();
+    const role=document.getElementById('au-role')?.value||'';
+    const list=this._admUsers.filter(u=>(!q||(u.name+u.email).includes(q))&&(!role||u.role===role||(role==='admin'&&u.isAdmin)));
+    document.getElementById('au-table').innerHTML=`
+      <tr><th>名前</th><th>区分</th><th>競技 / エリア</th><th>メール</th><th>登録日</th><th>状態</th><th>操作</th></tr>
+      ${list.map(u=>`<tr>
+        <td><b>${esc(u.name)}</b>${u.isAdmin?' <span class="pill pill-gold">ADMIN</span>':''}</td>
+        <td>${u.role==='coach'?'コーチ':u.role==='player'?'受講者':'運営'}</td>
+        <td>${esc(u.sport)} / ${esc(u.area)}</td>
+        <td>${esc(u.email)}</td>
+        <td>${fmtD(u.createdAt||Date.now())}</td>
+        <td>${u.suspended?'<span class="pill pill-red">停止中</span>':'<span class="pill pill-turf">有効</span>'}</td>
+        <td><div class="tbl-actions">${u.isAdmin?'—':
+          u.suspended
+            ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser('${u.id}',false)">復帰</button>`
+            :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser('${u.id}',true)">停止</button>`}</div></td>
+      </tr>`).join('')||'<tr><td colspan="7">該当ユーザーなし</td></tr>'}`;
+  },
+  async admToggleUser(id,suspend){
+    if(!confirm(suspend?'このユーザーを停止します。停止中はログイン・表示ができなくなります。':'このユーザーを復帰させます。')) return;
+    await DB.updateUser(id,{suspended:suspend});
+    this.toast(suspend?'ユーザーを停止しました':'ユーザーを復帰させました');
+    this.viewAdmin('users');
+  },
+
+  async admContracts(){
+    const cts=await DB.allContracts();
+    const rows=await Promise.all(cts.map(async c=>{
+      const co=await DB.getUser(c.coach), pl=await DB.getUser(c.player);
+      return `<tr><td><b>${esc(c.title)}</b><div class="hint">${esc(c.period)}</div></td>
+        <td>${esc(co?.name||'-')}</td><td>${esc(pl?.name||'-')}</td>
+        <td class="num">${yen(c.fee)}<span class="hint">${c.unit==='monthly'?'/月':'/回'}</span></td>
+        <td><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></td>
+        <td>${fmtD(c.ts)}</td>
+        <td>${c.status==='active'?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelCt('${c.id}')">強制解約</button>`:'—'}</td></tr>`;}));
+    this._admCts=cts;
+    return `<div class="wrap">
+      <div class="adm-toolbar">
+        <span class="hint">全 ${cts.length} 件</span>
+        <button class="btn btn-sm btn-soft" onclick="App.exportCSV('contracts')">CSVエクスポート</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <tr><th>契約</th><th>コーチ</th><th>受講者</th><th>料金</th><th>状態</th><th>提案日</th><th>操作</th></tr>
+        ${rows.join('')||'<tr><td colspan="7">契約データがありません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admCancelCt(id){
+    if(!confirm('運営権限でこの契約を解約します。よろしいですか？')) return;
+    await DB.updateContract(id,{status:'cancelled',decidedTs:Date.now()});
+    this.toast('契約を解約しました'); this.viewAdmin('contracts');
+  },
+
+  async admReports(){
+    const rs=await DB.listReports();
+    const rows=await Promise.all(rs.map(async r=>{
+      const from=await DB.getUser(r.from), tg=await DB.getUser(r.target);
+      return `<tr>
+        <td>${fmtD(r.ts)}</td>
+        <td>${esc(from?.name||'-')}</td>
+        <td><b>${esc(tg?.name||'-')}</b>${tg?.suspended?' <span class="pill pill-red">停止中</span>':''}</td>
+        <td>${esc(r.reason)}<div class="hint">${esc(r.detail||'')}</div></td>
+        <td>${r.status==='open'?'<span class="pill pill-flag">未対応</span>':'<span class="pill pill-gray">対応済</span>'}</td>
+        <td><div class="tbl-actions">
+          ${r.status==='open'?`<button class="btn btn-sm btn-soft" onclick="App.admResolve('${r.id}')">対応済にする</button>`:''}
+          ${tg&&!tg.suspended&&!tg.isAdmin?`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUserFromReport('${tg.id}','${r.id}')">対象を停止</button>`:''}
+        </div></td></tr>`;}));
+    return `<div class="wrap">
+      <p class="hint" style="margin:16px 0 10px">通報内容を確認し、必要に応じてユーザー停止などの対応を行ってください。</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>日付</th><th>通報者</th><th>対象</th><th>内容</th><th>状態</th><th>操作</th></tr>
+        ${rows.join('')||'<tr><td colspan="6">通報はありません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admResolve(id){ await DB.updateReport(id,{status:'resolved'}); this.toast('対応済にしました'); this.viewAdmin('reports'); },
+  async admToggleUserFromReport(uid,rid){
+    if(!confirm('通報対象のユーザーを停止し、この通報を対応済にします。')) return;
+    await DB.updateUser(uid,{suspended:true}); await DB.updateReport(rid,{status:'resolved'});
+    this.toast('ユーザーを停止しました'); this.viewAdmin('reports');
+  },
+
+  async admPayments(){
+    const ps=await DB.allPayments();
+    const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
+    const total=ps.reduce((s,p)=>s+p.amount,0), fees=ps.reduce((s,p)=>s+p.fee,0);
+    const un=await DB.unsettledByCoach();
+    const pos=await DB.allPayouts();
+    const unTotal=un.reduce((s,x)=>s+x.net,0);
+    return `<div class="wrap">
+      <div class="stats">
+        <div class="stat"><div class="n" style="font-size:22px">${yen(total)}</div><div class="l">決済総額</div></div>
+        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（${Math.round(PLATFORM_FEE_RATE*100)}%）</div></div>
+        <div class="stat"><div class="n">${ps.length}</div><div class="l">決済件数</div></div>
+      </div>
+      <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">コーチ精算（未払い ${yen(unTotal)}）</h2>
+      <p class="hint" style="margin-bottom:8px">受講者からの決済のうち、コーチにまだ振り込んでいない受取分です。銀行振込を実施したら「精算済みにする」を押すと記録され、コーチに通知されます。</p>
+      <div class="tbl-wrap" style="margin-bottom:20px"><table>
+        <tr><th>コーチ</th><th>未精算額（受取分）</th><th>件数</th><th>操作</th></tr>
+        ${un.map(x=>`<tr><td><b>${esc(us[x.coach]||'-')}</b></td><td class="num">${yen(x.net)}</td><td>${x.count}</td>
+          <td><button class="btn btn-sm btn-turf" onclick="App.admSettle('${x.coach}')">精算済みにする</button></td></tr>`).join('')
+          ||'<tr><td colspan="4">未精算の決済はありません</td></tr>'}
+      </table></div>
+      ${pos.length?`
+      <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">精算履歴</h2>
+      <div class="tbl-wrap" style="margin-bottom:20px"><table>
+        <tr><th>日付</th><th>コーチ</th><th>精算額</th><th>対象件数</th></tr>
+        ${pos.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${esc(us[p.coach]||'-')}</td><td class="num">${yen(p.amount)}</td><td>${p.count}</td></tr>`).join('')}
+      </table></div>`:''}
+      <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">決済一覧</h2>
+      <div class="adm-toolbar"><span class="hint">全 ${ps.length} 件</span>
+        <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payouts')">精算CSV</button>
+        <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payments')">決済CSV</button></div>
+      <div class="tbl-wrap"><table>
+        <tr><th>日付</th><th>コーチ</th><th>受講者</th><th>金額</th><th>手数料</th><th>コーチ受取</th><th>方法</th></tr>
+        ${ps.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${esc(us[p.coach]||'-')}</td><td>${esc(us[p.player]||'-')}</td>
+          <td class="num">${yen(p.amount)}</td><td class="num">${yen(p.fee)}</td><td class="num">${yen(p.net)}</td>
+          <td>${p.method==='demo'?'デモ決済':p.method==='manual'?'手動記録':'Stripe'}${p.payoutId==='stripe_connect'?'<div class="hint">自動分配済</div>':p.payoutId?'<div class="hint">精算済</div>':''}</td></tr>`).join('')||'<tr><td colspan="7">決済データがありません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admVerify(){
+    const order={pending:0,rejected:1,none:2,approved:3};
+    const coaches=(await DB.allUsers()).filter(u=>u.role==='coach')
+      .sort((a,b)=>(order[a.verified||'none']??2)-(order[b.verified||'none']??2)||(b.verifiedAppliedTs||0)-(a.verifiedAppliedTs||0));
+    return `<div class="wrap">
+      <p class="hint" style="margin:16px 0 10px">コーチからの認証申請を審査してください。本人確認書類を確認して承認すると、プロフィールに「認証コーチ」バッジが表示されます。結果は自動でコーチに通知されます。</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>コーチ</th><th>競技 / エリア</th><th>指導形態</th><th>申請日</th><th>書類</th><th>状態</th><th>操作</th></tr>
+        ${coaches.map(u=>`<tr>
+          <td><b>${esc(u.name)}</b><div class="hint">${esc(u.email)}</div></td>
+          <td>${esc(u.sport)} / ${esc(u.area)}</td>
+          <td>${CTARGET_S[u.coachTarget||'both']}</td>
+          <td>${u.verifiedAppliedTs?fmtD(u.verifiedAppliedTs):'-'}</td>
+          <td>${u.idDoc?`<button class="btn btn-sm btn-soft" onclick="App.admViewDoc('${u.id}')">書類を見る</button>`:'<span class="hint">未提出</span>'}</td>
+          <td>${u.verified==='approved'?'<span class="pill pill-turf">認証済</span>'
+              :u.verified==='rejected'?'<span class="pill pill-red">見送り</span>'
+              :u.verified==='pending'?'<span class="pill pill-gold">審査待ち</span>'
+              :'<span class="pill pill-gray">未申請</span>'}</td>
+          <td><div class="tbl-actions">${
+            u.verified==='pending'
+              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet('${u.id}','approved')">承認</button>
+                <button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet('${u.id}','rejected')">見送り</button>`
+            :u.verified==='approved'
+              ?`<button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet('${u.id}','rejected')">認証を取消</button>`
+            :u.verified==='rejected'
+              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet('${u.id}','approved')">承認する</button>`
+            :'<span class="hint">申請待ち</span>'}</div></td></tr>`).join('')||'<tr><td colspan="7">コーチがいません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admSettle(coach){
+    if(!confirm('このコーチへの振込を実施済みとして精算しますか？（対象：未精算の全決済）')) return;
+    const r=await DB.settleCoach(coach);
+    if(!r){ this.toast('未精算の決済がありません'); return; }
+    DB.notify(coach,'pay',`レッスン料 ${yen(r.amount)}（${r.count}件分）の精算・振込処理を行いました`,'#contracts');
+    this.toast('精算を記録しました');
+    await this.viewAdmin('payments');
+  },
+  async admViewDoc(userId){
+    const u=await DB.getUser(userId);
+    this.modal(`<h3 class="rounded" style="font-size:16px;font-weight:800;margin-bottom:10px">${esc(u.name)} さんの本人確認書類</h3>
+      ${u.idDoc?`<img class="idthumb" src="${u.idDoc}" alt="本人確認書類">`:'<p class="hint">書類は提出されていません。</p>'}`);
+  },
+  async admVerifySet(userId,st){
+    if(!confirm(st==='approved'?'このコーチを承認します。認証バッジが付与されます。':'このコーチの審査を却下します。')) return;
+    await DB.updateUser(userId,{verified:st});
+    DB.notify(userId,'verify', st==='approved'?'コーチ認証が承認されました！プロフィールに認証バッジが付与されています':'コーチ認証が見送られました。本人確認書類をご確認のうえ再提出してください', '#me');
+    this.toast(st==='approved'?'承認しました':'却下しました'); this.viewAdmin('verify');
+  },
+
+  async exportCSV(kind){
+    let rows=[], name='';
+    if(kind==='users'){
+      name='mycoach_users.csv';
+      rows=[['ID','名前','区分','競技','エリア','メール','料金','登録日','状態']]
+        .concat((await DB.allUsers()).map(u=>[u.id,u.name,u.role,u.sport,u.area,u.email,u.fee||0,fmtD(u.createdAt||0),u.suspended?'停止':'有効']));
+    }else if(kind==='contracts'){
+      name='mycoach_contracts.csv';
+      const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
+      rows=[['ID','タイトル','コーチ','受講者','料金','単位','期間','状態','提案日']]
+        .concat((await DB.allContracts()).map(c=>[c.id,c.title,us[c.coach]||'-',us[c.player]||'-',c.fee,c.unit==='monthly'?'月額':'1回',c.period,CT_STATUS[c.status],fmtD(c.ts)]));
+    }else if(kind==='payments'){
+      name='mycoach_payments.csv';
+      const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
+      rows=[['ID','日付','コーチ','受講者','金額','手数料','コーチ受取','方法','精算ID']]
+        .concat((await DB.allPayments()).map(p=>[p.id,fmtD(p.ts),us[p.coach]||'-',us[p.player]||'-',p.amount,p.fee,p.net,p.method,p.payoutId||'']));
+    }else{
+      name='mycoach_payouts.csv';
+      const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
+      rows=[['ID','日付','コーチ','精算額','対象件数']]
+        .concat((await DB.allPayouts()).map(p=>[p.id,fmtD(p.ts),us[p.coach]||'-',p.amount,p.count]));
+    }
+    const csv='\uFEFF'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=name; a.click();
+    this.toast('CSVをダウンロードしました');
+  },
+
+  /* ---------- モーダル ---------- */
+  modal(html){
+    this.closeModal();
+    const bg=document.createElement('div'); bg.className='modal-bg'; bg.id='modal-bg';
+    bg.innerHTML=`<div class="modal"><button class="close" onclick="App.closeModal()">${ic('x',16)}</button>${html}</div>`;
+    bg.addEventListener('click',e=>{ if(e.target===bg) this.closeModal(); });
+    document.body.appendChild(bg);
+  },
+  closeModal(){ document.getElementById('modal-bg')?.remove(); },
+};
+
+if(location.search.includes('paid=1')){ try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){} setTimeout(()=>App.toast('お支払いが完了しました'),900); }
+if(location.search.includes('connect=done')){ try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){} setTimeout(()=>App.toast('口座設定を受け付けました。反映まで数分かかることがあります'),900); }
+if(location.search.includes('connect=refresh')){ try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){} setTimeout(()=>App.toast('口座設定が完了していません。マイページから再開できます'),900); }
+App.boot();
+</script>
+</body>
+</html>
