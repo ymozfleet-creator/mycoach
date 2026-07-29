@@ -186,6 +186,24 @@ exports.createConnectLink = onRequest(
   }
 );
 
+/* ---------- 2.7 レビュー集計の再計算（整合性の担保・任意） ----------
+   有効化すると、レビュー投稿のたびにサーバー側で平均を再計算して上書きします。
+   有効化後は firestore.rules の ratingAvg/ratingCount 例外行を削除してください。 */
+exports.recalcRating = onDocumentCreated(
+  { region: REGION, document: 'reviews/{id}' },
+  async (event) => {
+    const rv = event.data && event.data.data();
+    if (!rv || !rv.to) return;
+    const q = await admin.firestore().collection('reviews').where('to', '==', rv.to).get();
+    const list = q.docs.map(d => d.data());
+    const avg = list.reduce((s, x) => s + Number(x.rating || 0), 0) / (list.length || 1);
+    await admin.firestore().collection('users').doc(rv.to).update({
+      ratingAvg: Math.round(avg * 10) / 10,
+      ratingCount: list.length,
+    });
+  }
+);
+
 /* ---------- 3. 通知 → メール（Trigger Email拡張ブリッジ） ---------- */
 /* 拡張「Trigger Email from Firestore」をインストールし、
    ドキュメントコレクションを "mail" に設定してください。 */

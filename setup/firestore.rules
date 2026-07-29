@@ -25,21 +25,33 @@ service cloud.firestore {
             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
             // Stripe口座情報はFunctions（Admin SDK）のみが書き込む
             && request.resource.data.get('stripeAccountId', '') == resource.data.get('stripeAccountId', '')
-            && request.resource.data.get('stripeChargesEnabled', false) == resource.data.get('stripeChargesEnabled', false));
+            && request.resource.data.get('stripeChargesEnabled', false) == resource.data.get('stripeChargesEnabled', false))
+        // レビュー投稿に伴う評価集計フィールドのみの更新は許可
+        // （改ざん耐性を高めたい場合は functions の recalcRating を有効化し、この行を削除）
+        || (authed()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratingAvg','ratingCount']));
       allow delete: if false; // 退会は deleted フラグで論理削除
     }
 
     // いいね：作成は本人（from）のみ
     match /likes/{id} {
       allow read: if authed();
-      allow create: if authed() && request.resource.data.from == request.auth.uid;
+      // ドキュメントIDは「送信者_受信者」に固定（本人以外のいいねを作れない）
+      allow create: if authed()
+        && request.resource.data.from == request.auth.uid
+        && id == request.auth.uid + '_' + request.resource.data.to;
       allow update, delete: if false;
     }
 
     // マッチ：当事者のみ閲覧・作成（双方向いいね成立時にクライアントが作成）
     match /matches/{id} {
       allow read: if authed() && (request.auth.uid in resource.data.users || isAdmin());
-      allow create: if authed() && request.auth.uid in request.resource.data.users;
+      // 双方の「いいね」が存在する場合のみマッチを作成できる（強制マッチの防止）
+      allow create: if authed()
+        && request.resource.data.users.size() == 2
+        && request.auth.uid in request.resource.data.users
+        && exists(/databases/$(database)/documents/likes/$(request.auth.uid + '_' + (request.resource.data.users[0] == request.auth.uid ? request.resource.data.users[1] : request.resource.data.users[0])))
+        && exists(/databases/$(database)/documents/likes/$((request.resource.data.users[0] == request.auth.uid ? request.resource.data.users[1] : request.resource.data.users[0]) + '_' + request.auth.uid));
       allow update, delete: if isAdmin();
 
       // チャット：マッチ当事者のみ
@@ -61,6 +73,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // 本人確認書類：本人の提出、本人と管理者のみ閲覧可
+    match /verify_docs/{uid} {
+      allow read: if authed() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if authed() && request.auth.uid == uid;
+      allow delete: if isAdmin();
+    }
+
     // 通報：作成は誰でも、閲覧・対応は管理者のみ
     match /reports/{id} {
       allow create: if authed();
@@ -71,7 +90,11 @@ service cloud.firestore {
     // 通知：宛先本人のみ閲覧・既読化。作成はログインユーザー（いいね等の相手宛通知）
     match /notifications/{id} {
       allow read, update: if authed() && (resource.data.to == request.auth.uid || isAdmin());
-      allow create: if authed();
+      allow create: if authed()
+        && request.resource.data.type in ['like','match','msg','contract','pay','review','verify']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 300
+        && request.resource.data.to is string;
       allow delete: if false;
     }
 
@@ -81,7 +104,10 @@ service cloud.firestore {
     match /payments/{id} {
       allow read: if authed() && (request.auth.uid == resource.data.coach
                     || request.auth.uid == resource.data.player || isAdmin());
-      allow create: if authed() && request.resource.data.player == request.auth.uid;
+      allow create: if authed()
+        && request.resource.data.player == request.auth.uid
+        && request.resource.data.amount is number && request.resource.data.amount > 0
+        && request.resource.data.fee is number && request.resource.data.fee >= 0;
       allow update: if isAdmin(); // 精算フラグ（payoutId）の付与のみ想定
       allow delete: if false;
     }
@@ -100,8 +126,18 @@ service cloud.firestore {
 
     // レビュー：閲覧は全員、作成は投稿者本人のみ
     match /reviews/{id} {
+      function ct() {
+        return get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data;
+      }
       allow read: if authed();
-      allow create: if authed() && request.resource.data.from == request.auth.uid;
+      // 完了済み契約の当事者のみ、契約相手に対して投稿できる
+      allow create: if authed()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && ct().status == 'completed'
+        && (request.auth.uid == ct().coach || request.auth.uid == ct().player)
+        && request.resource.data.to == (request.auth.uid == ct().coach ? ct().player : ct().coach);
       allow update, delete: if isAdmin();
     }
 

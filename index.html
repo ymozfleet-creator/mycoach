@@ -333,14 +333,11 @@ footer a{color:var(--ink2)}
                 または STRIPE_PAYMENT_LINK に固定額のPayment Link URLを設定（簡易）
         - メール通知: Firebase Extensions「Trigger Email」の導入を推奨
    ========================================================================= */
+const FIREBASE_CONFIG = null; /* 例:
 const FIREBASE_CONFIG = {
-  apiKey: "（自分の値）",
-  authDomain: "xxxx.firebaseapp.com",
-  projectId: "xxxx",
-  storageBucket: "xxxx.appspot.com",
-  messagingSenderId: "0000000000",
-  appId: "1:0000000000:web:xxxx"
-};
+  apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx",
+  storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
+}; */
 
 const PLATFORM_FEE_RATE = 0.15;   // プラットフォーム手数料率（15%）
 const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
@@ -605,7 +602,8 @@ const fmtT = ts => { const d=new Date(ts); const now=new Date();
   return same ? hm : `${d.getMonth()+1}/${d.getDate()} ${hm}`; };
 const fmtD = ts => { const d=new Date(ts); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; };
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-const avatarOf = u => (u && u.photo) ? `<img src="${u.photo}" alt="">` : (SPORT_ICON[u?.sport]||SPORT_ICON['その他']);
+const safeImg = s => (typeof s==='string' && /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(s)) ? s : null;
+const avatarOf = u => { const p=safeImg(u&&u.photo); return p ? `<img src="${p}" alt="">` : (SPORT_ICON[u?.sport]||SPORT_ICON['その他']); };
 const stars = (n, s=13) => Array.from({length:5},(_,i)=>`<span class="${i<Math.round(n)?'st on':'st'}">${ic('star',s)}</span>`).join('');
 function resizeImage(file, max=480){ return new Promise((res,rej)=>{
   const r=new FileReader();
@@ -704,12 +702,12 @@ function seedDB(){
   const reports = [
     {id:'r1', from:'p4', target:'c8', reason:'返信がない', detail:'いいねのお礼メッセージを送りましたが1週間返信がありません。', ts:t-86400000*2, status:'open'},
   ];
-  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[]};
+  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[], verifyDocs:{}};
 }
 
 const LocalDB = {
   mode:'demo',
-  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts'].forEach(k=>{ if(!d[k]) d[k]=[]; }); return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
+  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts'].forEach(k=>{ if(!d[k]) d[k]=[]; }); if(!d.verifyDocs) d.verifyDocs={}; return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
   _save(db){ localStorage.setItem(LS_DB, JSON.stringify(db)); },
   async init(){},
   async signUp(email,pw,profile){
@@ -807,6 +805,8 @@ const LocalDB = {
     db.users[r.to].ratingAvg=Math.round(avg*10)/10; db.users[r.to].ratingCount=list.length; this._save(db); return rv; },
   async listReviews(target){ return this._load().reviews.filter(r=>r.to===target).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ return this._load().reviews.some(r=>r.contractId===contractId&&r.from===from); },
+  async setIdDoc(userId,dataUrl){ const db=this._load(); db.verifyDocs=db.verifyDocs||{}; db.verifyDocs[userId]=dataUrl; this._save(db); },
+  async getIdDoc(userId){ return (this._load().verifyDocs||{})[userId]||null; },
   async unsettledByCoach(){ const db=this._load(); const map={};
     db.payments.filter(p=>!p.payoutId).forEach(p=>{ const m=map[p.coach]=map[p.coach]||{coach:p.coach,net:0,count:0}; m.net+=Number(p.net||0); m.count++; });
     return Object.values(map).sort((a,b)=>b.net-a.net); },
@@ -907,7 +907,17 @@ const FireDB = {
     return [...a.docs,...b.docs].map(d=>d.data()).sort((x,y)=>y.ts-x.ts);
   },
   async allContracts(){ const q=await this._fs.collection('contracts').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
-  async contractForMatch(matchId){ const q=await this._fs.collection('contracts').where('matchId','==',matchId).get(); const cs=q.docs.map(d=>d.data()); return cs.sort((a,b)=>b.ts-a.ts)[0]||null; },
+  async contractForMatch(matchId, uid2){
+    let cs;
+    if(!uid2){ const q=await this._fs.collection('contracts').where('matchId','==',matchId).get(); cs=q.docs.map(d=>d.data()); }
+    else{
+      const [a,b]=await Promise.all([
+        this._fs.collection('contracts').where('matchId','==',matchId).where('coach','==',uid2).get(),
+        this._fs.collection('contracts').where('matchId','==',matchId).where('player','==',uid2).get()]);
+      const seen={}; cs=[];
+      a.docs.concat(b.docs).forEach(d=>{ const c=d.data(); if(!seen[c.id]){ seen[c.id]=1; cs.push(c); } });
+    }
+    return cs.sort((a,b)=>b.ts-a.ts)[0]||null; },
   async report(from,target,reason,detail){ const id=uid('r'); await this._fs.collection('reports').doc(id).set({id,from,target,reason,detail,ts:Date.now(),status:'open'}); },
   async listReports(){ const q=await this._fs.collection('reports').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async updateReport(id,patch){ await this._fs.collection('reports').doc(id).update(patch); },
@@ -919,7 +929,14 @@ const FireDB = {
   async unreadNotifCount(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); return q.size; },
   async markNotifsRead(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); await Promise.all(q.docs.map(d=>d.ref.update({read:true}))); },
   async addPayment(p){ const id=uid('pay'); const pay={id,ts:Date.now(),...p}; await this._fs.collection('payments').doc(id).set(pay); return pay; },
-  async paymentsForContract(ctId){ const q=await this._fs.collection('payments').where('contractId','==',ctId).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async paymentsForContract(ctId, uid2){
+    if(!uid2){ const q=await this._fs.collection('payments').where('contractId','==',ctId).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); }
+    const [a,b]=await Promise.all([
+      this._fs.collection('payments').where('contractId','==',ctId).where('player','==',uid2).get(),
+      this._fs.collection('payments').where('contractId','==',ctId).where('coach','==',uid2).get()]);
+    const seen={}; const out=[];
+    a.docs.concat(b.docs).forEach(d=>{ const p=d.data(); if(!seen[p.id]){ seen[p.id]=1; out.push(p); } });
+    return out.sort((x,y)=>y.ts-x.ts); },
   async allPayments(){ const q=await this._fs.collection('payments').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async addReview(r){ const id=uid('rv'); const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
     const q=await this._fs.collection('reviews').where('to','==',r.to).get(); const list=q.docs.map(d=>d.data());
@@ -927,6 +944,8 @@ const FireDB = {
     await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length}); return rv; },
   async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
+  async setIdDoc(userId,dataUrl){ await this._fs.collection('verify_docs').doc(userId).set({uid:userId, doc:dataUrl, ts:Date.now()}); },
+  async getIdDoc(userId){ const d=await this._fs.collection('verify_docs').doc(userId).get(); return d.exists?d.data().doc:null; },
   async unsettledByCoach(){ const q=await this._fs.collection('payments').get(); const map={};
     q.docs.map(d=>d.data()).filter(p=>!p.payoutId).forEach(p=>{ const m=map[p.coach]=map[p.coach]||{coach:p.coach,net:0,count:0}; m.net+=Number(p.net||0); m.count++; });
     return Object.values(map).sort((a,b)=>b.net-a.net); },
@@ -1263,10 +1282,11 @@ const App = {
         if(pf) profile.photo=await resizeImage(pf,480).catch(()=>{ throw new Error('写真の読み込みに失敗しました。JPEGまたはPNG画像をご利用ください'); });
         if(role==='coach'){
           const idf=document.getElementById('f-iddoc')?.files[0];
-          if(idf){ profile.idDoc=await resizeImage(idf,900).catch(()=>{ throw new Error('本人確認書類の読み込みに失敗しました。JPEGまたはPNG画像をご利用ください'); }); profile.verified='pending'; profile.verifiedAppliedTs=Date.now(); }
+          if(idf){ this._pendingIdDoc=await resizeImage(idf,900).catch(()=>{ throw new Error('本人確認書類の読み込みに失敗しました。JPEGまたはPNG画像をご利用ください'); }); profile.hasIdDoc=true; profile.verified='pending'; profile.verifiedAppliedTs=Date.now(); }
           else profile.verified='none';
         }
         this.me=await DB.signUp(email,pw,profile);
+        if(this._pendingIdDoc){ try{ await DB.setIdDoc(this.me.id, this._pendingIdDoc); }catch(e){} this._pendingIdDoc=null; }
         this.toast('登録が完了しました！');
       }else{
         this.me=await DB.signIn(email,pw);
@@ -1467,7 +1487,7 @@ const App = {
     if(!m || !m.users.includes(this.me.id)){ this.toast('このトークにはアクセスできません'); location.hash='#messages'; return; }
     const other=await DB.getUser(m.users.find(u=>u!==this.me.id));
     this._chatOther=other;
-    const ct=await DB.contractForMatch(matchId);
+    const ct=await DB.contractForMatch(matchId, this.me.id);
     const iAmCoach = this.me.role==='coach';
     let banner='';
     if(ct){
@@ -1554,7 +1574,7 @@ const App = {
     const rows = await Promise.all(cts.map(async c=>{
       const other=await DB.getUser(c.coach===this.me.id?c.player:c.coach);
       const mine=c.proposer===this.me.id;
-      const pays=await DB.paymentsForContract(c.id);
+      const pays=await DB.paymentsForContract(c.id, this.me.id);
       let actions='';
       if(c.status==='proposed'){
         actions = mine
@@ -1813,8 +1833,9 @@ const App = {
     const f=document.getElementById('me-iddoc')?.files[0];
     if(!f){ this.toast('本人確認書類の画像を選択してください'); return; }
     try{
-      const idDoc=await resizeImage(f,900);
-      this.me=await DB.updateUser(this.me.id,{idDoc, verified:'pending', verifiedAppliedTs:Date.now()});
+      const docImg=await resizeImage(f,900);
+      await DB.setIdDoc(this.me.id, docImg);
+      this.me=await DB.updateUser(this.me.id,{hasIdDoc:true, verified:'pending', verifiedAppliedTs:Date.now()});
       this.toast('認証を申請しました。事務局の審査結果をお待ちください');
       this.viewMe();
     }catch(e){ this.toast('画像の読み込みに失敗しました'); }
@@ -2059,7 +2080,7 @@ const App = {
           <td>${esc(u.sport)} / ${esc(u.area)}</td>
           <td>${CTARGET_S[u.coachTarget||'both']}</td>
           <td>${u.verifiedAppliedTs?fmtD(u.verifiedAppliedTs):'-'}</td>
-          <td>${u.idDoc?`<button class="btn btn-sm btn-soft" onclick="App.admViewDoc('${u.id}')">書類を見る</button>`:'<span class="hint">未提出</span>'}</td>
+          <td>${u.hasIdDoc?`<button class="btn btn-sm btn-soft" onclick="App.admViewDoc('${u.id}')">書類を見る</button>`:'<span class="hint">未提出</span>'}</td>
           <td>${u.verified==='approved'?'<span class="pill pill-turf">認証済</span>'
               :u.verified==='rejected'?'<span class="pill pill-red">見送り</span>'
               :u.verified==='pending'?'<span class="pill pill-gold">審査待ち</span>'
@@ -2085,8 +2106,9 @@ const App = {
   },
   async admViewDoc(userId){
     const u=await DB.getUser(userId);
+    const img=safeImg(await DB.getIdDoc(userId));
     this.modal(`<h3 class="rounded" style="font-size:16px;font-weight:800;margin-bottom:10px">${esc(u.name)} さんの本人確認書類</h3>
-      ${u.idDoc?`<img class="idthumb" src="${u.idDoc}" alt="本人確認書類">`:'<p class="hint">書類は提出されていません。</p>'}`);
+      ${img?`<img class="idthumb" src="${img}" alt="本人確認書類">`:'<p class="hint">書類は提出されていません。</p>'}`);
   },
   async admVerifySet(userId,st){
     if(!confirm(st==='approved'?'このコーチを承認します。認証バッジが付与されます。':'このコーチの審査を却下します。')) return;
