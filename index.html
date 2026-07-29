@@ -261,6 +261,30 @@ svg.pict{vertical-align:-0.18em}
 .legal-tbl{width:100%;border-collapse:collapse;font-size:13px}
 .legal-tbl th{width:32%;text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;background:var(--sky);font-weight:700}
 .legal-tbl td{padding:11px 10px;border-bottom:1px solid var(--line);line-height:1.9}
+/* 実績証明書 */
+.cert-sheet{background:#fff;border:2.5px solid var(--court-deep);border-radius:6px;padding:46px 50px;position:relative;box-shadow:var(--shadow)}
+.cert-sheet.revoked{opacity:.55}
+.cert-sheet::before{content:'';position:absolute;inset:7px;border:1px solid var(--court);border-radius:3px;pointer-events:none}
+.cert-brand{display:flex;align-items:center;gap:8px;font-weight:900;font-family:'M PLUS Rounded 1c',sans-serif;color:var(--court-deep)}
+.cert-brand .ball{width:26px;height:26px;border-radius:50%;background:var(--court);color:#fff;display:grid;place-items:center;font-size:14px}
+.cert-no{position:absolute;top:22px;right:26px;font-size:11.5px;color:var(--ink2);font-family:Oswald,sans-serif}
+.cert-title{text-align:center;font-size:30px;font-weight:900;letter-spacing:.3em;margin:28px 0 18px}
+.cert-lead{font-size:13px;color:var(--ink2);line-height:2.1;text-align:center;margin-bottom:24px}
+.cert-name{font-size:22px;font-weight:800;text-align:center;border-bottom:2px solid var(--ink);display:table;padding:0 24px 6px;margin:0 auto 26px}
+.cert-name span{font-size:14px;font-weight:600;margin-left:8px}
+.cert-tbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:32px}
+.cert-tbl th{width:36%;text-align:left;padding:10px 13px;border:1px solid var(--line);background:var(--sky);font-weight:700}
+.cert-tbl td{padding:10px 13px;border:1px solid var(--line)}
+.cert-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.cert-date{font-size:13px;margin-bottom:4px}
+.cert-issuer{font-size:15.5px;font-weight:800}
+.cert-seal{width:76px;height:76px;border:2.5px solid #C0392B;color:#C0392B;border-radius:8px;display:grid;place-items:center;text-align:center;font-size:10px;font-weight:800;line-height:1.3;padding:5px;flex-shrink:0}
+@media print{
+  .topbar,.tabbar,.cert-actions,footer,.toast{display:none!important}
+  body{background:#fff}
+  .cert-sheet{border-width:2px;box-shadow:none;page-break-inside:avoid}
+  .wrap{max-width:none!important;padding:0!important}
+}
 footer a{color:var(--ink2)}
 
 /* --- 受講形態・認証申請 --- */
@@ -699,15 +723,21 @@ function seedDB(){
   const notifications = [
     {id:'n1', to:'p1', type:'like', text:'田中 翔太さんからいいねが届きました', link:'#matches', ts:t-3600000*5, read:false},
   ];
+  const certificates = [
+    {id:'MC-2026-DEMO01', userId:'c5', type:'coach_record', status:'issued', requestTs:t-86400000*6, issuedTs:t-86400000*5,
+     stats:{name:users['c5'].name, role:'coach', sport:users['c5'].sport, area:users['c5'].area, since:users['c5'].createdAt,
+            contracts:1, completed:1, lessons:1, ratingAvg:5, ratingCount:1, verified:true}},
+    {id:'MC-2026-DEMO02', userId:'c2', type:'coach_record', status:'requested', requestTs:t-3600000*10, issuedTs:null, stats:null},
+  ];
   const reports = [
     {id:'r1', from:'p4', target:'c8', reason:'返信がない', detail:'いいねのお礼メッセージを送りましたが1週間返信がありません。', ts:t-86400000*2, status:'open'},
   ];
-  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[], verifyDocs:{}};
+  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[], verifyDocs:{}, certificates};
 }
 
 const LocalDB = {
   mode:'demo',
-  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts'].forEach(k=>{ if(!d[k]) d[k]=[]; }); if(!d.verifyDocs) d.verifyDocs={}; return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
+  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts','certificates'].forEach(k=>{ if(!d[k]) d[k]=[]; }); if(!d.verifyDocs) d.verifyDocs={}; return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
   _save(db){ localStorage.setItem(LS_DB, JSON.stringify(db)); },
   async init(){},
   async signUp(email,pw,profile){
@@ -788,6 +818,7 @@ const LocalDB = {
       payments:db.payments.length,
       feeRevenue:db.payments.reduce((s,p)=>s+Number(p.fee||0),0),
       pendingCoaches:us.filter(u=>u.role==='coach'&&u.verified==='pending'&&!u.deleted).length,
+      pendingCerts:(db.certificates||[]).filter(c=>c.status==='requested').length,
       openReports:db.reports.filter(r=>r.status==='open').length,
     };
   },
@@ -805,6 +836,16 @@ const LocalDB = {
     db.users[r.to].ratingAvg=Math.round(avg*10)/10; db.users[r.to].ratingCount=list.length; this._save(db); return rv; },
   async listReviews(target){ return this._load().reviews.filter(r=>r.to===target).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ return this._load().reviews.some(r=>r.contractId===contractId&&r.from===from); },
+  async requestCert(userId,type){ const db=this._load(); db.certificates=db.certificates||[];
+    if(db.certificates.some(c=>c.userId===userId&&c.type===type&&c.status==='requested')) throw new Error('すでに申請中です。事務局の確認をお待ちください');
+    const c={id:'MC-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,8).toUpperCase(), userId, type, status:'requested', requestTs:Date.now(), issuedTs:null, stats:null};
+    db.certificates.push(c); this._save(db); return c; },
+  async listMyCerts(userId){ return (this._load().certificates||[]).filter(c=>c.userId===userId).sort((a,b)=>b.requestTs-a.requestTs); },
+  async allCerts(){ return (this._load().certificates||[]).slice().sort((a,b)=>b.requestTs-a.requestTs); },
+  async getCert(id){ return (this._load().certificates||[]).find(c=>c.id===id)||null; },
+  async issueCert(id,stats){ const db=this._load(); const c=(db.certificates||[]).find(x=>x.id===id); if(!c) throw new Error('証明書が見つかりません');
+    c.status='issued'; c.stats=stats; c.issuedTs=Date.now(); this._save(db); return c; },
+  async revokeCert(id){ const db=this._load(); const c=(db.certificates||[]).find(x=>x.id===id); if(c){ c.status='revoked'; this._save(db); } },
   async setIdDoc(userId,dataUrl){ const db=this._load(); db.verifyDocs=db.verifyDocs||{}; db.verifyDocs[userId]=dataUrl; this._save(db); },
   async getIdDoc(userId){ return (this._load().verifyDocs||{})[userId]||null; },
   async unsettledByCoach(){ const db=this._load(); const map={};
@@ -944,6 +985,17 @@ const FireDB = {
     await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length}); return rv; },
   async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
+  async requestCert(userId,type){
+    const q=await this._fs.collection('certificates').where('userId','==',userId).where('type','==',type).where('status','==','requested').get();
+    if(q.size) throw new Error('すでに申請中です。事務局の確認をお待ちください');
+    const id='MC-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,8).toUpperCase();
+    const c={id, userId, type, status:'requested', requestTs:Date.now(), issuedTs:null, stats:null};
+    await this._fs.collection('certificates').doc(id).set(c); return c; },
+  async listMyCerts(userId){ const q=await this._fs.collection('certificates').where('userId','==',userId).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.requestTs-a.requestTs); },
+  async allCerts(){ const q=await this._fs.collection('certificates').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.requestTs-a.requestTs); },
+  async getCert(id){ const d=await this._fs.collection('certificates').doc(id).get(); return d.exists?d.data():null; },
+  async issueCert(id,stats){ await this._fs.collection('certificates').doc(id).update({status:'issued', stats, issuedTs:Date.now()}); const d=await this._fs.collection('certificates').doc(id).get(); return d.data(); },
+  async revokeCert(id){ await this._fs.collection('certificates').doc(id).update({status:'revoked'}); },
   async setIdDoc(userId,dataUrl){ await this._fs.collection('verify_docs').doc(userId).set({uid:userId, doc:dataUrl, ts:Date.now()}); },
   async getIdDoc(userId){ const d=await this._fs.collection('verify_docs').doc(userId).get(); return d.exists?d.data().doc:null; },
   async unsettledByCoach(){ const q=await this._fs.collection('payments').get(); const map={};
@@ -962,7 +1014,7 @@ const FireDB = {
   async resetPassword(email){ await this._auth.sendPasswordResetEmail(email); },
   async deleteAccount(id){ await this._fs.collection('users').doc(id).update({deleted:true,suspended:true}); delete this._uc[id]; await this._auth.signOut(); },
   async stats(){
-    const [us,ms,ls,cs,rs,ps]=await Promise.all([this.allUsers(),this._fs.collection('matches').get(),this._fs.collection('likes').get(),this.allContracts(),this.listReports(),this.allPayments()]);
+    const [us,ms,ls,cs,rs,ps,certs]=await Promise.all([this.allUsers(),this._fs.collection('matches').get(),this._fs.collection('likes').get(),this.allContracts(),this.listReports(),this.allPayments(),this.allCerts()]);
     return {
       coaches:us.filter(u=>u.role==='coach').length, players:us.filter(u=>u.role==='player').length,
       matches:ms.size, likes:ls.size,
@@ -971,6 +1023,7 @@ const FireDB = {
       payments:ps.length,
       feeRevenue:ps.reduce((s,p)=>s+Number(p.fee||0),0),
       pendingCoaches:us.filter(u=>u.role==='coach'&&u.verified==='pending'&&!u.deleted).length,
+      pendingCerts:certs.filter(c=>c.status==='requested').length,
       openReports:rs.filter(r=>r.status==='open').length,
     };
   },
@@ -1010,6 +1063,7 @@ const App = {
     if(this.unsubChat){ this.unsubChat(); this.unsubChat=null; }
     const h=location.hash;
     if(h.startsWith('#legal/')) return this.viewLegal(h.split('/')[1]);
+    if(h.startsWith('#cert/')) return this.viewCert(h.slice(6));
     if(!this.me){
       if(h==='#login') return this.viewAuth();
       return this.viewLanding();
@@ -1645,6 +1699,7 @@ const App = {
     const u=this.me;
     const isCoach=u.role==='coach';
     const unsettled=isCoach?await DB.myUnsettled(u.id):0;
+    const myCerts=await DB.listMyCerts(u.id);
     this.shell(`
       <div class="wrap" style="max-width:560px">
         <div class="page-head"><h1>マイページ</h1></div>
@@ -1702,6 +1757,18 @@ const App = {
             </div>`:''}`:''}
           <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label><textarea id="me-intro">${esc(u.intro)}</textarea></div>
           <button class="btn btn-primary btn-block" onclick="App.saveMe()">プロフィールを保存</button>
+          <div class="verify-box" style="border-color:var(--gold);margin-top:4px">
+            <div class="vb-t" style="color:#8A6A00">${ic('doc',14)} 実績証明書</div>
+            <div class="hint" style="margin-bottom:8px">MyCOACHでの${isCoach?'指導実績（契約数・レッスン回数・評価・認証状態）':'受講実績（契約数・レッスン回数）'}を、事務局が証明書として発行します。印刷・PDF保存でき、証明書番号のURLで第三者が真正性を確認できます。</div>
+            ${myCerts.filter(c=>c.status==='issued').map(c=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;font-size:12.5px">
+                <span style="font-family:Oswald">${c.id}<span class="hint">（${fmtD(c.issuedTs)}発行）</span></span>
+                <a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>
+              </div>`).join('')}
+            ${myCerts.some(c=>c.status==='requested')
+              ?`<span class="pill pill-gold">発行申請中（事務局が確認しています）</span>`
+              :`<button class="btn btn-sm btn-primary" onclick="App.requestCert()">発行を申請する</button>`}
+          </div>
           <button class="btn btn-ghost btn-block" style="margin-top:10px" onclick="App.logout()">ログアウト</button>
           <button class="btn btn-danger-soft btn-block btn-sm" style="margin-top:10px" onclick="App.deleteMe()">退会する</button>
           ${DB.mode==='demo'?`<button class="btn btn-danger-soft btn-block btn-sm" style="margin-top:10px" onclick="if(confirm('デモデータを初期状態に戻します。よろしいですか？'))LocalDB.resetDemo()">${ic('refresh',14)} デモデータをリセット</button>`:''}
@@ -1824,6 +1891,66 @@ const App = {
   },
 
   /* ---------- 写真・退会・パスワード ---------- */
+  async requestCert(){
+    try{
+      await DB.requestCert(this.me.id, this.me.role==='coach'?'coach_record':'player_record');
+      this.toast('発行を申請しました。事務局の確認をお待ちください');
+      this.viewMe();
+    }catch(e){ this.toast(e.message||'申請に失敗しました'); }
+  },
+  async _certStats(u){
+    const cts=(await DB.allContracts()).filter(c=> u.role==='coach' ? c.coach===u.id : c.player===u.id);
+    const pays=(await DB.allPayments()).filter(p=> u.role==='coach' ? p.coach===u.id : p.player===u.id);
+    return { name:u.name, role:u.role, sport:u.sport, area:u.area, since:u.createdAt||null,
+      contracts:cts.filter(c=>c.status==='active'||c.status==='completed').length,
+      completed:cts.filter(c=>c.status==='completed').length,
+      lessons:pays.length,
+      ratingAvg:u.ratingAvg||0, ratingCount:u.ratingCount||0,
+      verified:u.verified==='approved' };
+  },
+  async viewCert(id){
+    const c=await DB.getCert(id);
+    if(!c || c.status==='requested'){
+      this.shell(`<div class="wrap" style="max-width:640px;text-align:center;padding:70px 0">
+        <h2 class="rounded" style="font-size:20px;font-weight:800;margin-bottom:8px">証明書が見つかりません</h2>
+        <p class="hint">証明書番号（URL）をご確認ください。発行前の証明書は表示されません。</p></div>`, null);
+      return;
+    }
+    const s=c.stats||{}; const revoked=c.status==='revoked';
+    const label=c.type==='coach_record'?'実 績 証 明 書':'受 講 証 明 書';
+    this.shell(`
+      <div class="wrap" style="max-width:780px">
+        <div class="cert-actions" style="display:flex;gap:10px;justify-content:flex-end;margin:20px 0 12px">
+          <button class="btn btn-sm btn-soft" onclick="window.print()">${ic('doc',14)} 印刷 / PDF保存</button>
+        </div>
+        ${revoked?`<div class="notice cert-actions" style="margin-bottom:12px">${ic('warn',14)} この証明書は失効しています。</div>`:''}
+        <div class="cert-sheet ${revoked?'revoked':''}">
+          <div class="cert-no">証明書番号：${esc(c.id)}</div>
+          <div class="cert-brand"><span class="ball">M</span> MyCOACH</div>
+          <h1 class="cert-title rounded">${label}</h1>
+          <p class="cert-lead">下記の者は、スポーツ指導者マッチングプラットフォーム「MyCOACH」において、<br>以下の実績を有することを証明します。</p>
+          <div class="cert-name">${esc(s.name||'')}<span>殿</span></div>
+          <table class="cert-tbl">
+            <tr><th>区分</th><td>${c.type==='coach_record'?'コーチ':'受講者'}（${esc(s.sport||'')} / ${esc(s.area||'')}）</td></tr>
+            ${s.since?`<tr><th>登録日</th><td>${fmtD(s.since)}</td></tr>`:''}
+            <tr><th>成立した契約</th><td>${s.contracts||0} 件（うち完了 ${s.completed||0} 件）</td></tr>
+            <tr><th>レッスン実施（決済記録に基づく）</th><td>${s.lessons||0} 回</td></tr>
+            ${c.type==='coach_record'&&s.ratingCount?`<tr><th>受講者評価</th><td><span class="rate">${stars(s.ratingAvg,13)}</span> ${s.ratingAvg}（${s.ratingCount}件）</td></tr>`:''}
+            ${c.type==='coach_record'?`<tr><th>本人確認</th><td>${s.verified?'認証済み（事務局による本人確認書類の確認済）':'未認証'}</td></tr>`:''}
+          </table>
+          <div class="cert-foot">
+            <div>
+              <div class="cert-date">発行日：${fmtD(c.issuedTs)}</div>
+              <div class="cert-issuer">MyCOACH事務局（株式会社ark）</div>
+              <div class="hint" style="margin-top:6px">真正性の確認：本ページのURL（証明書番号）にアクセスすると、いつでも発行状況を確認できます。</div>
+            </div>
+            <div class="cert-seal">${ic('shield',26)}<span>MyCOACH<br>事務局</span></div>
+          </div>
+        </div>
+      </div>
+      <footer class="cert-actions">© 2026 MyCOACH ― 出会った日から、伸びはじめる。</footer>`, null);
+    window.scrollTo(0,0);
+  },
   pickPtype(btn){
     document.querySelectorAll('#f-ptype .seg-btn').forEach(b=>b.classList.remove('sel'));
     btn.classList.add('sel'); this._ptype=btn.dataset.v;
@@ -1889,8 +2016,8 @@ const App = {
       <div class="adm-head"><div class="wrap">
         <h1>${ic('gear',20)} MyCOACH 運営管理 <span class="pill pill-gold">ADMIN</span></h1>
         <div class="adm-tabs">
-          ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['reports','通報対応']].map(([k,l])=>
-            `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash='#admin/${k}'">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}</button>`).join('')}
+          ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['certs','証明書'],['reports','通報対応']].map(([k,l])=>
+            `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash='#admin/${k}'">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}${k==='certs'&&this._pendingCerts?` (${this._pendingCerts})`:''}</button>`).join('')}
           <button class="adm-tab" onclick="App.logout()">ログアウト</button>
         </div>
       </div></div>`;
@@ -1901,13 +2028,14 @@ const App = {
     if(tab==='users') body=await this.admUsers();
     if(tab==='contracts') body=await this.admContracts();
     if(tab==='payments') body=await this.admPayments();
+    if(tab==='certs') body=await this.admCerts();
     if(tab==='verify') body=await this.admVerify();
     if(tab==='reports') body=await this.admReports();
     this.shell(head+body,'admin');
   },
 
   async admDash(){
-    const s=await DB.stats(); this._openReports=s.openReports; this._pendingCoaches=s.pendingCoaches;
+    const s=await DB.stats(); this._openReports=s.openReports; this._pendingCoaches=s.pendingCoaches; this._pendingCerts=s.pendingCerts;
     const cts=(await DB.allContracts()).slice(0,5);
     const rows=await Promise.all(cts.map(async c=>{
       const co=await DB.getUser(c.coach), pl=await DB.getUser(c.player);
@@ -1927,6 +2055,7 @@ const App = {
       </div>
       ${s.openReports?`<div class="notice">${ic('warn',14)} 未対応の通報が ${s.openReports} 件あります。「通報対応」タブから確認してください。</div>`:''}
       ${s.pendingCoaches?`<div class="notice">${ic('warn',14)} 審査待ちのコーチが ${s.pendingCoaches} 名います。「コーチ審査」タブから確認してください。</div>`:''}
+      ${s.pendingCerts?`<div class="notice">${ic('warn',14)} 実績証明書の発行申請が ${s.pendingCerts} 件あります。「証明書」タブから確認してください。</div>`:''}
       <h3 style="font-weight:800;margin:8px 0 10px">最近の契約</h3>
       <div class="tbl-wrap"><table>
         <tr><th>タイトル</th><th>コーチ</th><th>受講者</th><th>料金</th><th>状態</th><th>提案日</th></tr>
@@ -2095,6 +2224,43 @@ const App = {
               ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet('${u.id}','approved')">承認する</button>`
             :'<span class="hint">申請待ち</span>'}</div></td></tr>`).join('')||'<tr><td colspan="7">コーチがいません</td></tr>'}
       </table></div></div>`;
+  },
+  async admCerts(){
+    const cs=await DB.allCerts();
+    const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u);
+    const label=t=>t==='coach_record'?'コーチ実績証明書':'受講証明書';
+    return `<div class="wrap">
+      <p class="hint" style="margin:16px 0 10px">利用者からの発行申請を確認し、証明書を発行してください。実績（契約数・レッスン回数・評価・認証状態）は発行時点のプラットフォームデータから自動集計されます。発行後は証明書番号のURLで第三者も真正性を確認できます。</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>証明書番号</th><th>利用者</th><th>種別</th><th>申請日</th><th>状態</th><th>操作</th></tr>
+        ${cs.map(c=>{ const u=us[c.userId]; return `<tr>
+          <td style="font-family:Oswald;font-size:12.5px">${esc(c.id)}</td>
+          <td><b>${esc(u?.name||'退会ユーザー')}</b><div class="hint">${esc(u?.sport||'')}</div></td>
+          <td>${label(c.type)}</td>
+          <td>${fmtD(c.requestTs)}</td>
+          <td>${c.status==='issued'?'<span class="pill pill-turf">発行済</span>':c.status==='revoked'?'<span class="pill pill-red">失効</span>':'<span class="pill pill-gold">申請中</span>'}</td>
+          <td><div class="tbl-actions">
+            ${c.status==='requested'&&u?`<button class="btn btn-sm btn-turf" onclick="App.admIssueCert('${c.id}')">発行する</button>`:''}
+            ${c.status==='issued'?`<a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>
+              <button class="btn btn-sm btn-danger-soft" onclick="App.admRevokeCert('${c.id}')">失効</button>`:''}
+            ${c.status==='revoked'?`<a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>`:''}
+          </div></td></tr>`; }).join('')||'<tr><td colspan="6">発行申請はありません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admIssueCert(id){
+    const c=await DB.getCert(id); if(!c) return;
+    const u=await DB.getUser(c.userId);
+    if(!u){ this.toast('ユーザーが見つかりません'); return; }
+    const stats=await this._certStats(u);
+    if(!confirm(`${u.name} さんの${c.type==='coach_record'?'コーチ実績証明書':'受講証明書'}を発行します。\n\n自動集計された実績：\n・成立契約 ${stats.contracts} 件（完了 ${stats.completed} 件）\n・レッスン実施 ${stats.lessons} 回\n${c.type==='coach_record'?`・評価 ${stats.ratingAvg||'-'}（${stats.ratingCount}件）／認証 ${stats.verified?'済':'未'}\n`:''}\nよろしいですか？`)) return;
+    await DB.issueCert(id, stats);
+    DB.notify(c.userId,'cert','実績証明書が発行されました。マイページから表示・印刷できます','#me');
+    this.toast('発行しました'); await this.viewAdmin('certs');
+  },
+  async admRevokeCert(id){
+    if(!confirm('この証明書を失効させますか？証明書ページには「失効」と表示されます。')) return;
+    await DB.revokeCert(id);
+    this.toast('失効させました'); await this.viewAdmin('certs');
   },
   async admSettle(coach){
     if(!confirm('このコーチへの振込を実施済みとして精算しますか？（対象：未精算の全決済）')) return;
