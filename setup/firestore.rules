@@ -29,7 +29,7 @@ service cloud.firestore {
         // レビュー投稿に伴う評価集計フィールドのみの更新は許可
         // （改ざん耐性を高めたい場合は functions の recalcRating を有効化し、この行を削除）
         || (authed()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratingAvg','ratingCount']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratingAvg','ratingCount','lessonCount']));
       allow delete: if false; // 退会は deleted フラグで論理削除
     }
 
@@ -91,7 +91,7 @@ service cloud.firestore {
     match /notifications/{id} {
       allow read, update: if authed() && (resource.data.to == request.auth.uid || isAdmin());
       allow create: if authed()
-        && request.resource.data.type in ['like','match','msg','contract','pay','review','verify','cert']
+        && request.resource.data.type in ['like','match','msg','contract','pay','review','verify','cert','announce']
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 300
         && request.resource.data.to is string;
@@ -141,6 +141,14 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // 指導者募集：閲覧はログインユーザー、作成・更新はチーム本人（と管理者）
+    match /recruitments/{id} {
+      allow read: if authed();
+      allow create: if authed() && request.resource.data.teamId == request.auth.uid;
+      allow update: if authed() && (resource.data.teamId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
     // 実績証明書：申請は本人、発行・失効は事務局のみ。
     // 証明書番号（推測困難なランダムID）を知る第三者は真正性を確認できる（get）
     match /certificates/{id} {
@@ -151,6 +159,18 @@ service cloud.firestore {
         && request.resource.data.status == 'requested'
         && request.resource.data.stats == null;
       allow update, delete: if isAdmin();
+    }
+
+    // 運営からのお知らせ：閲覧は全ログインユーザー、配信は事務局のみ
+    match /announcements/{id} {
+      allow read: if authed();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 管理操作の監査ログ：事務局のみ。改ざん防止のため更新・削除は不可
+    match /audit_logs/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
     }
 
     // メール送信キュー（Trigger Email拡張専用。クライアントは触れない）

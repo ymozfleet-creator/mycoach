@@ -234,6 +234,17 @@ exports.recalcRating = onDocumentCreated(
   }
 );
 
+/* ---------- 2.8 指導実績カウントの再計算（整合性の担保） ---------- */
+exports.recalcLessons = onDocumentCreated(
+  { region: REGION, document: 'payments/{id}' },
+  async (event) => {
+    const p = event.data && event.data.data();
+    if (!p || !p.coach) return;
+    const q = await admin.firestore().collection('payments').where('coach', '==', p.coach).get();
+    await admin.firestore().collection('users').doc(p.coach).update({ lessonCount: q.size });
+  }
+);
+
 /* ---------- 3. 通知 → メール（Trigger Email拡張ブリッジ） ---------- */
 /* 拡張「Trigger Email from Firestore」をインストールし、
    ドキュメントコレクションを "mail" に設定してください。 */

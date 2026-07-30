@@ -261,6 +261,52 @@ svg.pict{vertical-align:-0.18em}
 .legal-tbl{width:100%;border-collapse:collapse;font-size:13px}
 .legal-tbl th{width:32%;text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;background:var(--sky);font-weight:700}
 .legal-tbl td{padding:11px 10px;border-bottom:1px solid var(--line);line-height:1.9}
+/* 募集・時間帯・報告書 */
+.recruit-sec{margin-bottom:22px}
+.recruit-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.recruit-card{background:linear-gradient(135deg,#F0FBF6,#fff);border:1.5px solid var(--turf);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.recruit-card .rc-t{font-weight:800;font-size:14.5px;margin-bottom:3px}
+.recruit-card .rc-meta{font-size:12px;color:var(--ink2);margin-bottom:5px}
+.recruit-card .rc-fee{font-family:Oswald,sans-serif;font-size:19px;font-weight:600;color:#0B7A57;margin-bottom:6px}
+.recruit-card .rc-fee small{font-size:11px;font-family:inherit;font-weight:700}
+.recruit-card .rc-d{font-size:12.5px;color:var(--ink2);line-height:1.8;margin-bottom:10px}
+.chk-wrap{display:flex;flex-wrap:wrap;gap:7px}
+.chk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border:1.5px solid var(--line);border-radius:99px;padding:7px 12px;cursor:pointer;background:#fff}
+.chk:has(input:checked){border-color:var(--court);background:var(--sky);color:var(--court-deep)}
+.chk input{accent-color:var(--court)}
+/* 比較表・部活動バンド・実績バッジ */
+.trust-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.compare{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--card)}
+.compare th,.compare td{padding:11px 12px;border:1px solid var(--line);text-align:center;line-height:1.7}
+.compare tr th:first-child{text-align:left;background:var(--sky);font-weight:700;width:20%}
+.compare .mc-col-h{background:var(--court);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-weight:900;font-size:14px}
+.compare .mc-cell{background:#F0F8FF;font-weight:700;color:var(--court-deep)}
+.compare-wrap{box-shadow:var(--shadow);border-radius:14px}
+.bukatsu-band{background:linear-gradient(135deg,#0B7A57,#12B27C);border-radius:22px;padding:40px 36px;color:#fff;text-align:center}
+.bukatsu-band h2{color:#fff}
+.bukatsu-band .sub{color:rgba(255,255,255,.92);max-width:44em;margin-left:auto;margin-right:auto}
+.bk-eyebrow{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.14em;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:99px;margin-bottom:14px}
+@media(max-width:640px){.compare{font-size:11px}.compare th,.compare td{padding:8px 6px}.bukatsu-band{padding:30px 20px}}
+/* 管理ダッシュボード v2 */
+.todo-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
+.todo-card{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 16px;background:var(--card);border:1.5px solid var(--line);border-radius:14px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:var(--shadow);transition:transform .12s}
+.todo-card:hover{transform:translateY(-2px);border-color:var(--court)}
+.todo-card .n{font-family:Oswald,sans-serif;font-size:24px;font-weight:600}
+.todo-card .l{font-size:12px;color:var(--ink2);font-weight:700}
+.chart-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:6px 0 18px}
+.mini-chart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;box-shadow:var(--shadow)}
+.mc-t{font-size:12.5px;font-weight:800;display:flex;justify-content:space-between;margin-bottom:8px}
+.mc-t span{color:var(--ink2);font-weight:600}
+.mc-bars{display:flex;align-items:flex-end;gap:5px;height:62px}
+.mc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.mc-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px}
+.mc-d{font-size:9.5px;color:var(--ink2)}
+.dash-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:6px}
+.act-list{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 14px;box-shadow:var(--shadow)}
+.act{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px;align-items:baseline}
+.act:last-child{border-bottom:none}
+.act .tm{color:var(--ink2);font-size:11px;white-space:nowrap;flex-shrink:0}
+@media(max-width:760px){.dash-2col{grid-template-columns:1fr}}
 /* 実績証明書 */
 .cert-sheet{background:#fff;border:2.5px solid var(--court-deep);border-radius:6px;padding:46px 50px;position:relative;box-shadow:var(--shadow)}
 .cert-sheet.revoked{opacity:.55}
@@ -619,6 +665,7 @@ const LEGAL = {
 </table>` },
 };
 
+const AVAIL = ['平日日中','平日夜','土曜','日曜・祝日','オンライン指導可'];
 const CTARGET = {both:'個人・チームどちらも', individual:'個人レッスンのみ', team:'チーム指導のみ'};
 const CTARGET_S = {both:'個人/チーム', individual:'個人のみ', team:'チームのみ'};
 const CT_STATUS = {proposed:'提案中', active:'契約中', declined:'辞退', completed:'完了', cancelled:'解約'};
@@ -677,6 +724,12 @@ function seedDB(){
   users['c7'].coachTarget='team';
   users['c8'].verified='pending'; users['c8'].verifiedAppliedTs=Date.now()-86400000*2;
   users['c5'].ratingAvg=5; users['c5'].ratingCount=1;
+  users['c1'].trialFee=2000; users['c3'].trialFee=3000; users['c5'].trialFee=0;
+  users['c1'].avail=['土曜','日曜・祝日']; users['c2'].avail=['平日夜','オンライン指導可'];
+  users['c3'].avail=['土曜','日曜・祝日']; users['c4'].avail=['平日夜'];
+  users['c5'].avail=['土曜']; users['c6'].avail=['平日日中','平日夜']; users['c7'].avail=['日曜・祝日'];
+  users['c5'].lessonCount=1; users['c2'].lessonCount=1;
+  users['c5'].certIssued=true;
   users['p5'].playerType='team'; users['p5'].teamName='FC小金井 ジュニア'; users['p5'].teamSize=12;
 
   const likes = [
@@ -738,12 +791,19 @@ function seedDB(){
   const reports = [
     {id:'r1', from:'p4', target:'c8', reason:'返信がない', detail:'いいねのお礼メッセージを送りましたが1週間返信がありません。', ts:t-86400000*2, status:'open'},
   ];
-  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[], verifyDocs:{}, certificates};
+  const recruitments = [
+    {id:'rc1', teamId:'p5', title:'守備連携を教えてくれる外部コーチ募集', sport:'サッカー', area:'東京都',
+     schedule:'月2回・土曜午前', fee:8000, detail:'小学生12名のクラブチームです。守備の連携と、前向きな声かけの文化づくりをお願いしたいです。', status:'open', ts:t-86400000*2},
+  ];
+  const announcements = [
+    {id:'an1', title:'MyCOACHへようこそ', body:'ご登録ありがとうございます。プロフィール写真を設定するとマッチ率が大きく向上します。ご不明点は通報・お問い合わせ窓口までお気軽にどうぞ。', target:'all', by:'事務局', ts:t-86400000*3, sent:12},
+  ];
+  return {users, likes, matches, messages, contracts, reports, payments, reviews, notifications, payouts:[], verifyDocs:{}, certificates, announcements, auditLogs:[], recruitments};
 }
 
 const LocalDB = {
   mode:'demo',
-  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts','certificates'].forEach(k=>{ if(!d[k]) d[k]=[]; }); if(!d.verifyDocs) d.verifyDocs={}; return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
+  _load(){ try{ const d=JSON.parse(localStorage.getItem(LS_DB)); if(d&&d.users){ ['notifications','payments','reviews','payouts','certificates','announcements','auditLogs','recruitments'].forEach(k=>{ if(!d[k]) d[k]=[]; }); if(!d.verifyDocs) d.verifyDocs={}; return d; } }catch(e){} const s=seedDB(); localStorage.setItem(LS_DB, JSON.stringify(s)); return s; },
   _save(db){ localStorage.setItem(LS_DB, JSON.stringify(db)); },
   async init(){},
   async signUp(email,pw,profile){
@@ -834,7 +894,9 @@ const LocalDB = {
   async listNotifications(me){ return this._load().notifications.filter(n=>n.to===me).sort((a,b)=>b.ts-a.ts).slice(0,50); },
   async unreadNotifCount(me){ return this._load().notifications.filter(n=>n.to===me&&!n.read).length; },
   async markNotifsRead(me){ const db=this._load(); db.notifications.forEach(n=>{ if(n.to===me) n.read=true; }); this._save(db); },
-  async addPayment(p){ const db=this._load(); const pay={id:uid('pay'),ts:Date.now(),...p}; db.payments.push(pay); this._save(db); return pay; },
+  async addPayment(p){ const db=this._load(); const pay={id:uid('pay'),ts:Date.now(),...p}; db.payments.push(pay);
+    if(p.coach && db.users[p.coach]) db.users[p.coach].lessonCount=(db.users[p.coach].lessonCount||0)+1;
+    this._save(db); return pay; },
   async paymentsForContract(ctId){ return this._load().payments.filter(p=>p.contractId===ctId).sort((a,b)=>b.ts-a.ts); },
   async allPayments(){ return this._load().payments.slice().sort((a,b)=>b.ts-a.ts); },
   async addReview(r){ const db=this._load(); const rv={id:uid('rv'),ts:Date.now(),...r}; db.reviews.push(rv);
@@ -842,6 +904,22 @@ const LocalDB = {
     db.users[r.to].ratingAvg=Math.round(avg*10)/10; db.users[r.to].ratingCount=list.length; this._save(db); return rv; },
   async listReviews(target){ return this._load().reviews.filter(r=>r.to===target).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ return this._load().reviews.some(r=>r.contractId===contractId&&r.from===from); },
+  async addRecruit(r){ const db=this._load(); db.recruitments=db.recruitments||[];
+    const rec={id:uid('rc'), status:'open', ts:Date.now(), ...r}; db.recruitments.push(rec); this._save(db); return rec; },
+  async listOpenRecruits(){ return (this._load().recruitments||[]).filter(r=>r.status==='open').sort((a,b)=>b.ts-a.ts); },
+  async myRecruits(teamId){ return (this._load().recruitments||[]).filter(r=>r.teamId===teamId).sort((a,b)=>b.ts-a.ts); },
+  async closeRecruit(id){ const db=this._load(); const r=(db.recruitments||[]).find(x=>x.id===id); if(r){ r.status='closed'; this._save(db); } },
+  async myPayments(uid2, field){ return this._load().payments.filter(p=>p[field]===uid2).sort((a,b)=>b.ts-a.ts); },
+  async addAnnouncement(a){ const db=this._load(); db.announcements=db.announcements||[];
+    const an={id:uid('an'), ts:Date.now(), ...a}; db.announcements.push(an); this._save(db); return an; },
+  async listAnnouncements(role){ return (this._load().announcements||[])
+    .filter(a=>a.target==='all'||a.target===role).sort((x,y)=>y.ts-x.ts); },
+  async allAnnouncements(){ return (this._load().announcements||[]).slice().sort((x,y)=>y.ts-x.ts); },
+  async audit(entry){ const db=this._load(); db.auditLogs=db.auditLogs||[];
+    db.auditLogs.push({id:uid('al'), ts:Date.now(), ...entry});
+    if(db.auditLogs.length>500) db.auditLogs=db.auditLogs.slice(-500);
+    this._save(db); },
+  async listAudit(n=30){ return (this._load().auditLogs||[]).slice().sort((x,y)=>y.ts-x.ts).slice(0,n); },
   async requestCert(userId,type){ const db=this._load(); db.certificates=db.certificates||[];
     if(db.certificates.some(c=>c.userId===userId&&c.type===type&&c.status==='requested')) throw new Error('すでに申請中です。事務局の確認をお待ちください');
     const c={id:'MC-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,8).toUpperCase(), userId, type, status:'requested', requestTs:Date.now(), issuedTs:null, stats:null};
@@ -975,7 +1053,12 @@ const FireDB = {
   async listNotifications(me){ const q=await this._fs.collection('notifications').where('to','==',me).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts).slice(0,50); },
   async unreadNotifCount(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); return q.size; },
   async markNotifsRead(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); await Promise.all(q.docs.map(d=>d.ref.update({read:true}))); },
-  async addPayment(p){ const id=uid('pay'); const pay={id,ts:Date.now(),...p}; await this._fs.collection('payments').doc(id).set(pay); return pay; },
+  async addPayment(p){ const id=uid('pay'); const pay={id,ts:Date.now(),...p}; await this._fs.collection('payments').doc(id).set(pay);
+    try{ const d=await this._fs.collection('users').doc(p.coach).get();
+      if(d.exists) await this._fs.collection('users').doc(p.coach).update({lessonCount:(d.data().lessonCount||0)+1});
+      delete this._uc[p.coach];
+    }catch(e){ /* ルール都合で失敗してもFunctionsのrecalcLessonsが補完 */ }
+    return pay; },
   async paymentsForContract(ctId, uid2){
     if(!uid2){ const q=await this._fs.collection('payments').where('contractId','==',ctId).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); }
     const [a,b]=await Promise.all([
@@ -991,6 +1074,23 @@ const FireDB = {
     await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length}); return rv; },
   async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
+  async addRecruit(r){ const id=uid('rc'); const rec={id, status:'open', ts:Date.now(), ...r};
+    await this._fs.collection('recruitments').doc(id).set(rec); return rec; },
+  async listOpenRecruits(){ const q=await this._fs.collection('recruitments').where('status','==','open').get();
+    return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async myRecruits(teamId){ const q=await this._fs.collection('recruitments').where('teamId','==',teamId).get();
+    return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async closeRecruit(id){ await this._fs.collection('recruitments').doc(id).update({status:'closed'}); },
+  async myPayments(uid2, field){ const q=await this._fs.collection('payments').where(field,'==',uid2).get();
+    return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async addAnnouncement(a){ const id=uid('an'); const an={id, ts:Date.now(), ...a};
+    await this._fs.collection('announcements').doc(id).set(an); return an; },
+  async listAnnouncements(role){ const q=await this._fs.collection('announcements').where('target','in',['all',role]).get();
+    return q.docs.map(d=>d.data()).sort((x,y)=>y.ts-x.ts); },
+  async allAnnouncements(){ const q=await this._fs.collection('announcements').get(); return q.docs.map(d=>d.data()).sort((x,y)=>y.ts-x.ts); },
+  async audit(entry){ const id=uid('al'); await this._fs.collection('audit_logs').doc(id).set({id, ts:Date.now(), ...entry}); },
+  async listAudit(n=30){ const q=await this._fs.collection('audit_logs').get();
+    return q.docs.map(d=>d.data()).sort((x,y)=>y.ts-x.ts).slice(0,n); },
   async requestCert(userId,type){
     const q=await this._fs.collection('certificates').where('userId','==',userId).where('type','==',type).where('status','==','requested').get();
     if(q.size) throw new Error('すでに申請中です。事務局の確認をお待ちください');
@@ -1082,6 +1182,8 @@ const App = {
       case '#messages': return this.viewMessages();
       case '#contracts': return this.viewContracts();
       case '#me': return this.viewMe();
+      case '#news': return this.viewNews();
+      case '#report': return this.viewReport();
       case '#admin': return this.viewAdmin('dash');
       default: return this.viewBrowse();
     }
@@ -1230,6 +1332,27 @@ const App = {
             <div class="safe"><div class="ic">${ic('card',22)}</div><h3>決済もアプリ内で</h3><p>現金の手渡しは不要。支払いはすべて記録に残り、あとから確認できます。</p></div>
           </div>
         </div>
+        <div class="sec">
+          <h2>MyCOACHが選ばれる理由</h2>
+          <p class="sub">「探して終わり」のマッチングではなく、契約・決済・実績の証明まで。ぜんぶが残るから、次につながる。</p>
+          <div class="tbl-wrap compare-wrap"><table class="compare">
+            <tr><th></th><th class="mc-col-h">MyCOACH</th><th>一般的な<br>個人指導マッチング</th><th>SNS・人づて</th></tr>
+            <tr><th>チーム・部活単位の契約</th><td class="mc-cell">◎ チーム登録・人数指定OK</td><td>△ 個人レッスン中心</td><td>△ 口約束になりがち</td></tr>
+            <tr><th>コーチの実績</th><td class="mc-cell">◎ 決済記録に基づく指導実績＋<br>事務局発行の実績証明書（URL検証可）</td><td>△ 自己申告プロフィール</td><td>× 確認しづらい</td></tr>
+            <tr><th>本人確認</th><td class="mc-cell">◎ 書類審査つき認証コーチ制度</td><td>○ サービスにより異なる</td><td>× なし</td></tr>
+            <tr><th>契約・決済</th><td class="mc-cell">◎ 提案→承諾→決済→精算まで<br>アプリ内で完結・記録が残る</td><td>○ 決済のみ対応が中心</td><td>× 現金手渡し・記録なし</td></tr>
+            <tr><th>手数料</th><td class="mc-cell">◎ 事前に明示<br>（受講者5%＋コーチ15%）</td><td>△ 20〜30%前後が一般的</td><td>○ なし（その分リスクは自己負担）</td></tr>
+            <tr><th>トラブル時</th><td class="mc-cell">◎ 通報窓口＋事務局対応＋監査記録</td><td>○ 窓口あり</td><td>× 当事者間のみ</td></tr>
+          </table></div>
+        </div>
+        <div class="sec">
+          <div class="bukatsu-band">
+            <div class="bk-eyebrow">FOR TEAMS ― 部活動・地域クラブのみなさまへ</div>
+            <h2 style="margin-bottom:10px">2026年、部活動は地域へ。<br>指導の担い手と、出会う場所を。</h2>
+            <p class="sub" style="margin-bottom:18px">部活動の地域移行がはじまり、指導者さがし・謝礼の支払い・実績の管理は、地域とチームの仕事になりました。MyCOACHなら、指導形態「チーム」で検索し、チーム名義で契約。支払いは記録に残り、指導実績は事務局発行の証明書として関係者への報告にも使えます。</p>
+            <button class="btn-hero primary" onclick="App.gotoSignup('player')">チームとして無料登録する</button>
+          </div>
+        </div>
         <div class="sec" style="padding-top:0">
           <h2>対応競技</h2>
           <div class="sportchips">${SPORTS.map(s=>`<span class="sportchip">${SPORT_ICON[s]} ${esc(s)}</span>`).join('')}</div>
@@ -1291,6 +1414,8 @@ const App = {
             <div class="field"><label>エリア</label><select id="f-area">${AREAS.map(a=>`<option ${a==='東京都'?'selected':''}>${a}</option>`).join('')}</select></div>
             ${isCoach?`
               <div class="field"><label>レッスン料金（1回・税込）</label><input id="f-fee" type="number" min="0" step="100" placeholder="5000"></div>
+              <div class="field"><label>対応できる時間帯（複数選択可）</label><div class="chk-wrap">${AVAIL.map(a=>`<label class="chk"><input type="checkbox" class="f-avail" value="${a}">${a}</label>`).join('')}</div></div>
+              <div class="field"><label>体験レッスン料金（任意・0で無料体験。空欄なら非表示）</label><input id="f-trial" type="number" min="0" step="100" placeholder="2000"><div class="hint">体験があるコーチは初回のハードルが下がり、マッチ率が上がります。</div></div>
               <div class="field"><label>指導歴</label><input id="f-exp" placeholder="例：指導歴5年"></div>
               <div class="field"><label>指導形態</label><select id="f-ctarget">
                 <option value="both">個人・チームどちらも</option>
@@ -1342,6 +1467,9 @@ const App = {
           }
         }else{
           profile.coachTarget=v('f-ctarget')||'both';
+          const tv=v('f-trial');
+          if(tv!==''&&tv!=null) profile.trialFee=Number(tv);
+          profile.avail=[...document.querySelectorAll('.f-avail:checked')].map(x=>x.value);
         }
         if(role==='coach' && !profile.fee) throw new Error('レッスン料金を入力してください');
         const pf=document.getElementById('f-photo')?.files[0];
@@ -1369,6 +1497,25 @@ const App = {
     const targetRole = isPlayer?'coach':'player';
     const [users, likes, matches] = await Promise.all([DB.listUsers(targetRole), DB.getLikes(this.me.id), DB.listMatches(this.me.id)]);
     this._browse={users, likes, matchedIds:new Set(matches.flatMap(m=>m.users))};
+    const recruits = isPlayer ? [] : await DB.listOpenRecruits();
+    const sentSet = new Set(likes.sent.map(l=>l.to));
+    const recruitHtml = recruits.length ? `
+      <div class="recruit-sec">
+        <h2 style="font-size:16px;font-weight:800;margin-bottom:4px">${ic('megaphone',16)} チームからの指導者募集</h2>
+        <p class="hint" style="margin-bottom:10px">部活動・クラブチームがコーチを探しています。「応募する」といいねが送られ、チームが返すとマッチしてメッセージできます。</p>
+        <div class="recruit-row">
+        ${recruits.map(r=>`
+          <div class="recruit-card">
+            <div class="rc-t">${esc(r.title)}</div>
+            <div class="rc-meta">${esc(r.sport)}・${esc(r.area)}・${esc(r.schedule||'')}</div>
+            <div class="rc-fee">謝礼 ${yen(r.fee)}<small> /回</small></div>
+            <p class="rc-d">${esc(r.detail||'')}</p>
+            ${this.me.id!==r.teamId?(sentSet.has(r.teamId)||this._browse.matchedIds.has(r.teamId)
+              ?`<span class="pill pill-gray">応募済み</span>`
+              :`<button class="btn btn-sm btn-turf" onclick="App.applyRecruit('${r.teamId}','${esc(r.title)}')">${ic('thumb',14)} 応募する</button>`):''}
+          </div>`).join('')}
+        </div>
+      </div>`:'';
     this.shell(`
       <div class="wrap">
         <div class="page-head">
@@ -1383,8 +1530,10 @@ const App = {
               ?`<option value="">指導形態：すべて</option><option value="fit">自分に合うコーチ（${this.me.playerType==='team'?'チーム':'個人'}対応）</option>`
               :`<option value="">受講形態：すべて</option><option value="individual">個人</option><option value="team">チーム</option>`}
           </select>
+          ${isPlayer?`<select id="fl-avail" onchange="App.renderBrowse()"><option value="">時間帯：すべて</option>${AVAIL.map(a=>`<option>${a}</option>`).join('')}</select>`:''}
           <input id="fl-q" placeholder="キーワード検索" oninput="App.renderBrowse()">
         </div>
+        ${recruitHtml}
         <div class="grid" id="browse-grid"></div>
       </div>`, 'browse');
     this.renderBrowse();
@@ -1394,6 +1543,7 @@ const App = {
     const {users, likes, matchedIds}=this._browse;
     const sp=document.getElementById('fl-sport').value, ar=document.getElementById('fl-area').value, q=document.getElementById('fl-q').value.trim();
     const tp=document.getElementById('fl-type')?.value||'';
+    const av=document.getElementById('fl-avail')?.value||'';
     const sentTo=new Set(likes.sent.map(l=>l.to));
     const recvFrom=new Set(likes.received.map(l=>l.from));
     const list=users.filter(u=>u.id!==this.me.id)
@@ -1406,7 +1556,8 @@ const App = {
           return ct==='both'||ct===myType;
         }
         return (u.playerType||'individual')===tp;
-      });
+      })
+      .filter(u=>!av||(u.avail||[]).includes(av));
     const grid=document.getElementById('browse-grid');
     if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ic">${ic('search',44)}</div>条件に合うユーザーが見つかりませんでした。<br>条件を変えて再検索してみてください。</div>`; return; }
     grid.innerHTML=list.map(u=>{
@@ -1417,7 +1568,13 @@ const App = {
           <div class="avatar">${avatarOf(u)}</div>
           <div><div class="nm">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</div>
           <div class="meta">${esc(u.sport)}・${esc(u.area)}${u.exp?`・${esc(u.exp)}`:''}${u.role==='coach'?`・${CTARGET_S[u.coachTarget||'both']}対応`:''}</div>
-          ${u.ratingCount?`<span class="rate">${stars(u.ratingAvg,12)} ${u.ratingAvg}（${u.ratingCount}）</span>`:''}</div>
+          ${u.ratingCount?`<span class="rate">${stars(u.ratingAvg,12)} ${u.ratingAvg}（${u.ratingCount}）</span>`:''}
+          ${u.role==='coach'&&u.avail?.length?`<div class="meta" style="margin-top:2px">対応：${u.avail.join('・')}</div>`:''}
+          ${u.role==='coach'&&(u.lessonCount||u.certIssued||u.trialFee!=null)?`<div class="trust-row">
+            ${u.lessonCount?`<span class="pill pill-blue">指導実績 ${u.lessonCount}回</span>`:''}
+            ${u.certIssued?`<span class="pill pill-gold vbadge">${ic('doc',11)}実績証明済</span>`:''}
+            ${u.trialFee!=null?`<span class="pill pill-turf">${u.trialFee===0?'無料体験あり':`体験 ${yen(u.trialFee)}`}</span>`:''}
+          </div>`:''}</div>
         </div>
         <div class="intro">${esc(u.intro)}</div>
         <div class="ft">
@@ -1446,6 +1603,9 @@ const App = {
           ?`指導形態：${CTARGET[u.coachTarget||'both']}`
           :`受講形態：${u.playerType==='team'?`チーム（${esc(u.teamName||u.name)}${u.teamSize?`・約${u.teamSize}名`:''}）`:'個人'}`}</div>
         ${u.ratingCount?`<div class="rate" style="justify-content:center;margin-top:4px">${stars(u.ratingAvg,13)} ${u.ratingAvg}（${u.ratingCount}件）</div>`:''}
+        ${u.role==='coach'&&(u.lessonCount||u.certIssued)?`<div class="hint" style="margin-top:4px">MyCOACH実績：レッスン ${u.lessonCount||0}回（決済記録に基づく）${u.certIssued?`・${ic('doc',11)}事務局発行の実績証明書あり`:''}</div>`:''}
+        ${u.role==='coach'&&u.avail?.length?`<div class="hint" style="margin-top:3px">対応時間帯：${u.avail.join('・')}</div>`:''}
+        ${u.role==='coach'&&u.trialFee!=null?`<div style="margin-top:6px"><span class="pill pill-turf">${u.trialFee===0?'無料体験レッスンあり':`体験レッスン ${yen(u.trialFee)}`}</span></div>`:''}
         ${isCoach?`<div class="fee" style="font-size:24px;margin-top:8px">${yen(u.fee)}<small> /回</small></div>`:''}
       </div>
       <p style="margin:16px 0;font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(u.intro)}</p>
@@ -1615,6 +1775,7 @@ const App = {
     this.modal(`
       <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('doc',16)} 契約を${iAmCoach?'提案':'依頼'}する</h3>
       <p class="hint" style="margin-bottom:14px">相手が承諾すると契約成立となります。内容はメッセージで事前にすり合わせておくとスムーズです。</p>
+      ${coach.trialFee!=null?`<button type="button" class="btn btn-sm btn-soft" style="margin-bottom:12px" onclick="App.setTrialCt(${coach.trialFee})">${ic('ticket',13)} 体験レッスン（${coach.trialFee===0?'無料':yen(coach.trialFee)}）で提案する</button>`:''}
       <div class="field"><label>契約タイトル</label><input id="ct-title" placeholder="例：${esc(coach.sport)}個人レッスン（月4回）"></div>
       <div class="field"><label>レッスン内容・条件</label><textarea id="ct-detail" placeholder="回数・時間・場所・持ち物・キャンセル規定など"></textarea></div>
       <div class="field"><label>料金（税込）</label><input id="ct-fee" type="number" min="0" step="100" value="${iAmCoach?(this.me.fee||''):(other?.fee||'')}" oninput="App.updateCtFeeHint()"><div class="hint" id="ct-fee-hint" style="margin-top:4px"></div></div>
@@ -1623,6 +1784,45 @@ const App = {
       <button class="btn btn-turf btn-block" onclick="App.submitContract('${matchId}','${coach.id}','${player.id}')">この内容で送信する</button>`);
   },
 
+  setTrialCt(fee){
+    const s=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+    s('ct-title','体験レッスン'); s('ct-fee',fee); s('ct-period','1回');
+    const un=document.getElementById('ct-unit'); if(un) un.value='per';
+    this.updateCtFeeHint();
+  },
+  openRecruitForm(){
+    this.modal(`
+      <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:4px">${ic('megaphone',16)} 指導者募集を作成</h3>
+      <p class="hint" style="margin-bottom:12px">競技・エリアはチームのプロフィール（${esc(this.me.sport)}・${esc(this.me.area)}）が使われます。</p>
+      <div class="field"><label>募集タイトル</label><input id="rc-title" placeholder="例：守備連携を教えてくれる外部コーチ募集"></div>
+      <div class="field"><label>活動日程</label><input id="rc-sched" placeholder="例：月2回・土曜午前"></div>
+      <div class="field"><label>謝礼（1回あたり・税込）</label><input id="rc-fee" type="number" min="0" step="500" placeholder="8000"></div>
+      <div class="field"><label>募集内容</label><textarea id="rc-detail" placeholder="チームの人数・レベル・お願いしたいことなど"></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="App.submitRecruit()">掲載する</button>`);
+  },
+  async submitRecruit(){
+    const title=document.getElementById('rc-title').value.trim();
+    const fee=Number(document.getElementById('rc-fee').value)||0;
+    if(!title){ this.toast('募集タイトルを入力してください'); return; }
+    if(!fee){ this.toast('謝礼を入力してください'); return; }
+    await DB.addRecruit({teamId:this.me.id, title, sport:this.me.sport, area:this.me.area,
+      schedule:document.getElementById('rc-sched').value.trim(), fee,
+      detail:document.getElementById('rc-detail').value.trim()});
+    this.closeModal(); this.toast('募集を掲載しました。応募はいいねとして届きます');
+    this.viewMe();
+  },
+  async closeRecruit(id){
+    if(!confirm('この募集を締め切りますか？コーチの検索画面から非表示になります。')) return;
+    await DB.closeRecruit(id); this.toast('募集を締め切りました'); this.viewMe();
+  },
+  async applyRecruit(teamId, title){
+    const likes=await DB.getLikes(this.me.id);
+    if(likes.sent.some(l=>l.to===teamId)){ this.toast('応募済みです。チームからの返信をお待ちください'); return; }
+    const r=await DB.like(this.me.id, teamId);
+    DB.notify(teamId,'like',`募集「${title}」にコーチ（${this.me.name}さん）から応募がありました。マッチ画面でプロフィールを確認し、いいねを返すとメッセージできます`,'#matches');
+    if(r.matched){ const other=await DB.getUser(teamId); this.showMatchFX(other, r.matchId); }
+    else{ this.toast('応募しました！チームがいいねを返すとマッチします'); this.viewBrowse(); }
+  },
   updateCtFeeHint(){
     const el=document.getElementById('ct-fee-hint'); if(!el) return;
     const v=Number(document.getElementById('ct-fee')?.value)||0;
@@ -1720,6 +1920,7 @@ const App = {
     const isCoach=u.role==='coach';
     const unsettled=isCoach?await DB.myUnsettled(u.id):0;
     const myCerts=await DB.listMyCerts(u.id);
+    const myRecs=(!isCoach&&u.playerType==='team')?await DB.myRecruits(u.id):[];
     this.shell(`
       <div class="wrap" style="max-width:560px">
         <div class="page-head"><h1>マイページ</h1></div>
@@ -1753,6 +1954,8 @@ const App = {
             </div>`:''}
           ${isCoach?`
             <div class="field"><label>レッスン料金（1回・税込）</label><input id="me-fee" type="number" min="0" step="100" value="${u.fee||0}"></div>
+            <div class="field"><label>対応できる時間帯（複数選択可）</label><div class="chk-wrap">${AVAIL.map(a=>`<label class="chk"><input type="checkbox" class="me-avail" value="${a}" ${ (u.avail||[]).includes(a)?'checked':'' }>${a}</label>`).join('')}</div></div>
+            <div class="field"><label>体験レッスン料金（0=無料体験・空欄=非表示）</label><input id="me-trial" type="number" min="0" step="100" value="${u.trialFee!=null?u.trialFee:''}"></div>
             <div class="field"><label>指導歴</label><input id="me-exp" value="${esc(u.exp)}"></div>
             <div class="field"><label>指導形態</label><select id="me-ctarget">
               <option value="both" ${(u.coachTarget||'both')==='both'?'selected':''}>個人・チームどちらも</option>
@@ -1777,13 +1980,28 @@ const App = {
             </div>`:''}`:''}
           <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label><textarea id="me-intro">${esc(u.intro)}</textarea></div>
           <button class="btn btn-primary btn-block" onclick="App.saveMe()">プロフィールを保存</button>
+          <a class="btn btn-ghost btn-block btn-sm" href="#news" style="margin-bottom:10px">${ic('megaphone',14)} 運営からのお知らせを見る</a>
+          <a class="btn btn-ghost btn-block btn-sm" href="#report" style="margin-bottom:10px">${ic('doc',14)} ${isCoach?'指導実績レポートを作成（印刷/PDF）':'活動報告書を作成（印刷/PDF）'}</a>
+          ${!isCoach&&u.playerType==='team'?`
+          <div class="verify-box" style="border-color:var(--court)">
+            <div class="vb-t">${ic('megaphone',14)} 指導者を募集する</div>
+            <div class="hint" style="margin-bottom:8px">募集を掲載すると、コーチの検索画面の最上部に表示され、コーチから直接応募が届きます。応募はいいねとして届き、返すとマッチしてメッセージできます。</div>
+            ${myRecs.map(r=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;font-size:12.5px">
+                <span><b>${esc(r.title)}</b>（${yen(r.fee)}/回）${r.status==='open'?'<span class="pill pill-turf">掲載中</span>':'<span class="pill pill-gray">終了</span>'}</span>
+                ${r.status==='open'?`<button class="btn btn-sm btn-danger-soft" onclick="App.closeRecruit('${r.id}')">締め切る</button>`:''}
+              </div>`).join('')}
+            <button class="btn btn-sm btn-primary" onclick="App.openRecruitForm()" style="margin-top:6px">募集を作成する</button>
+          </div>`:''}
           <div class="verify-box" style="border-color:var(--gold);margin-top:4px">
             <div class="vb-t" style="color:#8A6A00">${ic('doc',14)} 実績証明書</div>
             <div class="hint" style="margin-bottom:8px">MyCOACHでの${isCoach?'指導実績（契約数・レッスン回数・評価・認証状態）':'受講実績（契約数・レッスン回数）'}を、事務局が証明書として発行します。印刷・PDF保存でき、証明書番号のURLで第三者が真正性を確認できます。</div>
             ${myCerts.filter(c=>c.status==='issued').map(c=>`
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;font-size:12.5px">
                 <span style="font-family:Oswald">${c.id}<span class="hint">（${fmtD(c.issuedTs)}発行）</span></span>
+                <span style="display:flex;gap:6px">
                 <a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>
+                <button class="btn btn-sm btn-ghost" onclick="App.copyCertLink('${c.id}')">リンクをコピー</button></span>
               </div>`).join('')}
             ${myCerts.some(c=>c.status==='requested')
               ?`<span class="pill pill-gold">発行申請中（事務局が確認しています）</span>`
@@ -1802,6 +2020,9 @@ const App = {
     if(this.me.role==='coach'){
       patch.fee=Number(v('me-fee')||0); patch.exp=v('me-exp');
       patch.coachTarget=v('me-ctarget')||'both';
+      const tv=v('me-trial');
+      patch.trialFee=(tv===''||tv==null)?null:Number(tv);
+      patch.avail=[...document.querySelectorAll('.me-avail:checked')].map(x=>x.value);
     }else{
       patch.playerType=v('me-ptype')||'individual';
       if(patch.playerType==='team'){ patch.teamName=v('me-teamname')||''; patch.teamSize=Number(v('me-teamsize')||0); }
@@ -1910,6 +2131,11 @@ const App = {
   },
 
   /* ---------- 写真・退会・パスワード ---------- */
+  async copyCertLink(id){
+    const url=location.origin+location.pathname+'#cert/'+id;
+    try{ await navigator.clipboard.writeText(url); this.toast('証明書のリンクをコピーしました。人材バンクや応募先、SNSにそのまま貼れます'); }
+    catch(e){ prompt('このリンクをコピーしてください', url); }
+  },
   async requestCert(){
     try{
       await DB.requestCert(this.me.id, this.me.role==='coach'?'coach_record':'player_record');
@@ -1926,6 +2152,67 @@ const App = {
       lessons:pays.length,
       ratingAvg:u.ratingAvg||0, ratingCount:u.ratingCount||0,
       verified:u.verified==='approved' };
+  },
+  async viewNews(){
+    const ans=await DB.listAnnouncements(this.me.role);
+    this.shell(`
+      <div class="wrap" style="max-width:720px">
+        <div class="page-head" style="margin-top:24px"><h1>${ic('megaphone',20)} 運営からのお知らせ</h1></div>
+        ${ans.map(a=>`
+          <div class="card" style="padding:18px 20px;margin-bottom:12px">
+            <div class="hint" style="margin-bottom:4px">${fmtD(a.ts)}・MyCOACH事務局</div>
+            <div style="font-weight:800;font-size:15px;margin-bottom:6px">${esc(a.title)}</div>
+            <div style="font-size:13.5px;color:var(--ink2);line-height:2;white-space:pre-wrap">${esc(a.body)}</div>
+          </div>`).join('')||'<p class="hint" style="padding:34px 0;text-align:center">お知らせはまだありません。</p>'}
+      </div>`, null);
+    window.scrollTo(0,0);
+  },
+  async viewReport(){
+    const u=this.me; const isCoach=u.role==='coach';
+    const cts=await DB.listContracts(u.id);
+    const pays=await DB.myPayments(u.id, isCoach?'coach':'player');
+    const total=pays.reduce((s,p)=>s+(isCoach?(p.net||0):(p.amount||0)),0);
+    const names={};
+    for(const c of cts){ const o=await DB.getUser(isCoach?c.player:c.coach); names[c.id]=o?.name||'退会ユーザー'; }
+    const title=isCoach?'指 導 実 績 レ ポ ー ト':'活 動 報 告 書';
+    this.shell(`
+      <div class="wrap" style="max-width:820px">
+        <div class="cert-actions" style="display:flex;gap:10px;justify-content:flex-end;margin:20px 0 12px">
+          <button class="btn btn-sm btn-soft" onclick="window.print()">${ic('doc',14)} 印刷 / PDF保存</button>
+        </div>
+        <div class="cert-sheet">
+          <div class="cert-no">作成日：${fmtD(Date.now())}</div>
+          <div class="cert-brand"><span class="ball">M</span> MyCOACH</div>
+          <h1 class="cert-title rounded" style="font-size:24px">${title}</h1>
+          <table class="cert-tbl">
+            <tr><th>対象</th><td>${esc(u.name)}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}${u.teamSize?`・約${u.teamSize}名`:''}）`:''}</td></tr>
+            <tr><th>競技 / エリア</th><td>${esc(u.sport)} / ${esc(u.area)}</td></tr>
+            <tr><th>対象期間</th><td>${fmtD(u.createdAt||Date.now())} 〜 ${fmtD(Date.now())}</td></tr>
+            <tr><th>契約</th><td>${cts.length} 件（契約中 ${cts.filter(c=>c.status==='active').length} / 完了 ${cts.filter(c=>c.status==='completed').length}）</td></tr>
+            <tr><th>レッスン実施（決済記録）</th><td>${pays.length} 回</td></tr>
+            <tr><th>${isCoach?'受取総額（手数料控除後）':'お支払い総額'}</th><td>${yen(total)}</td></tr>
+            ${isCoach?`<tr><th>本人確認</th><td>${u.verified==='approved'?'認証済み（事務局による本人確認書類の確認済）':'未認証'}</td></tr>`:''}
+          </table>
+          ${cts.length?`
+          <h3 style="font-size:14px;font-weight:800;margin:0 0 8px">契約の内訳</h3>
+          <table class="cert-tbl" style="margin-bottom:24px">
+            <tr><th style="width:auto">タイトル</th><th style="width:auto">${isCoach?'受講者':'コーチ'}</th><th style="width:auto">料金</th><th style="width:auto">状態</th></tr>
+            ${cts.map(c=>`<tr><td>${esc(c.title)}</td><td>${esc(names[c.id])}</td><td>${yen(c.fee)}${c.unit==='monthly'?'/月':'/回'}</td><td>${CT_STATUS[c.status]}</td></tr>`).join('')}
+          </table>`:''}
+          ${pays.length?`
+          <h3 style="font-size:14px;font-weight:800;margin:0 0 8px">${isCoach?'受取履歴':'お支払い履歴'}</h3>
+          <table class="cert-tbl" style="margin-bottom:24px">
+            <tr><th style="width:auto">日付</th><th style="width:auto">${isCoach?'受取額':'支払額'}</th><th style="width:auto">方法</th></tr>
+            ${pays.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${yen(isCoach?(p.net||0):(p.amount||0))}</td><td>${p.method==='demo'?'デモ':p.method==='manual'?'振込等':'カード決済'}</td></tr>`).join('')}
+          </table>`:''}
+          <p class="hint">本レポートはMyCOACHのプラットフォーム記録（契約・決済データ）から自動生成されたものです。学校・自治体・保護者の皆さまへの活動報告や、助成金申請の添付資料としてご利用いただけます。</p>
+          <div class="cert-foot" style="margin-top:16px">
+            <div><div class="cert-issuer">MyCOACH（株式会社ark）</div></div>
+          </div>
+        </div>
+      </div>
+      <footer class="cert-actions">© 2026 MyCOACH</footer>`, null);
+    window.scrollTo(0,0);
   },
   async viewCert(id){
     const c=await DB.getCert(id);
@@ -1967,6 +2254,11 @@ const App = {
           </div>
         </div>
       </div>
+      ${!this.me&&c.type==='coach_record'&&!revoked?`
+      <div class="cert-actions" style="text-align:center;margin:20px 0 30px">
+        <p class="hint" style="margin-bottom:10px">このコーチに指導を依頼したい方は、MyCOACHで無料登録できます。個人でも、チームでも。</p>
+        <button class="btn btn-primary" onclick="location.hash='';App.gotoSignup('player')">MyCOACHでコーチを探す（無料）</button>
+      </div>`:''}
       <footer class="cert-actions">© 2026 MyCOACH ― 出会った日から、伸びはじめる。</footer>`, null);
     window.scrollTo(0,0);
   },
@@ -2035,7 +2327,7 @@ const App = {
       <div class="adm-head"><div class="wrap">
         <h1>${ic('gear',20)} MyCOACH 運営管理 <span class="pill pill-gold">ADMIN</span></h1>
         <div class="adm-tabs">
-          ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['certs','証明書'],['reports','通報対応']].map(([k,l])=>
+          ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['certs','証明書'],['announce','お知らせ配信'],['reports','通報対応']].map(([k,l])=>
             `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash='#admin/${k}'">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}${k==='certs'&&this._pendingCerts?` (${this._pendingCerts})`:''}</button>`).join('')}
           <button class="adm-tab" onclick="App.logout()">ログアウト</button>
         </div>
@@ -2048,6 +2340,7 @@ const App = {
     if(tab==='contracts') body=await this.admContracts();
     if(tab==='payments') body=await this.admPayments();
     if(tab==='certs') body=await this.admCerts();
+    if(tab==='announce') body=await this.admAnnounce();
     if(tab==='verify') body=await this.admVerify();
     if(tab==='reports') body=await this.admReports();
     this.shell(head+body,'admin');
@@ -2055,34 +2348,77 @@ const App = {
 
   async admDash(){
     const s=await DB.stats(); this._openReports=s.openReports; this._pendingCoaches=s.pendingCoaches; this._pendingCerts=s.pendingCerts;
-    const cts=(await DB.allContracts()).slice(0,5);
+    const [allU, allC, allP, un, audit]=await Promise.all([DB.allUsers(), DB.allContracts(), DB.allPayments(), DB.unsettledByCoach(), DB.listAudit(12)]);
+    const unTotal=un.reduce((a,x)=>a+x.net,0);
+
+    /* --- 要対応タスク --- */
+    const todos=[
+      s.pendingCoaches?{n:s.pendingCoaches, l:'審査待ちコーチ', h:'#admin/verify', c:'var(--gold)'}:null,
+      s.openReports?{n:s.openReports, l:'未対応の通報', h:'#admin/reports', c:'var(--flag)'}:null,
+      s.pendingCerts?{n:s.pendingCerts, l:'証明書の発行申請', h:'#admin/certs', c:'var(--gold)'}:null,
+      unTotal?{n:yen(unTotal), l:'コーチ未精算（振込待ち）', h:'#admin/payments', c:'var(--court)'}:null,
+    ].filter(Boolean);
+
+    /* --- 直近7日ミニチャート --- */
+    const days=Array.from({length:7},(_,i)=>{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(6-i)); return d.getTime(); });
+    const cnt=(arr,key)=>days.map((d0,i)=>arr.filter(x=>{const t=x[key]||0; return t>=d0 && t<(days[i+1]||d0+86400000);}).length);
+    const chart=(title,data,color)=>{ const mx=Math.max(...data,1);
+      return `<div class="mini-chart"><div class="mc-t">${title}<span>${data.reduce((a,b)=>a+b,0)}件/7日</span></div>
+        <div class="mc-bars">${data.map((v,i)=>`<div class="mc-col"><div class="mc-bar" style="height:${Math.round(v/mx*46)+3}px;background:${color}"></div><div class="mc-d">${new Date(days[i]).getDate()}</div></div>`).join('')}</div></div>`; };
+
+    /* --- 最近のアクティビティ --- */
+    const acts=[
+      ...allU.map(u=>({ts:u.createdAt||0, t:`新規登録：${u.name}（${u.role==='coach'?'コーチ':'受講者'}）`})),
+      ...allC.map(c=>({ts:c.ts, t:`契約提案：${c.title}（${yen(c.fee)}）`})),
+      ...allP.map(p=>({ts:p.ts, t:`決済：${yen(p.amount)}（コーチ受取 ${yen(p.net)}）`})),
+    ].sort((a,b)=>b.ts-a.ts).slice(0,8);
+
+    const cts=allC.slice(0,5);
     const rows=await Promise.all(cts.map(async c=>{
       const co=await DB.getUser(c.coach), pl=await DB.getUser(c.player);
       return `<tr><td>${esc(c.title)}</td><td>${esc(co?.name||'-')}</td><td>${esc(pl?.name||'-')}</td>
         <td class="num">${yen(c.fee)}</td><td><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></td><td>${fmtD(c.ts)}</td></tr>`;}));
+
     return `<div class="wrap">
+      ${todos.length?`
+      <h3 style="font-weight:800;margin:16px 0 8px">${ic('warn',15)} 要対応（クリックで移動）</h3>
+      <div class="todo-row">
+        ${todos.map(t2=>`<button class="todo-card" onclick="location.hash='${t2.h}'"><span class="n" style="color:${t2.c}">${t2.n}</span><span class="l">${t2.l}</span></button>`).join('')}
+      </div>`:`<div class="notice" style="border-color:var(--turf);color:#0B7A57;margin-top:16px">${ic('check',14)} 現在、対応が必要なタスクはありません。</div>`}
       <div class="stats">
         <div class="stat"><div class="n">${s.coaches}</div><div class="l">コーチ数</div></div>
         <div class="stat"><div class="n">${s.players}</div><div class="l">受講者数</div></div>
-        <div class="stat"><div class="n">${s.likes}</div><div class="l">いいね総数</div></div>
         <div class="stat"><div class="n">${s.matches}</div><div class="l">マッチ数</div></div>
         <div class="stat"><div class="n">${s.active}</div><div class="l">契約中</div></div>
         <div class="stat"><div class="n" style="font-size:22px">${yen(s.gmv)}</div><div class="l">成立契約 流通額</div></div>
         <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(s.feeRevenue)}</div><div class="l">手数料収益（決済ベース）</div></div>
-        <div class="stat"><div class="n" style="color:${s.pendingCoaches?'var(--gold)':'var(--court)'}">${s.pendingCoaches}</div><div class="l">審査待ちコーチ</div></div>
-        <div class="stat"><div class="n" style="color:${s.openReports?'var(--flag)':'var(--court)'}">${s.openReports}</div><div class="l">未対応の通報</div></div>
       </div>
-      ${s.openReports?`<div class="notice">${ic('warn',14)} 未対応の通報が ${s.openReports} 件あります。「通報対応」タブから確認してください。</div>`:''}
-      ${s.pendingCoaches?`<div class="notice">${ic('warn',14)} 審査待ちのコーチが ${s.pendingCoaches} 名います。「コーチ審査」タブから確認してください。</div>`:''}
-      ${s.pendingCerts?`<div class="notice">${ic('warn',14)} 実績証明書の発行申請が ${s.pendingCerts} 件あります。「証明書」タブから確認してください。</div>`:''}
-      <h3 style="font-weight:800;margin:8px 0 10px">最近の契約</h3>
+      <div class="chart-row">
+        ${chart('新規登録', cnt(allU,'createdAt'), 'var(--court)')}
+        ${chart('契約提案', cnt(allC,'ts'), 'var(--turf)')}
+        ${chart('決済', cnt(allP,'ts'), 'var(--gold)')}
+      </div>
+      <div class="dash-2col">
+        <div>
+          <h3 style="font-weight:800;margin:8px 0 10px">最近のアクティビティ</h3>
+          <div class="act-list">
+            ${acts.map(a=>`<div class="act"><span class="tm">${fmtT(a.ts)}</span><span>${esc(a.t)}</span></div>`).join('')||'<p class="hint">アクティビティはまだありません</p>'}
+          </div>
+        </div>
+        <div>
+          <h3 style="font-weight:800;margin:8px 0 10px">${ic('shield',14)} 管理操作ログ（監査）</h3>
+          <div class="act-list">
+            ${audit.map(a=>`<div class="act"><span class="tm">${fmtT(a.ts)}</span><span><b>${esc(a.admin||'-')}</b>：${esc(a.action)}${a.target?` → ${esc(a.target)}`:''}</span></div>`).join('')||'<p class="hint">管理操作の記録はまだありません。停止・審査・精算・発行などの操作が自動で記録されます。</p>'}
+          </div>
+        </div>
+      </div>
+      <h3 style="font-weight:800;margin:18px 0 10px">最近の契約</h3>
       <div class="tbl-wrap"><table>
         <tr><th>タイトル</th><th>コーチ</th><th>受講者</th><th>料金</th><th>状態</th><th>提案日</th></tr>
         ${rows.join('')||'<tr><td colspan="6">契約データがありません</td></tr>'}
       </table></div>
     </div>`;
   },
-
   async admUsers(){
     const users=(await DB.allUsers()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     this._admUsers=users;
@@ -2091,6 +2427,8 @@ const App = {
         <input id="au-q" placeholder="名前・メールで検索" oninput="App.renderAdmUsers()">
         <select id="au-role" onchange="App.renderAdmUsers()">
           <option value="">すべての区分</option><option value="coach">コーチ</option><option value="player">受講者</option><option value="admin">管理者</option></select>
+        <select id="au-st" onchange="App.renderAdmUsers()">
+          <option value="">すべての状態</option><option value="active">有効</option><option value="suspended">停止中</option><option value="deleted">退会</option></select>
         <button class="btn btn-sm btn-soft" onclick="App.exportCSV('users')">CSVエクスポート</button>
       </div>
       <div class="tbl-wrap"><table id="au-table"></table></div>
@@ -2099,7 +2437,10 @@ const App = {
   renderAdmUsers(){
     const q=(document.getElementById('au-q')?.value||'').trim();
     const role=document.getElementById('au-role')?.value||'';
-    const list=this._admUsers.filter(u=>(!q||(u.name+u.email).includes(q))&&(!role||u.role===role||(role==='admin'&&u.isAdmin)));
+    const st=document.getElementById('au-st')?.value||'';
+    const list=this._admUsers.filter(u=>(!q||(u.name+u.email).includes(q))
+      &&(!role||u.role===role||(role==='admin'&&u.isAdmin))
+      &&(!st||(st==='deleted'?u.deleted:st==='suspended'?(u.suspended&&!u.deleted):(!u.suspended&&!u.deleted))));
     document.getElementById('au-table').innerHTML=`
       <tr><th>名前</th><th>区分</th><th>競技 / エリア</th><th>メール</th><th>登録日</th><th>状態</th><th>操作</th></tr>
       ${list.map(u=>`<tr>
@@ -2108,8 +2449,10 @@ const App = {
         <td>${esc(u.sport)} / ${esc(u.area)}</td>
         <td>${esc(u.email)}</td>
         <td>${fmtD(u.createdAt||Date.now())}</td>
-        <td>${u.suspended?'<span class="pill pill-red">停止中</span>':'<span class="pill pill-turf">有効</span>'}</td>
-        <td><div class="tbl-actions">${u.isAdmin?'—':
+        <td>${u.deleted?'<span class="pill pill-gray">退会</span>':u.suspended?'<span class="pill pill-red">停止中</span>':'<span class="pill pill-turf">有効</span>'}</td>
+        <td><div class="tbl-actions">
+          <button class="btn btn-sm btn-soft" onclick="App.admUserDetail('${u.id}')">詳細</button>
+          ${u.isAdmin||u.deleted?'':
           u.suspended
             ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser('${u.id}',false)">復帰</button>`
             :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser('${u.id}',true)">停止</button>`}</div></td>
@@ -2117,9 +2460,39 @@ const App = {
   },
   async admToggleUser(id,suspend){
     if(!confirm(suspend?'このユーザーを停止します。停止中はログイン・表示ができなくなります。':'このユーザーを復帰させます。')) return;
+    const tu=await DB.getUser(id);
     await DB.updateUser(id,{suspended:suspend});
+    DB.audit({admin:this.me.name, action:suspend?'ユーザー停止':'ユーザー復帰', target:tu?.name||id});
     this.toast(suspend?'ユーザーを停止しました':'ユーザーを復帰させました');
-    this.viewAdmin('users');
+    this.closeModal(); this.viewAdmin('users');
+  },
+  async admUserDetail(id){
+    const u=await DB.getUser(id); if(!u) return;
+    const [cts,pays,reps]=await Promise.all([DB.allContracts(),DB.allPayments(),DB.listReports()]);
+    const myC=cts.filter(c=>c.coach===id||c.player===id);
+    const myP=pays.filter(p=>p.coach===id||p.player===id);
+    const repd=reps.filter(r=>r.target===id).length;
+    this.modal(`
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
+        <div class="avatar" style="width:56px;height:56px">${avatarOf(u)}</div>
+        <div><div style="font-weight:800;font-size:16px">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</div>
+        <div class="hint">${esc(u.email)}</div></div>
+      </div>
+      <table class="legal-tbl" style="margin-bottom:14px">
+        <tr><th>区分</th><td>${u.role==='coach'?'コーチ':'受講者'}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}・${u.teamSize||'-'}名）`:''}</td></tr>
+        <tr><th>競技 / エリア</th><td>${esc(u.sport)} / ${esc(u.area)}${u.role==='coach'?`・${CTARGET_S[u.coachTarget||'both']}対応`:''}</td></tr>
+        <tr><th>登録日</th><td>${fmtD(u.createdAt||Date.now())}</td></tr>
+        <tr><th>状態</th><td>${u.deleted?'退会':u.suspended?'停止中':'有効'}${u.role==='coach'?` ／ 認証：${u.verified==='approved'?'済':u.verified==='pending'?'審査中':'未'}`:''}</td></tr>
+        <tr><th>契約</th><td>${myC.length} 件（契約中 ${myC.filter(c=>c.status==='active').length} / 完了 ${myC.filter(c=>c.status==='completed').length}）</td></tr>
+        <tr><th>決済</th><td>${myP.length} 回${u.role==='coach'?`（受取累計 ${yen(myP.reduce((s,p)=>s+(p.net||0),0))}）`:`（支払累計 ${yen(myP.reduce((s,p)=>s+(p.amount||0),0))}）`}</td></tr>
+        ${u.role==='coach'?`<tr><th>評価</th><td>${u.ratingCount?`${stars(u.ratingAvg,12)} ${u.ratingAvg}（${u.ratingCount}件）`:'まだありません'}</td></tr>`:''}
+        <tr><th>通報された回数</th><td>${repd} 件</td></tr>
+      </table>
+      ${u.isAdmin||u.deleted?'':`<div style="display:flex;gap:8px">
+        ${u.suspended
+          ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser('${u.id}',false)">復帰させる</button>`
+          :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser('${u.id}',true)">停止する</button>`}
+      </div>`}`);
   },
 
   async admContracts(){
@@ -2170,7 +2543,7 @@ const App = {
         ${rows.join('')||'<tr><td colspan="6">通報はありません</td></tr>'}
       </table></div></div>`;
   },
-  async admResolve(id){ await DB.updateReport(id,{status:'resolved'}); this.toast('対応済にしました'); this.viewAdmin('reports'); },
+  async admResolve(id){ await DB.updateReport(id,{status:'resolved'}); DB.audit({admin:this.me.name, action:'通報を対応済に', target:id}); this.toast('対応済にしました'); this.viewAdmin('reports'); },
   async admToggleUserFromReport(uid,rid){
     if(!confirm('通報対象のユーザーを停止し、この通報を対応済にします。')) return;
     await DB.updateUser(uid,{suspended:true}); await DB.updateReport(rid,{status:'resolved'});
@@ -2266,6 +2639,40 @@ const App = {
           </div></td></tr>`; }).join('')||'<tr><td colspan="6">発行申請はありません</td></tr>'}
       </table></div></div>`;
   },
+  async admAnnounce(){
+    const ans=await DB.allAnnouncements();
+    const tgt={all:'全員', coach:'コーチのみ', player:'受講者のみ'};
+    return `<div class="wrap" style="max-width:860px">
+      <h2 style="font-size:16px;font-weight:800;margin:18px 0 6px">${ic('megaphone',16)} お知らせを配信</h2>
+      <p class="hint" style="margin-bottom:12px">配信すると対象ユーザー全員に通知（ベル）が届きます。メール通知（Trigger Email）を設定済みの場合はメールでも送信されます。</p>
+      <div class="card" style="padding:18px 20px;margin-bottom:22px">
+        <div class="field"><label>配信対象</label><select id="an-target">
+          <option value="all">全員</option><option value="coach">コーチのみ</option><option value="player">受講者のみ</option></select></div>
+        <div class="field"><label>タイトル</label><input id="an-title" placeholder="例：年末年始の運営体制について"></div>
+        <div class="field"><label>本文</label><textarea id="an-body" style="min-height:110px" placeholder="お知らせの内容"></textarea></div>
+        <button class="btn btn-primary" onclick="App.admSendAnnounce()">${ic('send',15)} 配信する</button>
+      </div>
+      <h2 style="font-size:16px;font-weight:800;margin:0 0 8px">配信履歴</h2>
+      <div class="tbl-wrap"><table>
+        <tr><th>日時</th><th>対象</th><th>タイトル</th><th>配信数</th></tr>
+        ${ans.map(a=>`<tr><td>${fmtD(a.ts)}</td><td>${tgt[a.target]||a.target}</td>
+          <td><b>${esc(a.title)}</b><div class="hint" style="white-space:pre-wrap">${esc(a.body)}</div></td>
+          <td>${a.sent!=null?a.sent+'名':'-'}</td></tr>`).join('')||'<tr><td colspan="4">配信履歴はありません</td></tr>'}
+      </table></div></div>`;
+  },
+  async admSendAnnounce(){
+    const target=document.getElementById('an-target').value;
+    const title=document.getElementById('an-title').value.trim();
+    const body=document.getElementById('an-body').value.trim();
+    if(!title||!body){ this.toast('タイトルと本文を入力してください'); return; }
+    const users=(await DB.allUsers()).filter(u=>!u.deleted&&!u.suspended&&!u.isAdmin&&(target==='all'||u.role===target));
+    if(!confirm(`${target==='all'?'全員':target==='coach'?'コーチ':'受講者'} ${users.length}名 に配信します。\n\n「${title}」\n\nよろしいですか？`)) return;
+    await DB.addAnnouncement({title, body, target, by:this.me.name, sent:users.length});
+    for(const u of users){ await DB.notify(u.id,'announce',`【お知らせ】${title}`,'#news'); }
+    DB.audit({admin:this.me.name, action:'お知らせを配信', target:`${target==='all'?'全員':target==='coach'?'コーチ':'受講者'} ${users.length}名`, detail:title});
+    this.toast(`${users.length}名に配信しました`);
+    await this.viewAdmin('announce');
+  },
   async admIssueCert(id){
     const c=await DB.getCert(id); if(!c) return;
     const u=await DB.getUser(c.userId);
@@ -2273,18 +2680,26 @@ const App = {
     const stats=await this._certStats(u);
     if(!confirm(`${u.name} さんの${c.type==='coach_record'?'コーチ実績証明書':'受講証明書'}を発行します。\n\n自動集計された実績：\n・成立契約 ${stats.contracts} 件（完了 ${stats.completed} 件）\n・レッスン実施 ${stats.lessons} 回\n${c.type==='coach_record'?`・評価 ${stats.ratingAvg||'-'}（${stats.ratingCount}件）／認証 ${stats.verified?'済':'未'}\n`:''}\nよろしいですか？`)) return;
     await DB.issueCert(id, stats);
+    await DB.updateUser(c.userId,{certIssued:true});
+    DB.audit({admin:this.me.name, action:'実績証明書を発行', target:u.name, detail:id});
     DB.notify(c.userId,'cert','実績証明書が発行されました。マイページから表示・印刷できます','#me');
     this.toast('発行しました'); await this.viewAdmin('certs');
   },
   async admRevokeCert(id){
     if(!confirm('この証明書を失効させますか？証明書ページには「失効」と表示されます。')) return;
     await DB.revokeCert(id);
+    const rc=await DB.getCert(id);
+    if(rc){ const still=(await DB.listMyCerts(rc.userId)).some(x=>x.status==='issued');
+      if(!still) await DB.updateUser(rc.userId,{certIssued:false}); }
+    DB.audit({admin:this.me.name, action:'実績証明書を失効', target:id});
     this.toast('失効させました'); await this.viewAdmin('certs');
   },
   async admSettle(coach){
     if(!confirm('このコーチへの振込を実施済みとして精算しますか？（対象：未精算の全決済）')) return;
     const r=await DB.settleCoach(coach);
     if(!r){ this.toast('未精算の決済がありません'); return; }
+    const su=await DB.getUser(coach);
+    DB.audit({admin:this.me.name, action:'コーチ精算', target:su?.name||coach, detail:`${yen(r.amount)}（${r.count}件）`});
     DB.notify(coach,'pay',`レッスン料 ${yen(r.amount)}（${r.count}件分）の精算・振込処理を行いました`,'#contracts');
     this.toast('精算を記録しました');
     await this.viewAdmin('payments');
@@ -2297,7 +2712,9 @@ const App = {
   },
   async admVerifySet(userId,st){
     if(!confirm(st==='approved'?'このコーチを承認します。認証バッジが付与されます。':'このコーチの審査を却下します。')) return;
+    const vu=await DB.getUser(userId);
     await DB.updateUser(userId,{verified:st});
+    DB.audit({admin:this.me.name, action:st==='approved'?'コーチ認証を承認':'コーチ認証を見送り', target:vu?.name||userId});
     DB.notify(userId,'verify', st==='approved'?'コーチ認証が承認されました！プロフィールに認証バッジが付与されています':'コーチ認証が見送られました。本人確認書類をご確認のうえ再提出してください', '#me');
     this.toast(st==='approved'?'承認しました':'却下しました'); this.viewAdmin('verify');
   },
