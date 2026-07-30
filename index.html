@@ -648,7 +648,7 @@ function resizeImage(file, max=480){ return new Promise((res,rej)=>{
 /* =========================================================================
    デモ用DB（localStorage）
    ========================================================================= */
-const LS_DB='mycoach_db_v3', LS_SES='mycoach_session_v3';
+const LS_DB='mycoach_db_v4', LS_SES='mycoach_session_v4';
 
 function seedDB(){
   const t = Date.now();
@@ -1158,7 +1158,11 @@ const App = {
         <button class="btn btn-sm btn-primary" onclick="App.demoLogin('demo-player@mycoach.jp')">受講者として体験</button>
         <button class="btn btn-sm btn-turf" onclick="App.demoLogin('demo-coach@mycoach.jp')">コーチとして体験</button>
         <button class="btn btn-sm btn-ghost" onclick="App.demoLogin('admin@mycoach.jp')">管理者として体験</button>
-        <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。</div>
+        <div style="margin-top:6px">
+          <button class="btn btn-sm btn-soft" onclick="App.demoLogin('player2@mycoach.jp')">決済を体験（契約中の受講者）</button>
+          <button class="btn btn-sm btn-soft" onclick="App.demoLogin('coach2@mycoach.jp')">受取側を体験（契約中のコーチ）</button>
+        </div>
+        <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。「決済を体験」は契約中アカウントで、支払い（レッスン料+5%）から精算までを確認できます。</div>
       </div></div>`:'';
     const orb=(name,size,style)=>`<div class="orb" style="${style}">${ic(name,Math.round(size*0.46))}</div>`;
     const marItems = SPORTS.map(s=>`<span>${SPORT_ICON[s]} ${esc(s)}</span>`).join('');
@@ -1310,6 +1314,8 @@ const App = {
             <button class="btn btn-sm btn-soft" onclick="App.demoLogin('demo-player@mycoach.jp')">受講者</button>
             <button class="btn btn-sm btn-soft" onclick="App.demoLogin('demo-coach@mycoach.jp')">コーチ</button>
             <button class="btn btn-sm btn-soft" onclick="App.demoLogin('admin@mycoach.jp')">管理者</button>
+            <button class="btn btn-sm btn-soft" onclick="App.demoLogin('player2@mycoach.jp')">受講者2（契約中）</button>
+            <button class="btn btn-sm btn-soft" onclick="App.demoLogin('coach2@mycoach.jp')">コーチ2（契約中）</button>
           </div>`:''}
         </div>
       </div>`, null);
