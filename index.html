@@ -282,6 +282,19 @@ svg.pict{vertical-align:-0.18em}
 .compare .mc-col-h{background:var(--court);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-weight:900;font-size:14px}
 .compare .mc-cell{background:#F0F8FF;font-weight:700;color:var(--court-deep)}
 .compare-wrap{box-shadow:var(--shadow);border-radius:14px}
+.reason-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0 28px}
+.reason-card{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:22px 22px 18px;box-shadow:var(--shadow);overflow:hidden;text-align:left}
+.reason-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--court),var(--turf))}
+.rc-num{position:absolute;top:12px;right:18px;font-family:Oswald,sans-serif;font-size:36px;font-weight:600;color:var(--line);line-height:1}
+.rc-ic{color:var(--court);margin-bottom:9px}
+.reason-card h3{font-size:15.5px;font-weight:800;margin-bottom:7px;font-family:'M PLUS Rounded 1c',sans-serif}
+.reason-card p{font-size:12.8px;color:var(--ink2);line-height:2}
+.reason-card p b{color:var(--ink)}
+.compare-s th,.compare-s td{padding:10px 10px}
+.compare-s td{font-size:17px;font-weight:800;color:var(--ink2)}
+.compare-s .mc-cell{font-size:19px;color:var(--court-deep)}
+.cmp-note{font-size:10.5px;font-weight:600;color:var(--ink2);margin-top:2px;line-height:1.4}
+@media(max-width:640px){.reason-grid{grid-template-columns:1fr}.rc-num{font-size:30px}}
 .bukatsu-band{background:linear-gradient(135deg,#0B7A57,#12B27C);border-radius:22px;padding:40px 36px;color:#fff;text-align:center}
 .bukatsu-band h2{color:#fff}
 .bukatsu-band .sub{color:rgba(255,255,255,.92);max-width:44em;margin-left:auto;margin-right:auto}
@@ -409,9 +422,9 @@ const FIREBASE_CONFIG = {
   storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
 }; */
 
-const PLAYER_FEE_RATE = 0.05;  // 受講者システム利用料（レッスン料に上乗せ・5%）
-const COACH_FEE_RATE  = 0.15;  // コーチ事務手数料（レッスン料から控除・15%）
-/* 手数料計算（例: レッスン料5,000円 → 受講者支払 5,250円 / コーチ受取 4,250円 / 事務局 1,000円） */
+const PLAYER_FEE_RATE = 0.10;  // 受講者システム利用料（レッスン料に上乗せ・10%）
+const COACH_FEE_RATE  = 0.20;  // コーチ事務手数料（レッスン料から控除・20%）
+/* 手数料計算（例: レッスン料5,000円 → 受講者支払 5,500円 / コーチ受取 4,000円 / 事務局 1,500円） */
 const feeCalc = f => { f=Number(f)||0;
   const playerFee=Math.round(f*PLAYER_FEE_RATE), coachFee=Math.round(f*COACH_FEE_RATE);
   return { base:f, playerFee, coachFee, charge:f+playerFee, net:f-coachFee, fee:playerFee+coachFee }; };
@@ -469,7 +482,7 @@ const AREAS = ['北海道','青森県','岩手県','宮城県','秋田県','山�
 
 /* ============ 法務文書 ============
    株式会社ark「部勝（ブカツ）」の規約（2026年2月27日版）をベースに、
-   MyCOACHのサービス内容（マッチング／サービス利用料15%／認証コーチ制度）へ適合させたものです。 */
+   MyCOACHのサービス内容（マッチング／両建て手数料／認証コーチ制度）へ適合させたものです。 */
 const LEGAL = {
   terms: { title:'利用規約', body:`
 <div class="legal-date">制定日: 2026年7月29日</div>
@@ -498,11 +511,11 @@ const LEGAL = {
 <h2>第5条（手数料・料金）</h2>
 <p>本サービスの利用に関する手数料は以下の通りです。表示金額はすべて税込です。</p>
 <ul>
-<li><b>受講者システム利用料</b>：レッスン料の5%（税込）。レッスン料に上乗せして受講者にご負担いただきます。</li>
-<li><b>コーチ事務手数料</b>：レッスン料の15%（税込）。当社がレッスン料から控除した金額をコーチに支払います。</li>
+<li><b>受講者システム利用料</b>：レッスン料の10%（税込）。レッスン料に上乗せして受講者にご負担いただきます。</li>
+<li><b>コーチ事務手数料</b>：レッスン料の20%（税込）。当社がレッスン料から控除した金額をコーチに支払います。</li>
 <li><b>無料機能</b>：登録・コーチ／受講者の検索・いいね・マッチング・メッセージ</li>
 </ul>
-<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,250（税込）、コーチ受取額 ¥4,250、当社手数料合計 ¥1,000（税込）</p>
+<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,500（税込）、コーチ受取額 ¥4,000、当社手数料合計 ¥1,500（税込）</p>
 <p>手数料の変更は、変更日の30日前までに本サービス上で通知します。</p>
 <p>なお、コーチへの報酬は受講者とコーチ間の契約に基づくものであり、源泉徴収義務の有無については各自の税務状況に応じて判断してください。</p>
 <h2>第6条（決済）</h2>
@@ -656,7 +669,7 @@ const LEGAL = {
 <tr><th>運営統括責任者</th><td>茂住 雄太</td></tr>
 <tr><th>所在地</th><td>〒165-0023 東京都中野区江原町2-13-13</td></tr>
 <tr><th>お問い合わせ</th><td>メール：kanri&#64;mycoach-myteam.com<br>電話番号：請求があった場合に遅滞なく開示いたします。<br><span class="hint">※お問い合わせはメールにて承ります。原則5営業日以内に返信いたします。</span></td></tr>
-<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. 受講者システム利用料（税込）：</b>レッスン料の5%。レッスン料に上乗せしてご請求します。<br><b>3. コーチ事務手数料（税込）：</b>レッスン料の15%。当社がレッスン料から控除してコーチにお支払いします（受講者のご負担はありません）。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,250、コーチ受取額 ¥4,250<br><b>4. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
+<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. 受講者システム利用料（税込）：</b>レッスン料の10%。レッスン料に上乗せしてご請求します。<br><b>3. コーチ事務手数料（税込）：</b>レッスン料の20%。当社がレッスン料から控除してコーチにお支払いします（受講者のご負担はありません）。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,500、コーチ受取額 ¥4,000<br><b>4. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
 <tr><th>支払方法</th><td>クレジットカード決済（Visa, Mastercard, JCB, American Express）<br><span class="hint">※決済処理は Stripe, Inc. を通じて行われます。当社が認める場合、銀行振込等によることができます。</span></td></tr>
 <tr><th>支払時期</th><td>・都度契約：契約成立後、本サービス上の案内に従いお支払いください<br>・月額契約：毎月、本サービス上の支払い手続きによりお支払いください</td></tr>
 <tr><th>役務の提供時期</th><td>・レッスン：決済完了後、コーチと合意した日時に提供<br>・無料機能：アカウント登録完了後、直ちに利用可能</td></tr>
@@ -773,8 +786,8 @@ function seedDB(){
      fee:4500, unit:'per', period:'5回', status:'completed', ts:t-86400000*12, decidedTs:t-86400000*11, log:[]},
   ];
   const payments = [
-    {id:'pay1', contractId:'ct3', coach:'c5', player:'p4', amount:4725, base:4500, playerFee:225, coachFee:675, fee:900, net:3825, ts:t-86400000*11, method:'demo'},
-    {id:'pay2', contractId:'ct1', coach:'c2', player:'p2', amount:25200, base:24000, playerFee:1200, coachFee:3600, fee:4800, net:20400, ts:t-86400000, method:'demo'},
+    {id:'pay1', contractId:'ct3', coach:'c5', player:'p4', amount:4950, base:4500, playerFee:450, coachFee:900, fee:1350, net:3600, ts:t-86400000*11, method:'demo'},
+    {id:'pay2', contractId:'ct1', coach:'c2', player:'p2', amount:26400, base:24000, playerFee:2400, coachFee:4800, fee:7200, net:19200, ts:t-86400000, method:'demo'},
   ];
   const reviews = [
     {id:'rv1', contractId:'ct3', from:'p4', to:'c5', rating:5, comment:'子どもが毎回楽しみにしていて、目標だった25m完泳を達成できました！', ts:t-86400000*4},
@@ -1264,7 +1277,7 @@ const App = {
           <button class="btn btn-sm btn-soft" onclick="App.demoLogin('player2@mycoach.jp')">決済を体験（契約中の受講者）</button>
           <button class="btn btn-sm btn-soft" onclick="App.demoLogin('coach2@mycoach.jp')">受取側を体験（契約中のコーチ）</button>
         </div>
-        <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。「決済を体験」は契約中アカウントで、支払い（レッスン料+5%）から精算までを確認できます。</div>
+        <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。「決済を体験」は契約中アカウントで、支払い（レッスン料+10%）から精算までを確認できます。</div>
       </div></div>`:'';
     const orb=(name,size,style)=>`<div class="orb" style="${style}">${ic(name,Math.round(size*0.46))}</div>`;
     const marItems = SPORTS.map(s=>`<span>${SPORT_ICON[s]} ${esc(s)}</span>`).join('');
@@ -1334,16 +1347,35 @@ const App = {
         </div>
         <div class="sec">
           <h2>MyCOACHが選ばれる理由</h2>
-          <p class="sub">「探して終わり」のマッチングではなく、契約・決済・実績の証明まで。ぜんぶが残るから、次につながる。</p>
-          <div class="tbl-wrap compare-wrap"><table class="compare">
+          <p class="sub">さがして終わりのマッチングではなく、契約・お金・実績までぜんぶ残る。だから、次につながる。</p>
+          <div class="reason-grid">
+            <div class="reason-card"><div class="rc-num">01</div>
+              <div class="rc-ic">${ic('jersey',24)}</div>
+              <h3>チームでも、個人でも契約できる</h3>
+              <p>部活・クラブは<b>チーム名義でひとつの契約</b>に。集金も1本にまとまります。チーム側から「指導者募集」を掲載して、コーチに来てもらうこともできます。</p></div>
+            <div class="reason-card"><div class="rc-num">02</div>
+              <div class="rc-ic">${ic('doc',24)}</div>
+              <h3>実績は自己申告ではなく、記録</h3>
+              <p>レッスン実施回数は<b>決済記録から自動カウント</b>。盛れません。事務局発行の「実績証明書」は、URLを開くだけで誰でも本物か確認できます。</p></div>
+            <div class="reason-card"><div class="rc-num">03</div>
+              <div class="rc-ic">${ic('card',24)}</div>
+              <h3>契約からお金まで、アプリで完結</h3>
+              <p>提案 → 承諾 → 決済 → コーチへの精算まで、<b>ぜんぶ記録に残る</b>。助成金や保護者への活動報告書もワンクリックで作れます。現金手渡しの気まずさから卒業。</p></div>
+            <div class="reason-card"><div class="rc-num">04</div>
+              <div class="rc-ic">${ic('shield',24)}</div>
+              <h3>手数料は、先にぜんぶ見せる</h3>
+              <p><b>受講者10%＋コーチ20%。それだけ</b>です。契約提案の画面で「支払う額」と「受け取る額」をその場で表示。あとから引かれて驚くことがありません。</p></div>
+          </div>
+          <div class="tbl-wrap compare-wrap"><table class="compare compare-s">
             <tr><th></th><th class="mc-col-h">MyCOACH</th><th>一般的な<br>個人指導マッチング</th><th>SNS・人づて</th></tr>
-            <tr><th>チーム・部活単位の契約</th><td class="mc-cell">◎ チーム登録・人数指定OK</td><td>△ 個人レッスン中心</td><td>△ 口約束になりがち</td></tr>
-            <tr><th>コーチの実績</th><td class="mc-cell">◎ 決済記録に基づく指導実績＋<br>事務局発行の実績証明書（URL検証可）</td><td>△ 自己申告プロフィール</td><td>× 確認しづらい</td></tr>
-            <tr><th>本人確認</th><td class="mc-cell">◎ 書類審査つき認証コーチ制度</td><td>○ サービスにより異なる</td><td>× なし</td></tr>
-            <tr><th>契約・決済</th><td class="mc-cell">◎ 提案→承諾→決済→精算まで<br>アプリ内で完結・記録が残る</td><td>○ 決済のみ対応が中心</td><td>× 現金手渡し・記録なし</td></tr>
-            <tr><th>手数料</th><td class="mc-cell">◎ 事前に明示<br>（受講者5%＋コーチ15%）</td><td>△ 20〜30%前後が一般的</td><td>○ なし（その分リスクは自己負担）</td></tr>
-            <tr><th>トラブル時</th><td class="mc-cell">◎ 通報窓口＋事務局対応＋監査記録</td><td>○ 窓口あり</td><td>× 当事者間のみ</td></tr>
+            <tr><th>チーム単位の契約</th><td class="mc-cell">◎</td><td>△</td><td>△</td></tr>
+            <tr><th>実績の証明（記録・証明書）</th><td class="mc-cell">◎</td><td>△<div class="cmp-note">自己申告が中心</div></td><td>×</td></tr>
+            <tr><th>本人確認済みコーチ</th><td class="mc-cell">◎</td><td>○</td><td>×</td></tr>
+            <tr><th>契約・決済・精算の完結</th><td class="mc-cell">◎</td><td>○<div class="cmp-note">決済のみが中心</div></td><td>×<div class="cmp-note">現金手渡し</div></td></tr>
+            <tr><th>手数料の事前明示</th><td class="mc-cell">◎<div class="cmp-note">率を事前明示</div></td><td>△<div class="cmp-note">表示はサービス次第</div></td><td>−</td></tr>
+            <tr><th>トラブル時の窓口</th><td class="mc-cell">◎</td><td>○</td><td>×</td></tr>
           </table></div>
+          <p class="hint" style="text-align:center;margin-top:10px">◎＝標準で対応　○＝サービス・相手による　△＝限定的　×＝仕組みなし（一般的な例との比較です）</p>
         </div>
         <div class="sec">
           <div class="bukatsu-band">
@@ -1828,7 +1860,7 @@ const App = {
     const v=Number(document.getElementById('ct-fee')?.value)||0;
     if(!v){ el.textContent=''; return; }
     const k=feeCalc(v);
-    el.textContent=`受講者の支払額 ${yen(k.charge)}（システム利用料5%込）／ コーチ受取額 ${yen(k.net)}（事務手数料15%控除後）`;
+    el.textContent=`受講者の支払額 ${yen(k.charge)}（システム利用料${Math.round(PLAYER_FEE_RATE*100)}%込）／ コーチ受取額 ${yen(k.net)}（事務手数料${Math.round(COACH_FEE_RATE*100)}%控除後）`;
   },
   async submitContract(matchId, coachId, playerId){
     const v=id=>document.getElementById(id).value.trim();
@@ -2560,7 +2592,7 @@ const App = {
     return `<div class="wrap">
       <div class="stats">
         <div class="stat"><div class="n" style="font-size:22px">${yen(total)}</div><div class="l">決済総額</div></div>
-        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（受講者5%＋コーチ15%）</div></div>
+        <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（受講者10%＋コーチ20%）</div></div>
         <div class="stat"><div class="n">${ps.length}</div><div class="l">決済件数</div></div>
       </div>
       <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">コーチ精算（未払い ${yen(unTotal)}）</h2>
@@ -2733,7 +2765,7 @@ const App = {
     }else if(kind==='payments'){
       name='mycoach_payments.csv';
       const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
-      rows=[['ID','日付','コーチ','受講者','支払総額','レッスン料','受講者手数料5%','コーチ手数料15%','コーチ受取','方法','精算ID']]
+      rows=[['ID','日付','コーチ','受講者','支払総額','レッスン料','受講者手数料10%','コーチ手数料20%','コーチ受取','方法','精算ID']]
         .concat((await DB.allPayments()).map(p=>[p.id,fmtD(p.ts),us[p.coach]||'-',us[p.player]||'-',p.amount,p.base!=null?p.base:'',p.playerFee!=null?p.playerFee:'',p.coachFee!=null?p.coachFee:p.fee,p.net,p.method,p.payoutId||'']));
     }else{
       name='mycoach_payouts.csv';

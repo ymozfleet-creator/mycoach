@@ -18,8 +18,8 @@ const STRIPE_SECRET_KEY = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
 const REGION = 'asia-northeast1';       // 東京リージョン
-const PLAYER_FEE_RATE = 0.05;           // 受講者システム利用料（上乗せ・HTML側と揃える）
-const COACH_FEE_RATE = 0.15;            // コーチ事務手数料（控除・HTML側と揃える）
+const PLAYER_FEE_RATE = 0.10;           // 受講者システム利用料（上乗せ・HTML側と揃える）
+const COACH_FEE_RATE = 0.20;            // コーチ事務手数料（控除・HTML側と揃える）
 const APP_URL = '';                     // 任意: メール内リンク用のアプリURL（例 https://example.github.io/mycoach.html）
 
 /* ---------- 1. Checkoutセッション作成 ---------- */
@@ -43,7 +43,7 @@ exports.createCheckoutSession = onRequest(
       const coach = coachDoc.exists ? coachDoc.data() : {};
       const useConnect = !!(coach.stripeAccountId && coach.stripeChargesEnabled);
 
-      // 手数料モデル：受講者はレッスン料+5%を支払い、コーチはレッスン料-15%を受け取る
+      // 手数料モデル：受講者はレッスン料+10%を支払い、コーチはレッスン料-20%を受け取る
       const base = Number(c.fee);
       const playerFee = Math.round(base * PLAYER_FEE_RATE);
       const coachFee = Math.round(base * COACH_FEE_RATE);
@@ -62,7 +62,7 @@ exports.createCheckoutSession = onRequest(
         lineItems.push({
           price_data: {
             currency: 'jpy',
-            product_data: { name: 'システム利用料（5%）' },
+            product_data: { name: `システム利用料（${Math.round(PLAYER_FEE_RATE*100)}%）` },
             unit_amount: playerFee,
           },
           quantity: 1,
@@ -83,7 +83,7 @@ exports.createCheckoutSession = onRequest(
       };
       if (useConnect) {
         params.payment_intent_data = {
-          // プラットフォーム取り分 = 受講者5% + コーチ15%。残額(net)がコーチ口座へ自動送金される
+          // プラットフォーム取り分 = 受講者10% + コーチ20%。残額(net)がコーチ口座へ自動送金される
           application_fee_amount: charge - net,
           transfer_data: { destination: coach.stripeAccountId },
         };
@@ -119,7 +119,7 @@ exports.stripeWebhook = onRequest(
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const m = s.metadata || {};
-      const amount = s.amount_total; // 受講者の支払総額（レッスン料+5%）
+      const amount = s.amount_total; // 受講者の支払総額（レッスン料+10%）
       const base = Number(m.base) || Math.round(amount / (1 + PLAYER_FEE_RATE));
       const playerFee = Number(m.playerFee) || (amount - base);
       const coachFee = Number(m.coachFee) || Math.round(base * COACH_FEE_RATE);
@@ -231,6 +231,17 @@ exports.recalcRating = onDocumentCreated(
       ratingAvg: Math.round(avg * 10) / 10,
       ratingCount: list.length,
     });
+  }
+);
+
+/* ---------- 2.8 指導実績カウントの再計算（整合性の担保） ---------- */
+exports.recalcLessons = onDocumentCreated(
+  { region: REGION, document: 'payments/{id}' },
+  async (event) => {
+    const p = event.data && event.data.data();
+    if (!p || !p.coach) return;
+    const q = await admin.firestore().collection('payments').where('coach', '==', p.coach).get();
+    await admin.firestore().collection('users').doc(p.coach).update({ lessonCount: q.size });
   }
 );
 
