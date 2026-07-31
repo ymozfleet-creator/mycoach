@@ -448,8 +448,8 @@ const feeCalc = f => { f=Number(f)||0;
   const playerFee=Math.round(f*PLAYER_FEE_RATE), coachFee=Math.round(f*COACH_FEE_RATE);
   return { base:f, playerFee, coachFee, charge:f+playerFee, net:f-coachFee, fee:playerFee+coachFee }; };
 const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
-const STRIPE_CHECKOUT_ENDPOINT = null; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
-const STRIPE_CONNECT_ENDPOINT = null;  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
+const STRIPE_CHECKOUT_ENDPOINT = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createCheckoutSession'; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
+const STRIPE_CONNECT_ENDPOINT  = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createConnectLink';  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
 
 const SPORT_GROUPS = [
   ['球技', ['サッカー','フットサル','野球','ソフトボール','テニス','ソフトテニス','バドミントン','卓球','バスケットボール','バレーボール','ハンドボール','ラグビー','アメリカンフットボール','ホッケー','ラクロス','ゴルフ','ボウリング']],
