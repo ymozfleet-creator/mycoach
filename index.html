@@ -448,8 +448,8 @@ const feeCalc = f => { f=Number(f)||0;
   const playerFee=Math.round(f*PLAYER_FEE_RATE), coachFee=Math.round(f*COACH_FEE_RATE);
   return { base:f, playerFee, coachFee, charge:f+playerFee, net:f-coachFee, fee:playerFee+coachFee }; };
 const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL（固定額のみ・サーバー不要）
-const STRIPE_CHECKOUT_ENDPOINT = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createCheckoutSession'; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
-const STRIPE_CONNECT_ENDPOINT  = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createConnectLink';  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
+const STRIPE_CHECKOUT_ENDPOINT = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createCheckoutSession'; // 本番接続済み
+const STRIPE_CONNECT_ENDPOINT = 'https://asia-northeast1-mycoach-c15ae.cloudfunctions.net/createConnectLink';  // 本番接続済み（コーチの自動受取）
 
 const SPORT_GROUPS = [
   ['球技', ['サッカー','フットサル','野球','ソフトボール','テニス','ソフトテニス','バドミントン','卓球','バスケットボール','バレーボール','ハンドボール','ラグビー','アメリカンフットボール','ホッケー','ラクロス','ゴルフ','ボウリング']],
@@ -917,6 +917,7 @@ const LocalDB = {
     window.addEventListener('storage',onS);
     return ()=>{ clearInterval(iv); window.removeEventListener('storage',onS); };
   },
+  async getContract(id){ const db=this._load(); return db.contracts.find(x=>x.id===id)||null; },
   async createContract(c){ const db=this._load(); const ct={id:uid('ct'),ts:Date.now(),decidedTs:null,status:'proposed',log:[],...c}; db.contracts.push(ct); this._save(db); return ct; },
   async updateContract(id,patch){ const db=this._load(); const ct=db.contracts.find(c=>c.id===id); Object.assign(ct,patch); this._save(db); return ct; },
   async listContracts(me){ return this._load().contracts.filter(c=>c.coach===me||c.player===me).sort((a,b)=>b.ts-a.ts); },
@@ -1091,6 +1092,7 @@ const FireDB = {
     return this._fs.collection('matches').doc(matchId).collection('messages').orderBy('ts')
       .onSnapshot(s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))), err=>console.error('メッセージ購読エラー:', err));
   },
+  async getContract(id){ const d=await this._fs.collection('contracts').doc(id).get(); return d.exists?d.data():null; },
   async createContract(c){ const id=uid('ct'); const ct={id,ts:Date.now(),decidedTs:null,status:'proposed',log:[],...c}; await this._fs.collection('contracts').doc(id).set(ct); return ct; },
   async updateContract(id,patch){ await this._fs.collection('contracts').doc(id).update(patch); const d=await this._fs.collection('contracts').doc(id).get(); return d.data(); },
   async listContracts(me){
@@ -1945,7 +1947,23 @@ const App = {
     const k=feeCalc(v);
     el.textContent=`受講者の支払額 ${yen(k.charge)}（システム利用料${Math.round(PLAYER_FEE_RATE*100)}%込）／ コーチ受取額 ${yen(k.net)}（事務手数料${Math.round(COACH_FEE_RATE*100)}%控除後）`;
   },
+  /* コーチの受取口座（Stripe Connect）設定を契約開始の条件にするゲート。
+     Connect未接続の環境・デモモードでは無効（安全弁） */
+  async _coachPayoutGate(coachId){
+    if(!STRIPE_CONNECT_ENDPOINT || DB.mode==='demo') return true;
+    if(DB._uc) delete DB._uc[coachId]; // 口座設定直後の判定ミスを防ぐためキャッシュを介さない
+    const coach=await DB.getUser(coachId);
+    if(coach && coach.stripeChargesEnabled) return true;
+    if(this.me.id===coachId){
+      this.toast('先にマイページで受取口座（Stripe）を設定してください。設定後に契約を開始できます');
+      this.closeModal(); location.hash='#me';
+    }else{
+      this.toast('このコーチは受取口座が未設定のため、まだ契約を開始できません。コーチの設定完了をお待ちください');
+    }
+    return false;
+  },
   async submitContract(matchId, coachId, playerId){
+    if(!(await this._coachPayoutGate(coachId))) return;
     const v=id=>document.getElementById(id).value.trim();
     const title=v('ct-title'), detail=v('ct-detail'), fee=Number(v('ct-fee')), unit=v('ct-unit'), period=v('ct-period');
     if(!title||!detail||!fee||!period){ this.toast('すべての項目を入力してください'); return; }
@@ -2002,6 +2020,10 @@ const App = {
   },
 
   async ctAction(id, status){
+    if(status==='active'){
+      const ct0=await DB.getContract(id);
+      if(ct0 && !(await this._coachPayoutGate(ct0.coach))) return;
+    }
     const labels={active:'この契約を承諾します。よろしいですか？', declined:'この提案を辞退します。よろしいですか？', completed:'この契約を完了にします。よろしいですか？', cancelled:'解約（または提案の取り下げ）を行います。よろしいですか？'};
     if(!confirm(labels[status])) return;
     const ct=await DB.updateContract(id,{status, decidedTs:Date.now()});
@@ -2090,7 +2112,8 @@ const App = {
               <div class="vb-t" style="color:#0B7A57">${ic('card',14)} レッスン料の受取口座（Stripe）</div>
               ${u.stripeChargesEnabled
                 ?`<span class="pill pill-turf">自動受取 設定済み</span><div class="hint" style="margin-top:6px">決済のたびに、事務手数料${Math.round(COACH_FEE_RATE*100)}%を差し引いた受取分が登録口座へ自動で送金されます。</div>`
-                :`<div class="hint" style="margin-bottom:10px">Stripeで本人確認と口座登録を行うと、レッスン料の受取分が自動で振り込まれるようになります。未設定の間は事務局からの振込（月次精算）です。</div>
+                :`<div class="notice" style="margin-bottom:10px">${ic('warn',13)} <b>受取口座が未設定です。</b>設定が完了するまで、契約の提案・承諾ができません（受講者からの契約開始も保留されます）。</div>
+                  <div class="hint" style="margin-bottom:10px">Stripeで本人確認と銀行口座の登録（5分程度）を行うと、決済のたびに受取分が自動で口座へ振り込まれます。</div>
                   <button class="btn btn-sm btn-turf" onclick="App.connectOnboard()">受取口座を設定する（Stripeへ移動）</button>`}
             </div>`:''}`:''}
           <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label><textarea id="me-intro">${esc(u.intro)}</textarea></div>
