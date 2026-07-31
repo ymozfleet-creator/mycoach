@@ -2206,18 +2206,23 @@ const App = {
   },
 
   _nav(url){ location.href=url; },
+  async _idToken(){
+    try{ return await firebase.auth().currentUser.getIdToken(); }catch(e){ return ''; }
+  },
   async connectOnboard(){
     try{
-      const res=await fetch(STRIPE_CONNECT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({uid:this.me.id, origin:location.origin+location.pathname})});
+      const res=await fetch(STRIPE_CONNECT_ENDPOINT,{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+await this._idToken()},
+        body:JSON.stringify({origin:location.origin+location.pathname})});
       const d=await res.json();
       if(d.url) this._nav(d.url); else throw new Error(d.error||'設定ページの作成に失敗しました');
     }catch(e){ this.toast(e.message||'設定ページの作成に失敗しました'); }
   },
   async stripeCheckout(ctId){
     try{
-      const res=await fetch(STRIPE_CHECKOUT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contractId:ctId, uid:this.me.id, origin:location.origin+location.pathname})});
+      const res=await fetch(STRIPE_CHECKOUT_ENDPOINT,{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+await this._idToken()},
+        body:JSON.stringify({contractId:ctId, origin:location.origin+location.pathname})});
       const d=await res.json();
       if(d.url) this._nav(d.url); else throw new Error(d.error||'決済ページの作成に失敗しました');
     }catch(e){ this.toast(e.message||'決済ページの作成に失敗しました'); }

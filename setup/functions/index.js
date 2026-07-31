@@ -20,7 +20,17 @@ const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 const REGION = 'asia-northeast1';       // 東京リージョン
 const PLAYER_FEE_RATE = 0.10;           // 受講者システム利用料（上乗せ・HTML側と揃える）
 const COACH_FEE_RATE = 0.20;            // コーチ事務手数料（控除・HTML側と揃える）
-const APP_URL = '';                     // 任意: メール内リンク用のアプリURL（例 https://example.github.io/mycoach.html）
+const APP_URL = 'https://ymozfleet-creator.github.io/mycoach/index.html'; // メール内リンク・決済後の戻り先の既定URL
+
+/* IDトークン検証：Authorization: Bearer <token> から本人uidを取得する。
+   ボディで渡されたuidは信用しない（なりすまし・他人の口座リンク取得の防止） */
+async function requireAuth(req, res) {
+  const authz = req.headers.authorization || '';
+  const idToken = authz.startsWith('Bearer ') ? authz.slice(7) : '';
+  if (!idToken) { res.status(401).json({ error: '認証が必要です。再ログインしてお試しください' }); return null; }
+  try { return await admin.auth().verifyIdToken(idToken); }
+  catch (e) { res.status(401).json({ error: 'ログインの有効期限が切れています。再ログインしてください' }); return null; }
+}
 
 /* ---------- 1. Checkoutセッション作成 ---------- */
 exports.createCheckoutSession = onRequest(
@@ -28,9 +38,11 @@ exports.createCheckoutSession = onRequest(
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+      const decoded = await requireAuth(req, res); if (!decoded) return;
       const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-      const { contractId, uid, origin } = req.body || {};
-      if (!contractId || !uid) { res.status(400).json({ error: 'contractId / uid が必要です' }); return; }
+      const { contractId, origin } = req.body || {};
+      const uid = decoded.uid; // 本人のみ。ボディのuidは使用しない
+      if (!contractId) { res.status(400).json({ error: 'contractId が必要です' }); return; }
 
       const snap = await admin.firestore().collection('contracts').doc(contractId).get();
       if (!snap.exists) { res.status(404).json({ error: '契約が見つかりません' }); return; }
@@ -179,9 +191,10 @@ exports.createConnectLink = onRequest(
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+      const decoded = await requireAuth(req, res); if (!decoded) return;
       const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-      const { uid, origin } = req.body || {};
-      if (!uid) { res.status(400).json({ error: 'uid が必要です' }); return; }
+      const { origin } = req.body || {};
+      const uid = decoded.uid; // 本人のコーチアカウントのみ。ボディのuidは使用しない
 
       const ref = admin.firestore().collection('users').doc(uid);
       const snap = await ref.get();
