@@ -16,6 +16,7 @@ admin.initializeApp();
 
 const STRIPE_SECRET_KEY = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
+const STRIPE_WEBHOOK_SECRET_CONNECT = defineSecret('STRIPE_WEBHOOK_SECRET_CONNECT'); // 接続アカウント用宛先の署名シークレット
 
 const REGION = 'asia-northeast1';       // 東京リージョン
 const PLAYER_FEE_RATE = 0.10;           // 受講者システム利用料（上乗せ・HTML側と揃える）
@@ -111,17 +112,19 @@ exports.createCheckoutSession = onRequest(
 
 /* ---------- 2. Stripe Webhook（決済完了の記録） ---------- */
 exports.stripeWebhook = onRequest(
-  { region: REGION, secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET] },
+  { region: REGION, secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_WEBHOOK_SECRET_CONNECT] },
   async (req, res) => {
     const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.rawBody, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET.value()
-      );
-    } catch (e) {
-      res.status(400).send(`Webhook Error: ${e.message}`); return;
+    // Stripeは「自アカウント宛先」と「接続アカウント宛先」で署名シークレットが異なるため、
+    // 両方のシークレットで順に検証する（どちらで署名されたイベントも1つのURLで受ける）
+    let event = null;
+    const sig = req.headers['stripe-signature'];
+    for (const sec of [STRIPE_WEBHOOK_SECRET.value(), STRIPE_WEBHOOK_SECRET_CONNECT.value()]) {
+      if (!sec || sec === 'dummy') continue;
+      try { event = stripe.webhooks.constructEvent(req.rawBody, sig, sec); break; }
+      catch (e) { /* 次のシークレットで再検証 */ }
     }
+    if (!event) { res.status(400).send('Webhook Error: signature verification failed'); return; }
 
     // 冪等化：同一イベントの二重処理を防止（Stripeはリトライ配信する）
     const evRef = admin.firestore().collection('stripe_events').doc(event.id);
