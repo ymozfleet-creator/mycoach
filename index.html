@@ -59,9 +59,9 @@ main{min-height:calc(100vh - 60px);padding-bottom:90px}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff;outline:none;transition:border-color .15s}
+.field input,.field select,.field textarea{resize:vertical;width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff;outline:none;transition:border-color .15s}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--court)}
-.field textarea{min-height:96px;resize:vertical}
+.field textarea{resize:vertical;min-height:96px;resize:vertical}
 .hint{font-size:12px;color:var(--ink2)}
 .pill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 10px}
 .pill-blue{background:var(--court-soft);color:var(--court-deep)}
@@ -123,7 +123,19 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
 .page-head p{color:var(--ink2);font-size:13.5px}
 .filters{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 20px}
 .filters select,.filters input{border:1.5px solid var(--line);border-radius:99px;padding:9px 16px;background:#fff;outline:none;font-size:13.5px}
+/* セレクトのネイティブ矢印を廃し、枠内にカスタム矢印を描画（PCでの枠外はみ出し対策） */
+.filters select,.field select,.adm-toolbar select{
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235A6B7E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 14px center;background-color:#fff;
+  padding-right:38px;cursor:pointer}
+.filters select::-ms-expand,.field select::-ms-expand{display:none}
 .filters input{flex:1;min-width:150px}
+@media(max-width:640px){
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .filters select{width:100%;min-width:0}
+  .filters input{grid-column:1/-1;min-width:0}
+}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:15px}
 .ucard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;position:relative;transition:transform .15s}
 .ucard:hover{transform:translateY(-2px)}
@@ -132,7 +144,8 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
 .avatar.lg{width:74px;height:74px;font-size:36px}
 .ucard .nm{font-weight:800;font-size:15.5px;font-family:'M PLUS Rounded 1c',sans-serif}
 .ucard .meta{font-size:12px;color:var(--ink2)}
-.ucard .intro{font-size:13px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px}
+.ucard .intro{font-size:13px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ucard .intro:empty{display:none}
 .ucard .ft{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
 .fee{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;color:var(--court)}
 .fee small{font-family:'Noto Sans JP';font-size:11px;color:var(--ink2);font-weight:500}
@@ -153,6 +166,8 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
 .match-fx .avatar{width:92px;height:92px;font-size:44px;border:4px solid #fff;background:#fff}
 .match-fx .av-l{animation:slideL .5s cubic-bezier(.2,.9,.3,1.2)}
 .match-fx .av-r{animation:slideR .5s cubic-bezier(.2,.9,.3,1.2);margin-left:-14px}
+.fx-sub{background:transparent;border:1.5px solid rgba(255,255,255,.55);color:#fff;border-radius:99px;padding:9px 24px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s}
+.fx-sub:hover{background:rgba(255,255,255,.14)}
 .match-fx h2{font-family:'Oswald',sans-serif;font-size:56px;font-weight:600;letter-spacing:.1em;margin-top:18px;animation:pop .4s .3s both}
 .match-fx p{opacity:.9;margin-top:6px;animation:fade .4s .45s both}
 .match-fx .btn{margin-top:22px;background:#fff;color:var(--court)}
@@ -485,13 +500,13 @@ const SPORT_ICON = {}; SPORTS.forEach(s => SPORT_ICON[s] = ic(SPORT_PICT[s]||'je
 const AREAS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県','オンライン'];
 
 /* ============ 法務文書 ============
-   株式会社ark「部勝（ブカツ）」の規約（2026年2月27日版）をベースに、
+   「部勝（ブカツ）」の規約（2026年2月27日版）をベースに、運営者を個人事業主RELIGHTとし、
    MyCOACHのサービス内容（マッチング／両建て手数料／認証コーチ制度）へ適合させたものです。 */
 const LEGAL = {
   terms: { title:'利用規約', body:`
 <div class="legal-date">制定日: 2026年7月29日</div>
 <h2>第1条（総則）</h2>
-<p>この利用規約（以下「本規約」）は、株式会社ark（以下「当社」）が提供するスポーツ指導者マッチングプラットフォーム「MyCOACH」（以下「本サービス」）の利用条件を定めるものです。利用者は、本サービスの利用開始をもって本規約に同意したものとみなされます。</p>
+<p>この利用規約（以下「本規約」）は、RELIGHT（個人事業主・事業主：茂住 雄太。以下「運営者」）が提供するスポーツ指導者マッチングプラットフォーム「MyCOACH」（以下「本サービス」）の利用条件を定めるものです。利用者は、本サービスの利用開始をもって本規約に同意したものとみなされます。</p>
 <h2>第2条（定義）</h2>
 <ul>
 <li><b>利用者</b>：本サービスに登録した全てのユーザー（コーチ・受講者を含む）</li>
@@ -507,7 +522,7 @@ const LEGAL = {
 <li>登録情報に虚偽がないこと</li>
 </ul>
 <p>2. 18歳未満の方は保護者（法定代理人）の同意を得た上で登録するものとし、保護者は未成年の利用者の利用について連帯して責任を負います。登録時の同意チェックをもって保護者の同意を得たものとみなします。</p>
-<p>3. 当社は、虚偽情報の登録、過去の規約違反、反社会的勢力への該当、その他当社が不適切と判断した場合に登録を拒否・取消しできます。</p>
+<p>3. 運営者は、虚偽情報の登録、過去の規約違反、反社会的勢力への該当、その他運営者が不適切と判断した場合に登録を拒否・取消しできます。</p>
 <h2>第4条（アカウント管理）</h2>
 <p>1. 利用者は、自身のアカウント情報（メールアドレス・パスワード）を適切に管理する義務を負います。</p>
 <p>2. アカウントの第三者への譲渡・貸与は禁止します。</p>
@@ -516,33 +531,33 @@ const LEGAL = {
 <p>本サービスの利用に関する手数料は以下の通りです。表示金額はすべて税込です。</p>
 <ul>
 <li><b>受講者システム利用料</b>：レッスン料の10%（税込）。レッスン料に上乗せして受講者にご負担いただきます。</li>
-<li><b>コーチ事務手数料</b>：レッスン料の20%（税込）。当社がレッスン料から控除した金額をコーチに支払います。</li>
+<li><b>コーチ事務手数料</b>：レッスン料の20%（税込）。運営者がレッスン料から控除した金額をコーチに支払います。</li>
 <li><b>無料機能</b>：登録・コーチ／受講者の検索・いいね・マッチング・メッセージ</li>
 </ul>
-<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,500（税込）、コーチ受取額 ¥4,000、当社手数料合計 ¥1,500（税込）</p>
+<p>例：レッスン料¥5,000の場合、受講者お支払額 ¥5,500（税込）、コーチ受取額 ¥4,000、運営者手数料合計 ¥1,500（税込）</p>
 <p>手数料の変更は、変更日の30日前までに本サービス上で通知します。</p>
 <p>なお、コーチへの報酬は受講者とコーチ間の契約に基づくものであり、源泉徴収義務の有無については各自の税務状況に応じて判断してください。</p>
 <h2>第6条（決済）</h2>
-<p>1. 決済は Stripe, Inc. が提供する決済サービスを利用します。クレジットカード情報は当社のサーバーに保存されず、PCI DSS Level 1 準拠の Stripe サーバーにて管理されます。</p>
-<p>2. コーチへの報酬は、Stripe Connect による自動分配、または当社からの振込により支払われます。Stripe Connect による受取にはコーチ自身による Stripe アカウントの開設が必要です。</p>
+<p>1. 決済は Stripe, Inc. が提供する決済サービスを利用します。クレジットカード情報は運営者のサーバーに保存されず、PCI DSS Level 1 準拠の Stripe サーバーにて管理されます。</p>
+<p>2. コーチへの報酬は、Stripe Connect による自動分配、または運営者からの振込により支払われます。Stripe Connect による受取にはコーチ自身による Stripe アカウントの開設が必要です。</p>
 <p>3. 決済に関する紛争（チャージバック等）は Stripe の規定に従い処理されます。</p>
-<p>4. 当社が認める場合、銀行振込等の方法によることができます。この場合、利用者は本サービス上で支払いの記録を行うものとします。</p>
+<p>4. 運営者が認める場合、銀行振込等の方法によることができます。この場合、利用者は本サービス上で支払いの記録を行うものとします。</p>
 <h2>第7条（コーチと受講者間の契約）</h2>
-<p>1. 本サービスはコーチと受講者のマッチングを仲介するプラットフォームです。コーチと受講者間の指導契約は両者間で直接成立し、当社はその当事者ではありません。</p>
-<p>2. 当社はコーチの指導の質、資格の有効性、指導内容の適法性について保証しません。</p>
+<p>1. 本サービスはコーチと受講者のマッチングを仲介するプラットフォームです。コーチと受講者間の指導契約は両者間で直接成立し、運営者はその当事者ではありません。</p>
+<p>2. 運営者はコーチの指導の質、資格の有効性、指導内容の適法性について保証しません。</p>
 <p>3. 料金・日程等の交渉は本サービスのメッセージ機能を通じて行うことができ、最終的な条件は両者の合意に基づきます。</p>
-<p>4. コーチの指導に起因する事故・怪我・損害について、当社はプラットフォーム提供者としての立場に限られ、直接的な責任を負う立場にありません。スポーツ保険等への加入を推奨します。</p>
+<p>4. コーチの指導に起因する事故・怪我・損害について、運営者はプラットフォーム提供者としての立場に限られ、直接的な責任を負う立場にありません。スポーツ保険等への加入を推奨します。</p>
 <h2>第8条（チームでの利用）</h2>
 <p>1. チームとして登録する場合、チーム代表者がチームを代表して本サービスを利用し、契約を締結するものとします。</p>
 <p>2. チーム代表者は、レッスン契約の内容を構成員（未成年者の場合はその保護者）に周知し、必要な同意を得る責任を負います。</p>
 <p>3. チーム代表者が構成員の情報を本サービスに登録する場合、本人（未成年者の場合はその保護者）の同意を得た上で行うものとします。</p>
 <h2>第9条（認証コーチ制度）</h2>
-<p>1. コーチは、本人確認書類を提出して認証を申請できます。当社は提出された書類を確認のうえ、認証バッジを付与します。</p>
-<p>2. 認証バッジは、当社が本人確認書類を確認したことを示すものであり、指導の品質、安全性、資格の有効性等を保証するものではありません。</p>
+<p>1. コーチは、本人確認書類を提出して認証を申請できます。運営者は提出された書類を確認のうえ、認証バッジを付与します。</p>
+<p>2. 認証バッジは、運営者が本人確認書類を確認したことを示すものであり、指導の品質、安全性、資格の有効性等を保証するものではありません。</p>
 <p>3. 提出された本人確認書類は認証審査の目的にのみ利用し、運営担当者以外は閲覧できません。</p>
 <h2>第10条（レビュー）</h2>
-<p>1. レビューは利用者の主観的評価であり、当社はその正確性を保証しません。</p>
-<p>2. 当社は、虚偽または不適切と判断したレビューを事前通知なく削除できます。</p>
+<p>1. レビューは利用者の主観的評価であり、運営者はその正確性を保証しません。</p>
+<p>2. 運営者は、虚偽または不適切と判断したレビューを事前通知なく削除できます。</p>
 <h2>第11条（禁止事項）</h2>
 <ul>
 <li>虚偽情報の登録・掲載</li>
@@ -553,30 +568,30 @@ const LEGAL = {
 <li>商業目的でのスパム行為・営業活動</li>
 <li>他の利用者の個人情報の無断収集・流用</li>
 <li>手数料を回避する目的でのサービス外取引</li>
-<li>当社または第三者の知的財産権を侵害する行為</li>
+<li>運営者または第三者の知的財産権を侵害する行為</li>
 </ul>
 <h2>第12条（コンテンツ）</h2>
 <p>1. 利用者は自身が投稿・登録したコンテンツについて適法な権利を有していることを保証します。</p>
-<p>2. 利用者は当社に対しコンテンツをサービスの提供・改善に必要な範囲で使用する非独占的ライセンスを許諾します。</p>
-<p>3. 当社は違法または本規約に違反するコンテンツを事前通知なく削除できます。</p>
+<p>2. 利用者は運営者に対しコンテンツをサービスの提供・改善に必要な範囲で使用する非独占的ライセンスを許諾します。</p>
+<p>3. 運営者は違法または本規約に違反するコンテンツを事前通知なく削除できます。</p>
 <h2>第13条（アカウント停止・退会）</h2>
-<p>1. 当社は規約違反の場合、事前通知なくアカウントの一時停止または削除を行うことができます。</p>
+<p>1. 運営者は規約違反の場合、事前通知なくアカウントの一時停止または削除を行うことができます。</p>
 <p>2. 利用者はマイページよりいつでも退会できます。必要なデータは退会前に保存してください。退会後のデータ復元はできません。</p>
 <p>3. 未決済の手数料・料金の支払義務、および進行中の契約に関する義務は退会後も消滅しません。</p>
 <h2>第14条（サービスの変更・中断・終了）</h2>
-<p>1. 当社は事前通知の上、本サービスの内容を変更・中断・終了できます。緊急時（システム障害・セキュリティ上の脅威等）は事前通知なくサービスを中断することがあります。</p>
+<p>1. 運営者は事前通知の上、本サービスの内容を変更・中断・終了できます。緊急時（システム障害・セキュリティ上の脅威等）は事前通知なくサービスを中断することがあります。</p>
 <p>2. サービスの変更等により生じた損害について、故意または重過失がある場合を除き責任を負いません。</p>
 <h2>第15条（免責事項）</h2>
-<p>1. 当社は本サービスの完全性・正確性・安全性・可用性について保証しません。ただし、当社の故意または重大な過失による場合はこの限りではありません。</p>
-<p>2. 利用者間のトラブル（コーチと受講者間の紛争、利用者間の人間関係の問題等）については、当事者間で解決するものとします。ただし、当社は必要に応じて情報提供等の協力を行います。</p>
-<p>3. 天災・停電・通信障害等の不可抗力により生じた損害については、当社の故意または重大な過失による場合を除き、責任を負いません。</p>
-<p>4. 当社の賠償責任は、当社の故意または重大な過失による場合を除き、当該利用者が過去12ヶ月間に本サービスに支払った手数料の総額を上限とします。なお、消費者契約法その他の強行法規により当社の責任が免除できない場合はこの限りではありません。</p>
+<p>1. 運営者は本サービスの完全性・正確性・安全性・可用性について保証しません。ただし、運営者の故意または重大な過失による場合はこの限りではありません。</p>
+<p>2. 利用者間のトラブル（コーチと受講者間の紛争、利用者間の人間関係の問題等）については、当事者間で解決するものとします。ただし、運営者は必要に応じて情報提供等の協力を行います。</p>
+<p>3. 天災・停電・通信障害等の不可抗力により生じた損害については、運営者の故意または重大な過失による場合を除き、責任を負いません。</p>
+<p>4. 運営者の賠償責任は、運営者の故意または重大な過失による場合を除き、当該利用者が過去12ヶ月間に本サービスに支払った手数料の総額を上限とします。なお、消費者契約法その他の強行法規により運営者の責任が免除できない場合はこの限りではありません。</p>
 <h2>第16条（知的財産権）</h2>
-<p>1. 本サービスに関する知的財産権（著作権、商標権等）は当社または正当な権利者に帰属します。</p>
-<p>2. 利用者は、本サービスの利用にあたり取得した情報を、当社の事前の書面による承諾なく、複製・改変・再配布等することはできません。</p>
-<p>3. 利用者が本サービス上で作成・入力したデータ（プロフィール、メッセージ内容等）の知的財産権は、当該利用者に帰属します。ただし、当社はサービスの運営・改善に必要な範囲で当該データを利用できるものとします。</p>
+<p>1. 本サービスに関する知的財産権（著作権、商標権等）は運営者または正当な権利者に帰属します。</p>
+<p>2. 利用者は、本サービスの利用にあたり取得した情報を、運営者の事前の書面による承諾なく、複製・改変・再配布等することはできません。</p>
+<p>3. 利用者が本サービス上で作成・入力したデータ（プロフィール、メッセージ内容等）の知的財産権は、当該利用者に帰属します。ただし、運営者はサービスの運営・改善に必要な範囲で当該データを利用できるものとします。</p>
 <h2>第17条（規約の変更）</h2>
-<p>1. 当社は本規約を変更する場合、変更内容および効力発生時期を本サービス上で通知します。重要な変更の場合、効力発生の14日前までに通知します。</p>
+<p>1. 運営者は本規約を変更する場合、変更内容および効力発生時期を本サービス上で通知します。重要な変更の場合、効力発生の14日前までに通知します。</p>
 <p>2. 変更後に本サービスを継続利用した場合、変更後の規約に同意したものとみなします。</p>
 <h2>第18条（準拠法・管轄裁判所）</h2>
 <p>本規約の解釈・適用は日本法に準拠し、紛争は東京地方裁判所を第一審の専属的合意管轄裁判所とします。</p>
@@ -584,14 +599,14 @@ const LEGAL = {
 <p>利用者は現在および将来にわたり反社会的勢力に該当しないこと、および反社会的勢力と関係を有しないことを表明し保証します。</p>
 <h2>第20条（消費者保護に関する注意事項）</h2>
 <p>1. 本規約の各条項は、消費者契約法その他の強行法規に反しない範囲で適用されます。強行法規に反する条項がある場合、当該条項は強行法規が許容する最大限の範囲で有効とします。</p>
-<p>2. 当社は決済を仲介するプラットフォーム提供者であり、コーチと受講者間の契約の当事者ではありません。本サービス上の「契約」「請求」等の表現は、サービスの機能を説明する便宜上のものであり、当社が法的な契約締結を保証・代行するものではありません。</p>
+<p>2. 運営者は決済を仲介するプラットフォーム提供者であり、コーチと受講者間の契約の当事者ではありません。本サービス上の「契約」「請求」等の表現は、サービスの機能を説明する便宜上のものであり、運営者が法的な契約締結を保証・代行するものではありません。</p>
 <p>3. コーチと受講者間の指導契約は両者が直接締結するものであり、契約内容・報酬・損害賠償等については当事者間で解決してください。必要に応じて弁護士等の専門家にご相談ください。</p>
 <h2>お問い合わせ</h2>
-<p>株式会社ark ／ kanri&#64;mycoach-myteam.com</p>` },
+<p>RELIGHT（事業主：茂住 雄太）／ kanri&#64;mycoach-myteam.com</p>` },
 
   privacy: { title:'プライバシーポリシー', body:`
 <div class="legal-date">制定日: 2026年7月29日</div>
-<p>株式会社ark（以下「当社」）は、スポーツ指導者マッチングプラットフォーム「MyCOACH」（以下「本サービス」）における個人情報の取り扱いについて、以下の通り定めます。</p>
+<p>RELIGHT（個人事業主・事業主：茂住 雄太。以下「運営者」）は、スポーツ指導者マッチングプラットフォーム「MyCOACH」（以下「本サービス」）における個人情報の取り扱いについて、以下の通り定めます。</p>
 <h2>1. 収集する個人情報</h2>
 <h3>（1）利用者が直接提供する情報</h3>
 <ul>
@@ -610,8 +625,8 @@ const LEGAL = {
 </ul>
 <h3>（3）決済に関する情報</h3>
 <ul>
-<li>決済履歴・取引金額（当社が保持）</li>
-<li>クレジットカード情報（Stripe, Inc. が管理。当社のサーバーには一切保存しません）</li>
+<li>決済履歴・取引金額（運営者が保持）</li>
+<li>クレジットカード情報（Stripe, Inc. が管理。運営者のサーバーには一切保存しません）</li>
 </ul>
 <h3>（4）自動的に収集される情報</h3>
 <ul>
@@ -629,7 +644,7 @@ const LEGAL = {
 <li>法令に基づく対応</li>
 </ul>
 <h2>3. 第三者への提供・委託</h2>
-<p>当社は以下の場合を除き、利用者の同意なく個人情報を第三者に提供しません。</p>
+<p>運営者は以下の場合を除き、利用者の同意なく個人情報を第三者に提供しません。</p>
 <ul>
 <li><b>Google LLC</b>：認証・データベース・ホスティング（Firebase）のため</li>
 <li><b>Stripe, Inc.</b>：決済処理のため</li>
@@ -647,7 +662,7 @@ const LEGAL = {
 <h2>6. セキュリティ</h2>
 <ul>
 <li>SSL/TLS暗号化通信によるデータ保護</li>
-<li>認証情報は Firebase Authentication により管理され、当社はパスワードを保持しません</li>
+<li>認証情報は Firebase Authentication により管理され、運営者はパスワードを保持しません</li>
 <li>権限に基づくアクセス制御（本人確認書類は運営のみ閲覧可能）</li>
 <li>入力値のエスケープ処理によるXSS対策</li>
 </ul>
@@ -656,28 +671,28 @@ const LEGAL = {
 <p>2. 第三者のトラッキングCookieは使用しません。</p>
 <p>3. ブラウザの設定からローカルストレージのデータを削除できますが、サービスの利用に支障が生じる場合があります。</p>
 <h2>8. 利用者の権利</h2>
-<p>利用者は個人情報保護法に基づき、当社が保有する自己の個人情報の開示・訂正・追加・削除・利用停止・消去を請求できます。請求は kanri&#64;mycoach-myteam.com までご連絡ください。本人確認の上、合理的な期間内に対応します。</p>
+<p>利用者は個人情報保護法に基づき、運営者が保有する自己の個人情報の開示・訂正・追加・削除・利用停止・消去を請求できます。請求は kanri&#64;mycoach-myteam.com までご連絡ください。本人確認の上、合理的な期間内に対応します。</p>
 <h2>9. 未成年者の個人情報</h2>
 <p>1. 18歳未満の利用者の個人情報は、保護者の同意を得た上で収集・管理します。登録時の同意チェックをもって保護者の同意確認とします。</p>
 <p>2. 保護者はいつでも未成年の利用者の個人情報の開示・訂正・削除を請求できます。</p>
 <p>3. 未成年の利用者に関する情報は、特に慎重に管理し、サービス提供の目的以外では利用しません。</p>
 <h2>10. ポリシーの変更</h2>
-<p>当社は本ポリシーを変更する場合、変更内容を本サービス上で通知します。重要な変更は効力発生の14日前までに通知します。</p>
+<p>運営者は本ポリシーを変更する場合、変更内容を本サービス上で通知します。重要な変更は効力発生の14日前までに通知します。</p>
 <h2>11. お問い合わせ</h2>
-<p>株式会社ark 個人情報保護管理者<br>kanri&#64;mycoach-myteam.com</p>` },
+<p>RELIGHT 個人情報保護管理者：茂住 雄太<br>kanri&#64;mycoach-myteam.com</p>` },
 
   tokushoho: { title:'特定商取引法に基づく表記', body:`
 <table class="legal-tbl">
-<tr><th>販売事業者名</th><td>株式会社ark</td></tr>
+<tr><th>事業者名</th><td>RELIGHT（個人事業主）</td></tr>
 <tr><th>サービス名称</th><td>MyCOACH</td></tr>
-<tr><th>運営統括責任者</th><td>茂住 雄太</td></tr>
+<tr><th>事業主（代表）</th><td>茂住 雄太</td></tr>
 <tr><th>所在地</th><td>〒165-0023 東京都中野区江原町2-13-13</td></tr>
 <tr><th>お問い合わせ</th><td>メール：kanri&#64;mycoach-myteam.com<br>電話番号：請求があった場合に遅滞なく開示いたします。<br><span class="hint">※お問い合わせはメールにて承ります。原則5営業日以内に返信いたします。</span></td></tr>
-<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. 受講者システム利用料（税込）：</b>レッスン料の10%。レッスン料に上乗せしてご請求します。<br><b>3. コーチ事務手数料（税込）：</b>レッスン料の20%。当社がレッスン料から控除してコーチにお支払いします（受講者のご負担はありません）。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,500、コーチ受取額 ¥4,000<br><b>4. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
-<tr><th>支払方法</th><td>クレジットカード決済（Visa, Mastercard, JCB, American Express）<br><span class="hint">※決済処理は Stripe, Inc. を通じて行われます。当社が認める場合、銀行振込等によることができます。</span></td></tr>
+<tr><th>販売価格</th><td><b>1. レッスン料：</b>各コーチのプロフィールに表示された金額（税込）<br><b>2. 受講者システム利用料（税込）：</b>レッスン料の10%。レッスン料に上乗せしてご請求します。<br><b>3. コーチ事務手数料（税込）：</b>レッスン料の20%。運営者がレッスン料から控除してコーチにお支払いします（受講者のご負担はありません）。<br>　例）レッスン料¥5,000の場合：受講者お支払額 ¥5,500、コーチ受取額 ¥4,000<br><b>4. 無料機能：</b>登録・検索・いいね・マッチング・メッセージ<br><span class="hint">※表示金額はすべて税込です。</span></td></tr>
+<tr><th>支払方法</th><td>クレジットカード決済（Visa, Mastercard, JCB, American Express）<br><span class="hint">※決済処理は Stripe, Inc. を通じて行われます。運営者が認める場合、銀行振込等によることができます。</span></td></tr>
 <tr><th>支払時期</th><td>・都度契約：契約成立後、本サービス上の案内に従いお支払いください<br>・月額契約：毎月、本サービス上の支払い手続きによりお支払いください</td></tr>
 <tr><th>役務の提供時期</th><td>・レッスン：決済完了後、コーチと合意した日時に提供<br>・無料機能：アカウント登録完了後、直ちに利用可能</td></tr>
-<tr><th>返品・キャンセル</th><td><b>原則：</b>デジタルサービスの性質上、決済完了後の利用者都合による返金は原則お受けできません。<br><br><b>例外（返金対象）：</b><br>・コーチの無断欠席等によりレッスンが提供されなかった場合<br>・システム障害により決済が重複した場合<br>・当社の責に帰すべき事由がある場合<br><br><b>月額契約の解約：</b>次回のお支払い前に本サービス上で解約手続きを行ってください。既に決済済みの分は返金対象外です。<br><br>返金のご申請は kanri&#64;mycoach-myteam.com までご連絡ください。</td></tr>
+<tr><th>返品・キャンセル</th><td><b>原則：</b>デジタルサービスの性質上、決済完了後の利用者都合による返金は原則お受けできません。<br><br><b>例外（返金対象）：</b><br>・コーチの無断欠席等によりレッスンが提供されなかった場合<br>・システム障害により決済が重複した場合<br>・運営者の責に帰すべき事由がある場合<br><br><b>月額契約の解約：</b>次回のお支払い前に本サービス上で解約手続きを行ってください。既に決済済みの分は返金対象外です。<br><br>返金のご申請は kanri&#64;mycoach-myteam.com までご連絡ください。</td></tr>
 <tr><th>動作環境</th><td>推奨ブラウザ：Google Chrome、Safari、Edge の最新版<br>JavaScript の有効化およびインターネット接続が必要です</td></tr>
 </table>` },
 };
@@ -1638,6 +1653,12 @@ const App = {
   async openProfile(id){
     const u=await DB.getUser(id); if(!u) return;
     const isCoach=u.role==='coach';
+    // いいね・マッチ状態の判定
+    const g=await DB.getLikes(this.me.id);
+    const sent=g.sent.some(l=>l.to===u.id);
+    const recv=g.received.some(l=>l.from===u.id);
+    const mid=[this.me.id,u.id].sort().join('__');
+    const mt=await DB.getMatch(mid).catch(()=>null);
     const rvs=await DB.listReviews(id);
     const rvHtml=(await Promise.all(rvs.slice(0,3).map(async r=>{ const f=await DB.getUser(r.from);
       return `<div style="border-top:1px solid var(--line);padding:8px 0;font-size:12.5px"><span class="rate">${stars(r.rating,11)}</span> <b>${esc(f?.name||'退会ユーザー')}</b><div style="color:var(--ink2)">${esc(r.comment||'')}</div></div>`; }))).join('');
@@ -1657,14 +1678,28 @@ const App = {
       </div>
       <p style="margin:16px 0;font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(u.intro)}</p>
       ${rvs.length?`<div style="margin:0 0 14px"><div style="font-weight:800;font-size:13px">レビュー（${rvs.length}件）</div>${rvHtml}</div>`:''}
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('thumb')} いいねを送る</button>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        ${mt
+          ?`<a class="btn btn-turf btn-block" href="#chat/${mid}" onclick="App.closeModal()">${ic('chat')} メッセージを送る</a>`
+          :recv
+            ?`<button class="btn btn-flag btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('heart')} いいねを返す</button>`
+            :sent
+              ?`<button class="btn btn-soft btn-block" disabled style="opacity:.65;cursor:default">${ic('check')} いいね送信済み（相手の返事を待っています）</button>`
+              :`<button class="btn btn-primary btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('thumb')} いいねを送る</button>`}
         <button class="btn btn-danger-soft btn-sm" onclick="App.openReport('${u.id}')">通報</button>
-      </div>`);
+      </div>
+      ${mt?`<div style="text-align:center;margin-top:10px"><span class="pill pill-turf">${ic('check',11)} マッチ済み</span></div>`:''}`);
   },
 
   async sendLike(to){
     try{
+    // マッチ済み・送信済みの再タップをガード
+    const mid0=[this.me.id,to].sort().join('__');
+    const ex=await DB.getMatch(mid0).catch(()=>null);
+    if(ex){ this.toast('すでにマッチ済みです。メッセージからやり取りできます'); location.hash='#chat/'+mid0; return; }
+    const g0=await DB.getLikes(this.me.id);
+    if(g0.sent.some(l=>l.to===to) && !g0.received.some(l=>l.from===to)){
+      this.toast('いいねは送信済みです。相手の返事を待ちましょう'); return; }
     const r=await DB.like(this.me.id,to);
     if(r.matched){
       const other=await DB.getUser(to);
@@ -1688,8 +1723,8 @@ const App = {
       </div>
       <h2>MATCH!</h2>
       <p>${esc(other.name)} さんとマッチしました<br>メッセージで挨拶してみましょう。</p>
-      <button class="btn" onclick="this.closest('.match-fx').remove();location.hash='#chat/${matchId}'">${ic('chat')} メッセージを送る</button>
-      <div><button class="btn btn-sm" style="color:#fff;opacity:.8" onclick="this.closest('.match-fx').remove();App.route()">あとで</button></div>
+      <button class="btn fx-main" onclick="this.closest('.match-fx').remove();location.hash='#chat/${matchId}'">${ic('chat')} メッセージを送る</button>
+      <div style="margin-top:14px"><button class="fx-sub" onclick="this.closest('.match-fx').remove();App.route()">あとでメッセージする</button></div>
     </div>`;
     document.body.appendChild(el);
   },
@@ -2028,7 +2063,7 @@ const App = {
                   <button class="btn btn-sm btn-turf" onclick="App.connectOnboard()">受取口座を設定する（Stripeへ移動）</button>`}
             </div>`:''}`:''}
           <div class="field"><label>${isCoach?'自己紹介・指導内容':'目標・希望する指導内容'}</label><textarea id="me-intro">${esc(u.intro)}</textarea></div>
-          <button class="btn btn-primary btn-block" onclick="App.saveMe()">プロフィールを保存</button>
+          <button class="btn btn-primary btn-block" style="margin-top:16px;margin-bottom:14px" onclick="App.saveMe()">プロフィールを保存</button>
           <a class="btn btn-ghost btn-block btn-sm" href="#news" style="margin-bottom:10px">${ic('megaphone',14)} 運営からのお知らせを見る</a>
           <a class="btn btn-ghost btn-block btn-sm" href="#report" style="margin-bottom:10px">${ic('doc',14)} ${isCoach?'指導実績レポートを作成（印刷/PDF）':'活動報告書を作成（印刷/PDF）'}</a>
           ${!isCoach&&u.playerType==='team'?`
@@ -2256,7 +2291,7 @@ const App = {
           </table>`:''}
           <p class="hint">本レポートはMyCOACHのプラットフォーム記録（契約・決済データ）から自動生成されたものです。学校・自治体・保護者の皆さまへの活動報告や、助成金申請の添付資料としてご利用いただけます。</p>
           <div class="cert-foot" style="margin-top:16px">
-            <div><div class="cert-issuer">MyCOACH（株式会社ark）</div></div>
+            <div><div class="cert-issuer">MyCOACH（運営：RELIGHT）</div></div>
           </div>
         </div>
       </div>
@@ -2296,7 +2331,7 @@ const App = {
           <div class="cert-foot">
             <div>
               <div class="cert-date">発行日：${fmtD(c.issuedTs)}</div>
-              <div class="cert-issuer">MyCOACH事務局（株式会社ark）</div>
+              <div class="cert-issuer">MyCOACH事務局（運営：RELIGHT）</div>
               <div class="hint" style="margin-top:6px">真正性の確認：本ページのURL（証明書番号）にアクセスすると、いつでも発行状況を確認できます。</div>
             </div>
             <div class="cert-seal">${ic('shield',26)}<span>MyCOACH<br>事務局</span></div>
