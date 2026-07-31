@@ -1237,8 +1237,21 @@ const App = {
     const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
     document.body.appendChild(t); setTimeout(()=>t.remove(),2600); },
 
-  route(){
+  async route(){
     if(this.unsubChat){ this.unsubChat(); this.unsubChat=null; }
+    /* 防御：画面上のユーザー(App.me)とFirebase認証セッションのuidが食い違うと、
+       uid照合を伴う全読み取りが権限エラーになる（別タブでのログインで発生）。
+       検知したら安全のため強制サインアウトして再ログインを促す */
+    if(DB.mode!=='demo' && this.me && typeof firebase!=='undefined'){
+      const cu=firebase.auth().currentUser;
+      if(!cu || cu.uid!==this.me.id){
+        this.me=null;
+        try{ await DB.signOutUser(); }catch(e){}
+        this.toast('別のアカウントでのログインを検知したため、安全のためサインアウトしました。もう一度ログインしてください');
+        location.hash='#login';
+        return this.viewAuth('login');
+      }
+    }
     const h=location.hash;
     if(h.startsWith('#legal/')) return this.viewLegal(h.split('/')[1]);
     if(h.startsWith('#cert/')) return this.viewCert(h.slice(6));
