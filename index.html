@@ -416,15 +416,11 @@ footer a{color:var(--ink2)}
                 または STRIPE_PAYMENT_LINK に固定額のPayment Link URLを設定（簡易）
         - メール通知: Firebase Extensions「Trigger Email」の導入を推奨
    ========================================================================= */
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyASnST0dVT_0qDFxuELauG-uOqJPH_32D8",
-      authDomain: "mycoach-c15ae.firebaseapp.com",
-      projectId: "mycoach-c15ae",
-      storageBucket: "mycoach-c15ae.firebasestorage.app",
-      messagingSenderId: "716654384254",
-      appId: "1:716654384254:web:af387e47a2288bbde5b42f",
-      measurementId: "G-8TGR7Q8Y8L"
-    };
+const FIREBASE_CONFIG = null; /* 例:
+const FIREBASE_CONFIG = {
+  apiKey: "...", authDomain: "xxx.firebaseapp.com", projectId: "xxx",
+  storageBucket: "xxx.appspot.com", messagingSenderId: "...", appId: "..."
+}; */
 
 const PLAYER_FEE_RATE = 0.10;  // 受講者システム利用料（レッスン料に上乗せ・10%）
 const COACH_FEE_RATE  = 0.20;  // コーチ事務手数料（レッスン料から控除・20%）
@@ -1007,13 +1003,21 @@ const FireDB = {
   async listUsers(role){ const q=await this._fs.collection('users').where('role','==',role).get(); return q.docs.map(d=>d.data()).filter(u=>!u.suspended&&!u.deleted); },
   async allUsers(){ const q=await this._fs.collection('users').get(); return q.docs.map(d=>d.data()); },
   async like(from,to){
-    await this._fs.collection('likes').doc(`${from}_${to}`).set({from,to,ts:Date.now()});
+    // 自分のいいねは未作成の場合のみ作成（既存docへのsetはルール上updateとなり拒否されるため）
+    const mine=await this._fs.collection('likes').doc(`${from}_${to}`).get();
+    if(!mine.exists) await this._fs.collection('likes').doc(`${from}_${to}`).set({from,to,ts:Date.now()});
     const rev=await this._fs.collection('likes').doc(`${to}_${from}`).get();
     let matchId=null;
     if(rev.exists){
       matchId=[from,to].sort().join('__');
-      const m=this._fs.collection('matches').doc(matchId);
-      if(!(await m.get()).exists) await m.set({id:matchId,users:[from,to],ts:Date.now()});
+      try{
+        // 事前の存在確認getはしない（未存在docのreadはルールで拒否されるため）。直接作成し、
+        // 既存だった場合（update拒否）は読み取りで存在を確認できればマッチ成立として扱う
+        await this._fs.collection('matches').doc(matchId).set({id:matchId,users:[from,to],ts:Date.now()});
+      }catch(e){
+        const ex=await this._fs.collection('matches').doc(matchId).get().catch(()=>null);
+        if(!ex || !ex.exists) throw e;
+      }
     }
     return {matched:rev.exists, matchId};
   },
@@ -1064,9 +1068,11 @@ const FireDB = {
   async listReports(){ const q=await this._fs.collection('reports').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async updateReport(id,patch){ await this._fs.collection('reports').doc(id).update(patch); },
   async notify(to,type,text,link,dedupe){
-    if(dedupe){ const q=await this._fs.collection('notifications').where('to','==',to).where('read','==',false).get();
-      if(q.docs.some(d=>{const n=d.data();return n.link===link&&n.type===type;})) return; }
-    const id=uid('n'); await this._fs.collection('notifications').doc(id).set({id,to,type,text,link,ts:Date.now(),read:false}); },
+    try{
+      if(dedupe){ const q=await this._fs.collection('notifications').where('to','==',to).where('read','==',false).get();
+        if(q.docs.some(d=>{const n=d.data();return n.link===link&&n.type===type;})) return; }
+      const id=uid('n'); await this._fs.collection('notifications').doc(id).set({id,to,type,text,link,ts:Date.now(),read:false});
+    }catch(e){ console.warn('notify failed', e); } },
   async listNotifications(me){ const q=await this._fs.collection('notifications').where('to','==',me).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts).slice(0,50); },
   async unreadNotifCount(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); return q.size; },
   async markNotifsRead(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); await Promise.all(q.docs.map(d=>d.ref.update({read:true}))); },
@@ -1088,7 +1094,8 @@ const FireDB = {
   async addReview(r){ const id=uid('rv'); const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
     const q=await this._fs.collection('reviews').where('to','==',r.to).get(); const list=q.docs.map(d=>d.data());
     const avg=list.reduce((s,x)=>s+x.rating,0)/list.length;
-    await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length}); return rv; },
+    await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length});
+    delete this._uc[r.to]; return rv; },
   async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
   async addRecruit(r){ const id=uid('rc'); const rec={id, status:'open', ts:Date.now(), ...r};
@@ -1653,6 +1660,7 @@ const App = {
   },
 
   async sendLike(to){
+    try{
     const r=await DB.like(this.me.id,to);
     if(r.matched){
       const other=await DB.getUser(to);
@@ -1663,6 +1671,7 @@ const App = {
       this.toast('いいねを送りました！');
       if(location.hash===''||location.hash==='#browse') this.viewBrowse(); else this.route();
     }
+    }catch(e){ this.toast('送信に失敗しました：'+(e.message||e.code||'不明なエラー')); }
   },
 
   showMatchFX(other, matchId){
