@@ -882,6 +882,7 @@ const LocalDB = {
     }).sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
   },
   async getMatch(id){ const db=this._load(); const m=db.matches.find(x=>x.id===id); return m||null; },
+  async findMatch(a,b){ const db=this._load(); return db.matches.find(m=>m.users.includes(a)&&m.users.includes(b))||null; },
   async sendMessage(matchId,from,text){
     const db=this._load();
     (db.messages[matchId]=db.messages[matchId]||[]).push({id:uid('ms'),from,text,ts:Date.now()});
@@ -1057,6 +1058,11 @@ const FireDB = {
     return out.sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
   },
   async getMatch(id){ const d=await this._fs.collection('matches').doc(id).get(); return d.exists?d.data():null; },
+  async findMatch(a,b){
+    const det=await this._fs.collection('matches').doc([a,b].sort().join('__')).get();
+    if(det.exists) return det.data();
+    const q=await this._fs.collection('matches').where('users','array-contains',a).get();
+    return q.docs.map(d=>d.data()).find(m=>m.users.includes(b))||null; },
   async sendMessage(matchId,from,text){
     await this._fs.collection('matches').doc(matchId).collection('messages').add({from,text,ts:Date.now()});
   },
@@ -1657,8 +1663,8 @@ const App = {
     const g=await DB.getLikes(this.me.id);
     const sent=g.sent.some(l=>l.to===u.id);
     const recv=g.received.some(l=>l.from===u.id);
-    const mid=[this.me.id,u.id].sort().join('__');
-    const mt=await DB.getMatch(mid).catch(()=>null);
+    const mt=await DB.findMatch(this.me.id,u.id).catch(()=>null);
+    const mid=mt?mt.id:null;
     const rvs=await DB.listReviews(id);
     const rvHtml=(await Promise.all(rvs.slice(0,3).map(async r=>{ const f=await DB.getUser(r.from);
       return `<div style="border-top:1px solid var(--line);padding:8px 0;font-size:12.5px"><span class="rate">${stars(r.rating,11)}</span> <b>${esc(f?.name||'退会ユーザー')}</b><div style="color:var(--ink2)">${esc(r.comment||'')}</div></div>`; }))).join('');
@@ -1694,9 +1700,8 @@ const App = {
   async sendLike(to){
     try{
     // マッチ済み・送信済みの再タップをガード
-    const mid0=[this.me.id,to].sort().join('__');
-    const ex=await DB.getMatch(mid0).catch(()=>null);
-    if(ex){ this.toast('すでにマッチ済みです。メッセージからやり取りできます'); location.hash='#chat/'+mid0; return; }
+    const ex=await DB.findMatch(this.me.id,to).catch(()=>null);
+    if(ex){ this.toast('すでにマッチ済みです。メッセージからやり取りできます'); location.hash='#chat/'+ex.id; return; }
     const g0=await DB.getLikes(this.me.id);
     if(g0.sent.some(l=>l.to===to) && !g0.received.some(l=>l.from===to)){
       this.toast('いいねは送信済みです。相手の返事を待ちましょう'); return; }
