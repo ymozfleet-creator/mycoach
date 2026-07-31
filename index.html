@@ -451,7 +451,19 @@ const STRIPE_PAYMENT_LINK = null;     // 【簡易】Stripe Payment LinkのURL�
 const STRIPE_CHECKOUT_ENDPOINT = null; // 【推奨】Cloud FunctionsのcreateCheckoutSession URL（契約金額に連動した本格決済）
 const STRIPE_CONNECT_ENDPOINT = null;  // 【任意】Cloud FunctionsのcreateConnectLink URL（コーチへの自動分配 = Stripe Connect）
 
-const SPORTS = ['サッカー','フットサル','野球','ソフトボール','テニス','バドミントン','卓球','バスケットボール','バレーボール','陸上・かけっこ','マラソン','水泳','ゴルフ','空手','柔道','剣道','ボクシング','ダンス','体操','スキー','スノーボード','筋力トレーニング','ヨガ・ストレッチ','その他'];
+const SPORT_GROUPS = [
+  ['球技', ['サッカー','フットサル','野球','ソフトボール','テニス','ソフトテニス','バドミントン','卓球','バスケットボール','バレーボール','ハンドボール','ラグビー','アメリカンフットボール','ホッケー','ラクロス','ゴルフ','ボウリング']],
+  ['武道・格闘技', ['空手','柔道','剣道','弓道','合気道','なぎなた','テコンドー','ボクシング','キックボクシング','レスリング','相撲','フェンシング','総合格闘技']],
+  ['陸上・ランニング', ['陸上・かけっこ','短距離走','長距離走','マラソン','駅伝','トレイルランニング','競歩']],
+  ['水泳・マリンスポーツ', ['水泳','飛込','アーティスティックスイミング','水球','サーフィン','セーリング','カヌー・カヤック','ボート・漕艇']],
+  ['体操・ダンス', ['体操','新体操','トランポリン','チアリーディング','ダンス','バレエ','ヒップホップダンス','社交ダンス']],
+  ['ウィンタースポーツ', ['スキー','スノーボード','フィギュアスケート','スピードスケート','アイスホッケー','カーリング']],
+  ['フィットネス', ['筋力トレーニング','パーソナルトレーニング','ヨガ・ストレッチ','ピラティス','キッズ体育・運動教室']],
+  ['その他の競技', ['自転車・サイクリング','トライアスロン','スポーツクライミング','アーチェリー','射撃','乗馬','スケートボード','BMX','ゲートボール','グラウンドゴルフ','eスポーツ','その他']],
+];
+const SPORTS = SPORT_GROUPS.flatMap(g=>g[1]);
+const SPORTS_FEATURED = ['サッカー','野球','テニス','バスケットボール','バレーボール','卓球','バドミントン','陸上・かけっこ','水泳','ゴルフ','空手','柔道','剣道','ボクシング','ダンス','体操','ラグビー','スキー','スノーボード','筋力トレーニング','ヨガ・ストレッチ','チアリーディング','マラソン','その他'];
+const sportOptions = (sel='') => SPORT_GROUPS.map(([g,list])=>`<optgroup label="${g}">${list.map(s=>`<option ${s===sel?'selected':''}>${s}</option>`).join('')}</optgroup>`).join('');
 const PICT = {
   bell:'<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/>',
   star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9L6.6 19.6l1.1-6L3.2 9.4l6.1-.8z"/>',
@@ -496,6 +508,15 @@ const PICT = {
 };
 const ic = (name, s=18) => `<svg class="pict" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PICT[name]||PICT.jersey}</svg>`;
 const SPORT_PICT = {'サッカー':'soccer','フットサル':'soccer','野球':'baseball','ソフトボール':'baseball','テニス':'tennis','バドミントン':'badminton','卓球':'pingpong','バスケットボール':'basketball','バレーボール':'volleyball','陸上・かけっこ':'run','マラソン':'run','水泳':'swim','ゴルフ':'golf','空手':'martial','柔道':'martial','剣道':'martial','ボクシング':'boxing','ダンス':'dance','体操':'gym','スキー':'ski','スノーボード':'snowboard','筋力トレーニング':'weight','ヨガ・ストレッチ':'yoga','その他':'jersey'};
+Object.assign(SPORT_PICT, {
+  'ソフトテニス':'tennis','ハンドボール':'basketball','弓道':'martial','合気道':'martial','なぎなた':'martial',
+  'テコンドー':'martial','キックボクシング':'boxing','レスリング':'martial','相撲':'martial','フェンシング':'martial',
+  '総合格闘技':'boxing','短距離走':'run','長距離走':'run','駅伝':'run','トレイルランニング':'run','競歩':'run',
+  '飛込':'swim','アーティスティックスイミング':'swim','水球':'swim','サーフィン':'swim',
+  '新体操':'gym','トランポリン':'gym','チアリーディング':'dance','バレエ':'dance','ヒップホップダンス':'dance','社交ダンス':'dance',
+  'フィギュアスケート':'ski','スピードスケート':'ski','パーソナルトレーニング':'weight','ピラティス':'yoga',
+  'キッズ体育・運動教室':'run','トライアスロン':'run','スケートボード':'snowboard',
+});
 const SPORT_ICON = {}; SPORTS.forEach(s => SPORT_ICON[s] = ic(SPORT_PICT[s]||'jersey', 24));
 const AREAS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県','オンライン'];
 
@@ -1316,7 +1337,7 @@ const App = {
         <div class="hint" style="margin-top:6px">受講者アカウントには既にコーチからの「いいね」が届いています。いいねを返すとマッチ→契約→決済までの流れを体験できます。「決済を体験」は契約中アカウントで、支払い（レッスン料+10%）から精算までを確認できます。</div>
       </div></div>`:'';
     const orb=(name,size,style)=>`<div class="orb" style="${style}">${ic(name,Math.round(size*0.46))}</div>`;
-    const marItems = SPORTS.map(s=>`<span>${SPORT_ICON[s]} ${esc(s)}</span>`).join('');
+    const marItems = SPORTS_FEATURED.map(s=>`<span>${SPORT_ICON[s]} ${esc(s)}</span>`).join('');
     this.shell(`
       <div class="hero2">
         <div class="bgline"></div>
@@ -1423,7 +1444,8 @@ const App = {
         </div>
         <div class="sec" style="padding-top:0">
           <h2>対応競技</h2>
-          <div class="sportchips">${SPORTS.map(s=>`<span class="sportchip">${SPORT_ICON[s]} ${esc(s)}</span>`).join('')}</div>
+          <div class="sportchips">${SPORTS_FEATURED.map(s=>`<span class="sportchip">${SPORT_ICON[s]} ${esc(s)}</span>`).join('')}</div>
+          <p class="hint" style="text-align:center;margin-top:10px">ほか、武道・水泳・ウィンタースポーツ・フィットネスなど全${SPORTS.length}競技に対応</p>
         </div>
         <div class="cta-band lanes">
           <h3>その経験は、誰かの伸びしろだ。</h3>
@@ -1478,7 +1500,7 @@ const App = {
                 <div class="field"><label>人数（目安）</label><input id="f-teamsize" type="number" min="2" placeholder="12"></div>
               </div>`:''}
             <div class="field"><label>お名前（ニックネーム可）</label><input id="f-name" placeholder="例：山田 太郎"></div>
-            <div class="field"><label>競技</label><select id="f-sport">${SPORTS.map(s=>`<option>${s}</option>`).join('')}</select></div>
+            <div class="field"><label>競技</label><select id="f-sport">${sportOptions()}</select></div>
             <div class="field"><label>エリア</label><select id="f-area">${AREAS.map(a=>`<option ${a==='東京都'?'selected':''}>${a}</option>`).join('')}</select></div>
             ${isCoach?`
               <div class="field"><label>レッスン料金（1回・税込）</label><input id="f-fee" type="number" min="0" step="100" placeholder="5000"></div>
@@ -1591,7 +1613,7 @@ const App = {
           <p>${isPlayer?'気になるコーチに「いいね」を送りましょう。お互いにいいねするとマッチ成立です。':'あなたの指導を待っている人に「いいね」を送りましょう。'}</p>
         </div>
         <div class="filters">
-          <select id="fl-sport" onchange="App.renderBrowse()"><option value="">すべての競技</option>${SPORTS.map(s=>`<option>${s}</option>`).join('')}</select>
+          <select id="fl-sport" onchange="App.renderBrowse()"><option value="">すべての競技</option>${sportOptions()}</select>
           <select id="fl-area" onchange="App.renderBrowse()"><option value="">すべてのエリア</option>${AREAS.map(a=>`<option>${a}</option>`).join('')}</select>
           <select id="fl-type" onchange="App.renderBrowse()">
             ${isPlayer
@@ -1811,7 +1833,10 @@ const App = {
           ? `<div class="chat-ct-banner">${ic('doc',14)} 契約を提案中です（相手の承諾待ち）<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">内容を見る</button></div>`
           : `<div class="chat-ct-banner">${ic('doc',14)} 契約の提案が届いています<button class="btn btn-sm btn-turf" onclick="location.hash='#contracts'">確認して返答</button></div>`;
       }else if(ct.status==='active'){
-        banner = `<div class="chat-ct-banner">${ic('check',14)} 契約中：${esc(ct.title)}<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">詳細</button></div>`;
+        banner = `<div class="chat-ct-banner">${ic('check',14)} 契約中：${esc(ct.title)}
+          ${this.me.id===ct.player
+            ?`<button class="btn btn-sm btn-turf" onclick="App.openPay('${ct.id}')">${ic('card',13)} 支払う</button>`
+            :`<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">詳細</button>`}</div>`;
       }
     }
     const canPropose = !ct || ['declined','completed','cancelled'].includes(ct.status);
@@ -1825,7 +1850,8 @@ const App = {
           <button class="back" onclick="location.hash='#messages'">←</button>
           <div class="avatar" style="width:40px;height:40px;font-size:20px">${avatarOf(other)}</div>
           <div style="flex:1"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${esc(other?.sport||'')}・${esc(other?.area||'')}</div></div>
-          ${canPropose?`<button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${iAmCoach?ic('doc',14)+' 契約を提案':ic('doc',14)+' 契約を依頼'}</button>`:''}
+          ${canPropose?`<button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${iAmCoach?ic('doc',14)+' 契約を提案':ic('doc',14)+' 契約を依頼'}</button>
+          <span class="hint" style="font-size:11px">流れ：相談 → 契約${iAmCoach?'提案':'依頼'} → 承諾 → お支払い → レッスン</span>`:''}
           <button class="btn btn-sm btn-danger-soft" onclick="App.openReport('${other?.id}')">通報</button>
         </div>
         ${banner}
@@ -2031,7 +2057,7 @@ const App = {
             ${unsettled?`<div style="margin-top:4px"><span class="pill pill-gold">精算待ちの受取額 ${yen(unsettled)}（事務局から振込予定）</span></div>`:''}`:''}</div>
           </div>
           <div class="field"><label>お名前</label><input id="me-name" value="${esc(u.name)}"></div>
-          <div class="field"><label>競技</label><select id="me-sport">${SPORTS.map(s=>`<option ${s===u.sport?'selected':''}>${s}</option>`).join('')}</select></div>
+          <div class="field"><label>競技</label><select id="me-sport">${sportOptions(u.sport)}</select></div>
           <div class="field"><label>エリア</label><select id="me-area">${AREAS.map(a=>`<option ${a===u.area?'selected':''}>${a}</option>`).join('')}</select></div>
           ${!isCoach?`
             <div class="field"><label>受講形態</label><select id="me-ptype" onchange="document.getElementById('me-teamfields').style.display=this.value==='team'?'block':'none'">
