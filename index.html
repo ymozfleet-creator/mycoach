@@ -303,6 +303,7 @@ svg.pict{vertical-align:-0.18em}
 .legal-tbl th{width:32%;text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;background:var(--sky);font-weight:700}
 .legal-tbl td{padding:11px 10px;border-bottom:1px solid var(--line);line-height:1.9}
 .ct-next{background:var(--sky);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.7}
+.next-lesson{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FFF8E8;border:1px solid #F0DFAE;border-radius:10px;padding:7px 12px;font-size:12.5px}
 /* 募集・時間帯・報告書 */
 .recruit-sec{margin-bottom:22px}
 .recruit-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
@@ -616,6 +617,7 @@ const LEGAL = {
 <li>不正アクセス・システムへの攻撃・リバースエンジニアリング</li>
 <li>違法行為または公序良俗に反する行為</li>
 <li>商業目的でのスパム行為・営業活動</li>
+<li>本サービスで知り合った相手との、本サービスを介さない直接の金銭授受（直接取引）およびその勧誘</li>
 <li>他の利用者の個人情報の無断収集・流用</li>
 <li>手数料を回避する目的でのサービス外取引</li>
 <li>運営者または第三者の知的財産権を侵害する行為</li>
@@ -1954,6 +1956,16 @@ const App = {
       <button class="btn btn-turf btn-block" onclick="App.submitContract('${matchId}','${coach.id}','${player.id}')">この内容で送信する</button>`);
   },
 
+  /* 完了契約から、月額の継続プランをプリセットして提案フォームを開く（体験→継続の転換） */
+  async openRenewCt(matchId, playerId, perFee){
+    await this.openContractForm(matchId, playerId);
+    const s=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+    s('ct-title','継続レッスン（月4回）');
+    if(perFee>0) s('ct-fee', perFee*4);
+    const un=document.getElementById('ct-unit'); if(un) un.value='monthly';
+    s('ct-period','継続（1ヶ月ごと更新）');
+    this.updateCtFeeHint();
+  },
   setTrialCt(fee){
     const s=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
     s('ct-title','体験レッスン'); s('ct-fee',fee); s('ct-period','1回');
@@ -1968,6 +1980,10 @@ const App = {
       <div class="field"><label>活動日程</label><input id="rc-sched" placeholder="例：月2回・土曜午前"></div>
       <div class="field"><label>謝礼（1回あたり・税込）</label><input id="rc-fee" type="number" min="0" step="500" placeholder="8000"></div>
       <div class="field"><label>募集内容</label><textarea id="rc-detail" placeholder="チームの人数・レベル・お願いしたいことなど"></textarea></div>
+      <label class="check-row" style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin-bottom:14px;cursor:pointer">
+        <input type="checkbox" id="rc-managed" style="margin-top:3px">
+        <span><b>事務局おまかせで依頼する</b><br><span class="hint">掲載に加えて、MyCOACH事務局が条件に合うコーチの選定・打診・日程調整までお手伝いします（無料）。</span></span>
+      </label>
       <button class="btn btn-primary btn-block" onclick="App.submitRecruit()">掲載する</button>`);
   },
   async submitRecruit(){
@@ -1975,10 +1991,11 @@ const App = {
     const fee=Number(document.getElementById('rc-fee').value)||0;
     if(!title){ this.toast('募集タイトルを入力してください'); return; }
     if(!fee){ this.toast('謝礼を入力してください'); return; }
+    const managed=!!document.getElementById('rc-managed')?.checked;
     await DB.addRecruit({teamId:this.me.id, title, sport:this.me.sport, area:this.me.area,
       schedule:document.getElementById('rc-sched').value.trim(), fee,
-      detail:document.getElementById('rc-detail').value.trim()});
-    this.closeModal(); this.toast('募集を掲載しました。応募はいいねとして届きます');
+      detail:document.getElementById('rc-detail').value.trim(), managed});
+    this.closeModal(); this.toast(managed?'募集を掲載し、事務局に調整を依頼しました':'募集を掲載しました。応募はいいねとして届きます');
     this.viewMe();
   },
   async closeRecruit(id){
@@ -2046,14 +2063,18 @@ const App = {
                    <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','cancelled')">解約する</button>`;
       }else if(c.status==='completed'){
         const done=await DB.hasReview(c.id,this.me.id);
-        actions = done?`<span class="pill pill-gray">レビュー済み</span>`
-          :`<button class="btn btn-sm btn-primary" onclick="App.openReview('${c.id}','${c.coach===this.me.id?c.player:c.coach}')">${ic('star',14)} レビューを書く</button>`;
+        actions = (done?`<span class="pill pill-gray">レビュー済み</span>`
+          :`<button class="btn btn-sm btn-primary" onclick="App.openReview('${c.id}','${c.coach===this.me.id?c.player:c.coach}')">${ic('star',14)} レビューを書く</button>`)
+          + (this.me.id===c.coach?` <button class="btn btn-sm btn-turf" onclick="App.openRenewCt('${c.matchId}','${c.player}',${Number(c.fee)||0})">${ic('refresh',13)} 継続プランを提案</button>`:'');
       }
       return `<div class="ct-card">
         <div class="top"><h3>${esc(c.title)}</h3><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></div>
         ${c.status==='proposed'?`<div class="hint ct-next">${c.proposer===this.me.id?'相手の承諾を待っています。トークで一言添えると承諾率が上がります':'内容を確認して「承諾して契約する」を押すと契約開始です'}</div>`
-         :c.status==='active'?`<div class="hint ct-next">${this.me.id===c.player?'レッスンが済んだら「支払う」からお支払いください':'受講者のお支払い後、受取分が精算されます'}</div>`:''}
+         :c.status==='active'?`<div class="hint ct-next">${this.me.id===c.player?'レッスンが済んだら「支払う」からお支払いください':'受講者のお支払い後、受取分が精算されます'}</div>`
+         :c.status==='completed'&&this.me.id===c.coach?`<div class="hint ct-next">おつかれさまでした。手応えがあれば「継続プランを提案」で次につなげましょう</div>`:''}
         <div class="hint">相手：${esc(other?.name||'退会ユーザー')}（${c.coach===this.me.id?'受講者':'コーチ'}）</div>
+        ${c.status==='active'?`<div class="next-lesson">${ic('bell',12)} 次回レッスン：${c.nextLesson?`<b>${esc(c.nextLesson)}</b>`:'未定'}
+          <button class="btn btn-sm btn-ghost" style="min-height:28px;padding:3px 10px;font-size:11.5px" onclick="App.setNextLesson('${c.id}')">${c.nextLesson?'変更':'日程を決める'}</button></div>`:''}
         <div class="ct-meta">
           <div><div class="k">料金</div><div class="v fee" style="font-size:17px">${yen(c.fee)}<small> ${c.unit==='monthly'?'/月':'/回'}</small></div></div>
           <div><div class="k">期間</div><div class="v">${esc(c.period)}</div></div>
@@ -2075,6 +2096,17 @@ const App = {
       </div>`, 'contracts');
   },
 
+  async setNextLesson(id){
+    const v=prompt('次回レッスンの予定を入力してください（例：8/10(土) 10:00 ○○グラウンド）');
+    if(v===null) return;
+    const val=v.trim();
+    await DB.updateContract(id,{nextLesson:val||null});
+    const c=await DB.getContract(id);
+    const partner=c.coach===this.me.id?c.player:c.coach;
+    if(val) DB.notify(partner,'contract',`次回レッスンの予定が設定されました：${val}`,'#contracts');
+    this.toast(val?'次回の予定を共有しました':'予定をクリアしました');
+    await this.viewContracts();
+  },
   async ctAction(id, status){
     if(status==='active'){
       const ct0=await DB.getContract(id);
@@ -2270,7 +2302,8 @@ const App = {
       :`
         <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">支払いを記録する（銀行振込など）</button>
         <p class="hint" style="margin-top:8px">オンライン決済は未設定です。支払いの記録のみ行われます。</p>`}
-      <p class="hint" style="margin-top:10px">お支払いは契約履歴に記録され、コーチに通知されます。</p>`);
+      <p class="hint" style="margin-top:10px">お支払いは契約履歴に記録され、コーチに通知されます。</p>
+      <p class="hint" style="color:#0B7A57">${ic('doc',11)} この支払いは指導実績としてカウントされ、実績証明書・活動報告書に自動で反映されます（アプリ外での直接のやり取りは実績になりません）。</p>`);
   },
   async submitPay(ctId){
     const cts=await DB.listContracts(this.me.id);
@@ -2552,7 +2585,9 @@ const App = {
     const unTotal=un.reduce((a,x)=>a+x.net,0);
 
     /* --- 要対応タスク --- */
+    const openRec=(await DB.listOpenRecruits()).filter(r=>r.managed);
     const todos=[
+      openRec.length?{n:openRec.length, l:'おまかせ依頼（コーチ調整）', h:'#admin/contracts', c:'var(--flag)'}:null,
       s.pendingCoaches?{n:s.pendingCoaches, l:'審査待ちコーチ', h:'#admin/verify', c:'var(--gold)'}:null,
       s.openReports?{n:s.openReports, l:'未対応の通報', h:'#admin/reports', c:'var(--flag)'}:null,
       s.pendingCerts?{n:s.pendingCerts, l:'証明書の発行申請', h:'#admin/certs', c:'var(--gold)'}:null,
