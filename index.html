@@ -302,6 +302,7 @@ svg.pict{vertical-align:-0.18em}
 .legal-tbl{width:100%;border-collapse:collapse;font-size:13px}
 .legal-tbl th{width:32%;text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;background:var(--sky);font-weight:700}
 .legal-tbl td{padding:11px 10px;border-bottom:1px solid var(--line);line-height:1.9}
+.ct-next{background:var(--sky);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.7}
 /* 募集・時間帯・報告書 */
 .recruit-sec{margin-bottom:22px}
 .recruit-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
@@ -1672,6 +1673,11 @@ const App = {
     this.renderBrowse();
   },
 
+  resetBrowseFilters(){
+    ['fl-sport','fl-area','fl-type','fl-avail'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    const q=document.getElementById('fl-q'); if(q) q.value='';
+    this.renderBrowse();
+  },
   renderBrowse(){
     const {users, likes, matchedIds}=this._browse;
     const sp=document.getElementById('fl-sport').value, ar=document.getElementById('fl-area').value, q=document.getElementById('fl-q').value.trim();
@@ -1692,8 +1698,10 @@ const App = {
       })
       .filter(u=>!av||(u.avail||[]).includes(av));
     const grid=document.getElementById('browse-grid');
-    if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ic">${ic('search',44)}</div>条件に合うユーザーが見つかりませんでした。<br>条件を変えて再検索してみてください。</div>`; return; }
-    grid.innerHTML=list.map(u=>{
+    if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ic">${ic('search',44)}</div>条件に合う相手が見つかりませんでした。<br>条件を広げると出会いの幅が広がります。<br>
+      <button class="btn btn-sm btn-soft" style="margin-top:14px" onclick="App.resetBrowseFilters()">${ic('refresh',13)} 条件をリセットして全員表示</button></div>`; return; }
+    const countLine=`<div class="hint" style="grid-column:1/-1;margin:-2px 0 -4px">${list.length}名が見つかりました</div>`;
+    grid.innerHTML=countLine+list.map(u=>{
       const matched=matchedIds.has(u.id), sent=sentTo.has(u.id), recv=recvFrom.has(u.id);
       return `<div class="ucard">
         ${recv&&!matched?`<span class="likedby pill pill-flag">${ic('heart',12)} あなたに興味あり</span>`:''}
@@ -1800,7 +1808,7 @@ const App = {
   },
 
   /* ---------- マッチ / いいね ---------- */
-  async viewMatches(tab){
+  async viewMatches(tab='match'){
     const [matches, likes]=await Promise.all([DB.listMatches(this.me.id), DB.getLikes(this.me.id)]);
     const matchedIds=new Set(matches.flatMap(m=>m.users));
     const recv=likes.received.filter(l=>!matchedIds.has(l.from));
@@ -1814,7 +1822,8 @@ const App = {
           <div class="sub">${esc(m.other?.sport||'')}・${esc(m.other?.area||'')}</div></div>
           <div class="rt"><span class="pill pill-turf">マッチ中</span><div class="tm">${fmtD(m.ts)}</div></div>
         </div>`).join('')}</div>`
-        : `<div class="empty"><div class="ic">${ic('link',44)}</div>まだマッチがありません。<br>「さがす」から気になる相手にいいねを送りましょう。</div>`;
+        : `<div class="empty"><div class="ic">${ic('link',44)}</div>まだマッチがありません。<br>気になる相手に「いいね」を送るところから始まります。<br>
+          <a class="btn btn-sm btn-primary" style="margin-top:14px" href="#browse">${ic('search',13)} 相手をさがす</a></div>`;
     }else{
       const recvRows = await Promise.all(recv.map(async l=>{ const u=await DB.getUser(l.from); return u?`
         <div class="lrow">
@@ -1857,7 +1866,8 @@ const App = {
         <div class="sub">${m.lastMsg?esc(m.lastMsg.text):'マッチしました！挨拶してみましょう'}</div></div>
         <div class="rt"><div class="tm">${m.lastMsg?fmtT(m.lastMsg.ts):fmtD(m.ts)}</div></div>
       </div>`;}).join('')}</div>`
-      : `<div class="empty"><div class="ic">${ic('chat',44)}</div>マッチするとここでメッセージができます。</div>`;
+      : `<div class="empty"><div class="ic">${ic('chat',44)}</div>マッチするとここでメッセージができます。<br>
+        <a class="btn btn-sm btn-primary" style="margin-top:14px" href="#browse">${ic('search',13)} 相手をさがす</a></div>`;
     this.shell(`<div class="wrap"><div class="page-head"><h1>メッセージ</h1><p>マッチした相手と日程・内容を相談しましょう。</p></div>${body}</div>`, 'messages');
   },
 
@@ -2041,6 +2051,8 @@ const App = {
       }
       return `<div class="ct-card">
         <div class="top"><h3>${esc(c.title)}</h3><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></div>
+        ${c.status==='proposed'?`<div class="hint ct-next">${c.proposer===this.me.id?'相手の承諾を待っています。トークで一言添えると承諾率が上がります':'内容を確認して「承諾して契約する」を押すと契約開始です'}</div>`
+         :c.status==='active'?`<div class="hint ct-next">${this.me.id===c.player?'レッスンが済んだら「支払う」からお支払いください':'受講者のお支払い後、受取分が精算されます'}</div>`:''}
         <div class="hint">相手：${esc(other?.name||'退会ユーザー')}（${c.coach===this.me.id?'受講者':'コーチ'}）</div>
         <div class="ct-meta">
           <div><div class="k">料金</div><div class="v fee" style="font-size:17px">${yen(c.fee)}<small> ${c.unit==='monthly'?'/月':'/回'}</small></div></div>
@@ -2058,7 +2070,8 @@ const App = {
     this.shell(`
       <div class="wrap">
         <div class="page-head"><h1>契約</h1><p>提案の確認・承諾、契約中レッスンの管理ができます。</p></div>
-        ${cts.length?`<div class="list">${rows.join('')}</div>`:`<div class="empty"><div class="ic">${ic('doc',44)}</div>まだ契約はありません。<br>マッチした相手とのトーク画面から契約を提案できます。</div>`}
+        ${cts.length?`<div class="list">${rows.join('')}</div>`:`<div class="empty"><div class="ic">${ic('doc',44)}</div>まだ契約はありません。<br>マッチした相手とのトーク画面から提案できます。<br>
+          <a class="btn btn-sm btn-primary" style="margin-top:14px" href="#matches">${ic('link',13)} マッチ一覧を見る</a></div>`}
       </div>`, 'contracts');
   },
 
@@ -2110,6 +2123,7 @@ const App = {
               <div class="avatar lg" onclick="document.getElementById('me-photo').click()" title="写真を変更" style="cursor:pointer">${avatarOf(u)}</div>
               <a href="javascript:void(0)" onclick="document.getElementById('me-photo').click()" style="font-size:11.5px">${ic('camera',11)} 写真を変更</a>
               <input id="me-photo" type="file" accept="image/*" style="display:none" onchange="App.changePhoto(this)">
+              ${!u.photo?`<div class="hint" style="margin-top:6px;color:#8A6A00;font-weight:700">${ic('camera',11)} 写真を設定するとマッチ率が大きく上がります</div>`:''}
             </div>
             <div><div class="rounded" style="font-weight:800;font-size:18px">${esc(u.name)}</div>
             <span class="pill ${isCoach?'pill-turf':'pill-blue'}">${isCoach?'コーチ':'受講者'}</span>
