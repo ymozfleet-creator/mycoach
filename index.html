@@ -43,7 +43,7 @@ main{min-height:calc(100vh - 60px);padding-bottom:90px}
 .tab .badge{position:absolute;top:4px;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:99px;background:var(--flag);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
 
 /* ボタン */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;border-radius:99px;padding:11px 22px;font-size:14.5px;min-height:44px;line-height:1.2;transition:transform .12s ease, box-shadow .12s ease}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;border-radius:99px;padding:11px 22px;font-size:14.5px;min-height:44px;line-height:1.2;white-space:nowrap;transition:transform .12s ease, box-shadow .12s ease}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:linear-gradient(135deg,var(--court),#2CA1F2);color:#fff;box-shadow:0 4px 14px rgba(14,124,214,.35)}
 .btn-turf{background:var(--turf);color:#fff;box-shadow:0 4px 14px rgba(18,178,124,.3)}
@@ -142,7 +142,7 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
 .ucard .hd{display:flex;gap:12px;align-items:center}
 .avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--court-soft),#fff);border:2px solid var(--court-soft);display:grid;place-items:center;font-size:25px;flex-shrink:0}
 .avatar.lg{width:108px;height:108px;font-size:52px;border-width:3px}
-.ucard .avatar{width:72px;height:72px;font-size:34px;border-width:2.5px}
+.ucard .avatar{width:80px;height:80px;font-size:38px;border-width:2.5px}
 .ucard .nm{font-size:16.5px}
 
 .ucard .nm{font-weight:800;font-size:15.5px;font-family:'M PLUS Rounded 1c',sans-serif}
@@ -196,6 +196,12 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
 .chat-hd .back{font-size:20px;color:var(--court);padding:4px 8px}
 .chat-hd .nm{font-weight:800;font-size:15px}
 .chat-hd .sub{font-size:11.5px;color:var(--ink2)}
+.chat-hd .who{flex:1;min-width:0;cursor:pointer}
+.chat-hd .nm,.chat-hd .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-hd .avatar,.chat-hd .back,.chat-hd .rep{flex-shrink:0}
+.chat-cta{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#fff;border-bottom:1px solid var(--line)}
+.chat-cta .btn{flex-shrink:0}
+.chat-cta .hint{font-size:11px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;background:var(--bg)}
 .msg{max-width:78%;padding:9px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word}
 /* ---------- スマホ最適化 ---------- */
@@ -204,8 +210,8 @@ footer{border-top:1px solid var(--line);padding:26px 0 110px;text-align:center;c
   input,select,textarea{font-size:16px!important}
   .page-head h1{font-size:19px}
   .ucard{padding:16px}
-  .ucard .avatar{width:64px;height:64px;font-size:30px}
-  .avatar.lg{width:96px;height:96px;font-size:46px}
+  .ucard .avatar{width:88px;height:88px;font-size:42px}
+  .avatar.lg{width:104px;height:104px;font-size:50px}
   /* モーダルは下から出るボトムシートに（親指で届く・閉じ位置が安定） */
   .modal-bg{place-items:end center;padding:0}
   .modal{max-width:none;border-radius:22px 22px 0 0;max-height:92vh;padding:24px 18px calc(24px + env(safe-area-inset-bottom));animation:sheetUp .22s ease}
@@ -483,6 +489,8 @@ const SPORT_GROUPS = [
 ];
 const SPORTS = SPORT_GROUPS.flatMap(g=>g[1]);
 const SPORTS_FEATURED = ['サッカー','野球','テニス','バスケットボール','バレーボール','卓球','バドミントン','陸上・かけっこ','水泳','ゴルフ','空手','柔道','剣道','ボクシング','ダンス','体操','ラグビー','スキー','スノーボード','筋力トレーニング','ヨガ・ストレッチ','チアリーディング','マラソン','その他'];
+const metaOf = (u, extra=[]) => [u.sport, u.area, u.exp, ...extra]
+  .filter(x => x && String(x).trim()).map(esc).join('・');
 const sportOptions = (sel='') => SPORT_GROUPS.map(([g,list])=>`<optgroup label="${g}">${list.map(s=>`<option ${s===sel?'selected':''}>${s}</option>`).join('')}</optgroup>`).join('');
 const PICT = {
   bell:'<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/>',
@@ -1671,7 +1679,7 @@ const App = {
     const av=document.getElementById('fl-avail')?.value||'';
     const sentTo=new Set(likes.sent.map(l=>l.to));
     const recvFrom=new Set(likes.received.map(l=>l.from));
-    const list=users.filter(u=>u.id!==this.me.id)
+    const list=users.filter(u=>u.id!==this.me.id&&!u.isAdmin)
       .filter(u=>(!sp||u.sport===sp)&&(!ar||u.area===ar)&&(!q||(u.name+u.intro+u.sport).includes(q)))
       .filter(u=>{
         if(!tp) return true;
@@ -1692,7 +1700,7 @@ const App = {
         <div class="hd" style="cursor:pointer" onclick="App.openProfile('${u.id}')">
           <div class="avatar">${avatarOf(u)}</div>
           <div><div class="nm">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</div>
-          <div class="meta">${esc(u.sport)}・${esc(u.area)}${u.exp?`・${esc(u.exp)}`:''}${u.role==='coach'?`・${CTARGET_S[u.coachTarget||'both']}対応`:''}</div>
+          <div class="meta">${metaOf(u,[u.role==='coach'?CTARGET_S[u.coachTarget||'both']+'対応':null])}</div>
           ${u.ratingCount?`<span class="rate">${stars(u.ratingAvg,12)} ${u.ratingAvg}（${u.ratingCount}）</span>`:''}
           ${u.role==='coach'&&u.avail?.length?`<div class="meta" style="margin-top:2px">対応：${u.avail.join('・')}</div>`:''}
           ${u.role==='coach'&&(u.lessonCount||u.certIssued||u.trialFee!=null)?`<div class="trust-row">
@@ -1703,7 +1711,7 @@ const App = {
         </div>
         <div class="intro">${esc(u.intro)}</div>
         <div class="ft">
-          ${u.role==='coach'?`<div class="fee">${yen(u.fee)}<small> /回</small></div>`
+          ${u.role==='coach'?`<div class="fee">${u.fee>0?`${yen(u.fee)}<small> /回</small>`:'<small style="font-size:14px;font-weight:800">料金応相談</small>'}</div>`
             :`<span class="pill pill-blue">${u.playerType==='team'?`チーム${u.teamSize?`・${u.teamSize}名`:''}`:'個人'}で受講希望</span>`}
           ${matched?`<span class="pill pill-turf">${ic('check',12)} マッチ済み</span>`
             : sent?`<button class="btn btn-sm btn-soft" disabled>いいね済み</button>`
@@ -1737,7 +1745,7 @@ const App = {
         ${u.role==='coach'&&(u.lessonCount||u.certIssued)?`<div class="hint" style="margin-top:4px">MyCOACH実績：レッスン ${u.lessonCount||0}回（決済記録に基づく）${u.certIssued?`・${ic('doc',11)}事務局発行の実績証明書あり`:''}</div>`:''}
         ${u.role==='coach'&&u.avail?.length?`<div class="hint" style="margin-top:3px">対応時間帯：${u.avail.join('・')}</div>`:''}
         ${u.role==='coach'&&u.trialFee!=null?`<div style="margin-top:6px"><span class="pill pill-turf">${u.trialFee===0?'無料体験レッスンあり':`体験レッスン ${yen(u.trialFee)}`}</span></div>`:''}
-        ${isCoach?`<div class="fee" style="font-size:24px;margin-top:8px">${yen(u.fee)}<small> /回</small></div>`:''}
+        ${isCoach?`<div class="fee" style="font-size:24px;margin-top:8px">${u.fee>0?`${yen(u.fee)}<small> /回</small>`:'<small style="font-size:15px;font-weight:800">料金応相談</small>'}</div>`:''}
       </div>
       <p style="margin:16px 0;font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(u.intro)}</p>
       ${rvs.length?`<div style="margin:0 0 14px"><div style="font-weight:800;font-size:13px">レビュー（${rvs.length}件）</div>${rvHtml}</div>`:''}
@@ -1883,12 +1891,14 @@ const App = {
       <div class="chat">
         <div class="chat-hd">
           <button class="back" onclick="location.hash='#messages'">←</button>
-          <div class="avatar" style="width:40px;height:40px;font-size:20px">${avatarOf(other)}</div>
-          <div style="flex:1"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${esc(other?.sport||'')}・${esc(other?.area||'')}</div></div>
-          ${canPropose?`<button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${iAmCoach?ic('doc',14)+' 契約を提案':ic('doc',14)+' 契約を依頼'}</button>
-          <span class="hint" style="font-size:11px">流れ：相談 → 契約${iAmCoach?'提案':'依頼'} → 承諾 → お支払い → レッスン</span>`:''}
-          <button class="btn btn-sm btn-danger-soft" onclick="App.openReport('${other?.id}')">通報</button>
+          <div class="avatar" style="width:42px;height:42px;font-size:20px" onclick="App.openProfile('${other?.id}')">${avatarOf(other)}</div>
+          <div class="who" onclick="App.openProfile('${other?.id}')"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${other?metaOf(other):''}</div></div>
+          <button class="btn btn-sm btn-danger-soft rep" onclick="App.openReport('${other?.id}')">通報</button>
         </div>
+        ${canPropose?`<div class="chat-cta">
+          <button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${ic('doc',14)} 契約を${iAmCoach?'提案':'依頼'}する</button>
+          <span class="hint">相談 → 契約 → 承諾 → お支払い</span>
+        </div>`:''}
         ${banner}
         <div class="chat-body" id="chat-body"></div>
         <div class="chat-in">
