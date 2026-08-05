@@ -3,6 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function authed() { return request.auth != null; }
+    // 受取口座ゲートのサーバー強制（settings/platform.requireConnect==true のときのみ有効）
+    function connectGateOn() {
+      return exists(/databases/$(database)/documents/settings/platform)
+        && get(/databases/$(database)/documents/settings/platform).data.requireConnect == true;
+    }
     function isAdmin() {
       return authed() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
@@ -74,8 +79,14 @@ service cloud.firestore {
                     || request.auth.uid == resource.data.player || isAdmin());
       allow create: if authed() && (request.auth.uid == request.resource.data.coach
                     || request.auth.uid == request.resource.data.player);
-      allow update: if authed() && (request.auth.uid == resource.data.coach
-                    || request.auth.uid == resource.data.player || isAdmin());
+      allow update: if authed()
+        && (request.auth.uid == resource.data.coach
+            || request.auth.uid == resource.data.player || isAdmin())
+        // 契約開始（active への遷移）は、ゲート強制ON時はコーチの受取口座設定を必須にする
+        && (isAdmin()
+            || !(request.resource.data.status == 'active' && resource.data.status != 'active')
+            || !connectGateOn()
+            || get(/databases/$(database)/documents/users/$(resource.data.coach)).data.stripeChargesEnabled == true);
       allow delete: if false;
     }
 
@@ -115,7 +126,7 @@ service cloud.firestore {
         && request.resource.data.amount is number && request.resource.data.amount > 0
         && request.resource.data.fee is number && request.resource.data.fee >= 0;
       allow update: if isAdmin(); // 精算フラグ（payoutId）の付与のみ想定
-      allow delete: if false;
+      allow delete: if isAdmin(); // 誤記録の取消（管理画面から。監査ログに記録される）
     }
 
     // 精算（事務局→コーチへの振込記録）：作成は管理者のみ
@@ -165,6 +176,13 @@ service cloud.firestore {
         && request.resource.data.status == 'requested'
         && request.resource.data.stats == null;
       allow update, delete: if isAdmin();
+    }
+
+    // プラットフォーム設定（受取口座ゲートの強制など）：変更は事務局のみ
+    match /settings/{id} {
+      allow read: if authed();
+      allow create, update: if isAdmin();
+      allow delete: if false;
     }
 
     // 運営からのお知らせ：閲覧は全ログインユーザー、配信は事務局のみ

@@ -1,0 +1,25 @@
+{
+  "name": "MyCOACH - スポーツ指導者マッチング",
+  "short_name": "MyCOACH",
+  "description": "部活・クラブ・個人レッスンのコーチが見つかる。契約からお支払いまでアプリで完結。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F7FD",
+  "theme_color": "#2E7CE0",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

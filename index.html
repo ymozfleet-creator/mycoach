@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MyCOACH | スポーツ指導者マッチング</title>
+<title>MyCOACH | スポーツ指導者マッチング - 部活・クラブ・個人レッスンのコーチが見つかる</title>
+<meta name="description" content="スポーツの先生、見つかる。全国70競技のコーチと出会えるマッチングサービス。部活動の地域移行にも対応、チーム名義の契約・オンライン決済・実績証明書までアプリで完結。登録無料。">
+<meta name="theme-color" content="#2E7CE0">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MyCOACH">
+<meta property="og:title" content="MyCOACH｜スポーツ指導者マッチング">
+<meta property="og:description" content="部活・クラブ・個人レッスンのコーチが見つかる。契約からお支払い、実績の証明までアプリで完結。登録無料。">
+<meta property="og:url" content="https://ymozfleet-creator.github.io/mycoach/">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="manifest.json">
 <meta name="description" content="スポーツを教えたい人と学びたい人をつなぐマッチングサービス MyCOACH">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -468,6 +477,7 @@ const FIREBASE_CONFIG = {
   appId: "1:716654384254:web:af387e47a2288bbde5b42f",
   measurementId: "G-8TGR7Q8Y8L"
 }; /* 本番（mycoach-c15ae）接続済み。デモモードに戻す場合はこのオブジェクトを null に置き換える */
+const FIREBASE_STORAGE_ENABLED = false; /* Firebase Storage有効化後に true へ（写真をStorage保存へ切替。falseの間は従来どおり） */
 
 const PLAYER_FEE_RATE = 0.10;  // 受講者システム利用料（レッスン料に上乗せ・10%）
 const COACH_FEE_RATE  = 0.20;  // コーチ事務手数料（レッスン料から控除・20%）
@@ -933,6 +943,12 @@ const LocalDB = {
       return {...m, other, lastMsg:msgs[msgs.length-1]||null};
     }).sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
   },
+  async getSetting(id){ const db=this._load(); return (db.settings||{})[id]||null; },
+  async setSetting(id,val){ const db=this._load(); db.settings=db.settings||{}; db.settings[id]={...(db.settings[id]||{}),...val}; this._save(db); },
+  async deletePayment(id){ const db=this._load(); const i=db.payments.findIndex(p=>p.id===id); if(i<0) return null;
+    const [p]=db.payments.splice(i,1);
+    if(p.coach&&db.users[p.coach]) db.users[p.coach].lessonCount=Math.max(0,(db.users[p.coach].lessonCount||0)-1);
+    this._save(db); return p; },
   async getMatch(id){ const db=this._load(); const m=db.matches.find(x=>x.id===id); return m||null; },
   async findMatch(a,b){ const db=this._load(); return db.matches.find(m=>m.users.includes(a)&&m.users.includes(b))||null; },
   async sendMessage(matchId,from,text){
@@ -1046,6 +1062,7 @@ const FireDB = {
     await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
     await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js');
     await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
+    if(FIREBASE_STORAGE_ENABLED) await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js');
     firebase.initializeApp(FIREBASE_CONFIG);
     this._auth=firebase.auth(); this._fs=firebase.firestore();
     await new Promise(res=>{ const un=this._auth.onAuthStateChanged(()=>{un();res();}); });
@@ -1110,6 +1127,18 @@ const FireDB = {
     }
     return out.sort((a,b)=>((b.lastMsg?.ts||b.ts)-(a.lastMsg?.ts||a.ts)));
   },
+  async getSetting(id){ const d=await this._fs.collection('settings').doc(id).get(); return d.exists?d.data():null; },
+  async setSetting(id,val){ const d=await this._fs.collection('settings').doc(id).get();
+    if(d.exists) await this._fs.collection('settings').doc(id).update(val);
+    else await this._fs.collection('settings').doc(id).set({id,...val}); },
+  async deletePayment(id){ const d=await this._fs.collection('payments').doc(id).get(); if(!d.exists) return null;
+    const p=d.data();
+    await this._fs.collection('payments').doc(id).delete();
+    try{ const u=await this._fs.collection('users').doc(p.coach).get();
+      if(u.exists) await this._fs.collection('users').doc(p.coach).update({lessonCount:Math.max(0,(u.data().lessonCount||0)-1)});
+      delete this._uc[p.coach];
+    }catch(e){}
+    return p; },
   async getMatch(id){ const d=await this._fs.collection('matches').doc(id).get(); return d.exists?d.data():null; },
   async findMatch(a,b){
     const det=await this._fs.collection('matches').doc([a,b].sort().join('__')).get();
@@ -1259,6 +1288,9 @@ const App = {
       return;
     }
     window.addEventListener('hashchange',()=>this.route());
+    if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
     this.route();
     if(this.badgeTimer) clearInterval(this.badgeTimer);
     this.badgeTimer=setInterval(()=>{ if(this.me && (document.getElementById('badge-bell')||document.getElementById('badge-msg'))) this.updateBadges(); }, DB.mode==='demo'?5000:30000);
@@ -2515,7 +2547,14 @@ const App = {
     const f=input.files[0]; if(!f) return;
     try{
       const photo=await resizeImage(f,480);
-      this.me=await DB.updateUser(this.me.id,{photo});
+      let val=photo;
+      if(FIREBASE_STORAGE_ENABLED && DB.mode!=='demo' && typeof firebase!=='undefined' && firebase.storage){
+        const blob=await (await fetch(photo)).blob();
+        const ref=firebase.storage().ref(`avatars/${this.me.id}.jpg`);
+        await ref.put(blob,{contentType:'image/jpeg'});
+        val=await ref.getDownloadURL();
+      }
+      this.me=await DB.updateUser(this.me.id,{photo:val});
       this.toast('写真を更新しました'); this.viewMe();
     }catch(e){ this.toast('画像の読み込みに失敗しました'); }
   },
@@ -2646,6 +2685,11 @@ const App = {
             ${audit.map(a=>`<div class="act"><span class="tm">${fmtT(a.ts)}</span><span><b>${esc(a.admin||'-')}</b>：${esc(a.action)}${a.target?` → ${esc(a.target)}`:''}</span></div>`).join('')||'<p class="hint">管理操作の記録はまだありません。停止・審査・精算・発行などの操作が自動で記録されます。</p>'}
           </div>
         </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin:18px 0 6px;flex-wrap:wrap">
+        <h3 style="font-weight:800;margin:0">バックアップ</h3>
+        <button class="btn btn-sm btn-soft" onclick="App.backupAll()">${ic('doc',13)} 全データCSVを一括ダウンロード</button>
+        <span class="hint">users / contracts / payments / payouts の4ファイル。月次保存を推奨。</span>
       </div>
       <h3 style="font-weight:800;margin:18px 0 10px">最近の契約</h3>
       <div class="tbl-wrap"><table>
@@ -2787,6 +2831,7 @@ const App = {
 
   async admPayments(){
     const ps=await DB.allPayments();
+    const gset=await DB.getSetting('platform'); const gateOn=!!(gset&&gset.requireConnect);
     const us={}; (await DB.allUsers()).forEach(u=>us[u.id]=u.name);
     const total=ps.reduce((s,p)=>s+p.amount,0), fees=ps.reduce((s,p)=>s+p.fee,0);
     const un=await DB.unsettledByCoach();
@@ -2797,6 +2842,12 @@ const App = {
         <div class="stat"><div class="n" style="font-size:22px">${yen(total)}</div><div class="l">決済総額</div></div>
         <div class="stat"><div class="n" style="font-size:22px;color:var(--turf)">${yen(fees)}</div><div class="l">手数料収益（受講者10%＋コーチ20%）</div></div>
         <div class="stat"><div class="n">${ps.length}</div><div class="l">決済件数</div></div>
+      </div>
+      <div class="notice" style="margin:16px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${ic('shield',14)} <b>受取口座ゲートのサーバー強制：</b>
+        <span class="pill ${gateOn?'pill-turf':'pill-gray'}">${gateOn?'ON（データベースで強制中）':'OFF（画面制御のみ）'}</span>
+        <button class="btn btn-sm btn-soft" onclick="App.admToggleGate(${gateOn?'false':'true'})">${gateOn?'OFFにする':'ONにする'}</button>
+        <span class="hint">ONにすると、受取口座未設定のコーチとの契約開始をデータベース側でも拒否します（JS改変への対策）。</span>
       </div>
       <h2 style="font-size:16px;font-weight:800;margin:22px 0 8px">コーチ精算（未払い ${yen(unTotal)}）</h2>
       <p class="hint" style="margin-bottom:8px">受講者からの決済のうち、コーチにまだ振り込んでいない受取分です。銀行振込を実施したら「精算済みにする」を押すと記録され、コーチに通知されます。</p>
@@ -2817,11 +2868,13 @@ const App = {
         <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payouts')">精算CSV</button>
         <button class="btn btn-sm btn-soft" onclick="App.exportCSV('payments')">決済CSV</button></div>
       <div class="tbl-wrap"><table>
-        <tr><th>日付</th><th>コーチ</th><th>受講者</th><th>支払総額</th><th>手数料計</th><th>コーチ受取</th><th>方法</th></tr>
+        <tr><th>日付</th><th>コーチ</th><th>受講者</th><th>支払総額</th><th>手数料計</th><th>コーチ受取</th><th>方法</th><th></th></tr>
         ${ps.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${esc(us[p.coach]||'-')}</td><td>${esc(us[p.player]||'-')}</td>
           <td class="num">${yen(p.amount)}</td><td class="num">${yen(p.fee)}</td><td class="num">${yen(p.net)}</td>
-          <td>${p.method==='demo'?'デモ決済':p.method==='manual'?'手動記録':'Stripe'}${p.payoutId==='stripe_connect'?'<div class="hint">自動分配済</div>':p.payoutId?'<div class="hint">精算済</div>':''}</td></tr>`).join('')||'<tr><td colspan="7">決済データがありません</td></tr>'}
-      </table></div></div>`;
+          <td>${p.method==='demo'?'デモ決済':p.method==='manual'?'手動記録':'Stripe'}${p.payoutId==='stripe_connect'?'<div class="hint">自動分配済</div>':p.payoutId?'<div class="hint">精算済</div>':''}</td>
+          <td>${!p.payoutId?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelPayment('${p.id}')">取消</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8">決済データがありません</td></tr>'}
+      </table></div>
+      <p class="hint" style="margin-top:8px">「取消」は誤って記録された支払いの削除です（未精算のもののみ）。コーチの指導実績カウントも1件分戻ります。実際のお金の返金は行われないため、Stripe決済の返金はStripeダッシュボードから実施してください。</p></div>`;
   },
   async admVerify(){
     const order={pending:0,rejected:1,none:2,approved:3};
@@ -2928,6 +2981,29 @@ const App = {
       if(!still) await DB.updateUser(rc.userId,{certIssued:false}); }
     DB.audit({admin:this.me.name, action:'実績証明書を失効', target:id});
     this.toast('失効させました'); await this.viewAdmin('certs');
+  },
+  async admCancelPayment(id){
+    if(!confirm('この支払い記録を取り消します。コーチの指導実績カウントも1件戻ります。\n（実際のお金の返金は行われません。Stripe決済の返金はStripeダッシュボードから）\nよろしいですか？')) return;
+    const p=await DB.deletePayment(id);
+    if(!p){ this.toast('対象が見つかりませんでした'); return; }
+    const cu=await DB.getUser(p.coach);
+    DB.audit({admin:this.me.name, action:'支払い記録を取消', target:cu?.name||p.coach, detail:`${yen(p.amount)}（${p.id}）`});
+    DB.notify(p.player,'pay',`お支払い記録（${yen(p.amount)}）が事務局により取り消されました`,'#contracts');
+    DB.notify(p.coach,'pay',`支払い記録（受取分 ${yen(p.net)}）が事務局により取り消されました`,'#contracts');
+    this.toast('支払い記録を取り消しました');
+    await this.viewAdmin('payments');
+  },
+  async admToggleGate(on){
+    if(!confirm(on?'受取口座ゲートをデータベース側でも強制します。よろしいですか？':'サーバー強制をOFFにします（画面側の制御は残ります）。')) return;
+    await DB.setSetting('platform',{requireConnect:on});
+    DB.audit({admin:this.me.name, action:on?'受取口座ゲートのサーバー強制をON':'受取口座ゲートのサーバー強制をOFF'});
+    this.toast(on?'サーバー強制をONにしました':'OFFにしました');
+    await this.viewAdmin('payments');
+  },
+  async backupAll(){
+    for(const k of ['users','contracts','payments','payouts']){ await this.exportCSV(k); await new Promise(r=>setTimeout(r,400)); }
+    DB.audit({admin:this.me.name, action:'全データCSVバックアップを出力'});
+    this.toast('4ファイルをダウンロードしました');
   },
   async admSettle(coach){
     if(!confirm('このコーチへの振込を実施済みとして精算しますか？（対象：未精算の全決済）')) return;

@@ -184,3 +184,33 @@ firebase deploy --only functions:notifyMail
 - **バックアップ**: Firestoreの定期エクスポート設定を推奨
 - **特商法・利用規約**: 決済を伴うため、公開前に特定商取引法に基づく表記と
   利用規約・プライバシーポリシーのページをご用意ください
+
+
+---
+
+## STEP 7. メール通知を有効化する（Trigger Email拡張・推奨）
+
+アプリ内通知（いいね・マッチ・メッセージ・契約・支払い）をメールでも届けます。
+notifyMail関数はデプロイ済みのため、拡張の導入だけで動き始めます。
+
+1. Firebaseコンソール → 構築 → Extensions →「Trigger Email from Firestore」をインストール
+2. 設定値：Collection = `mail`／SMTP接続情報（例：Gmail のアプリパスワード、または SendGrid）
+   - 差出人（FROM）：kanri@mycoach-myteam.com 推奨
+3. インストール完了後、アプリで何か通知が発生すると `mail` コレクション経由でメールが送信されます
+4. 確認：Firestore → mail に delivery.state = SUCCESS が付けば稼働
+
+## STEP 8. Firebase Hostingへ移行する（独自オリジン・推奨）
+
+github.io は他リポジトリとオリジンを共有するため、専用オリジンの Hosting への移行を推奨します。
+
+1. Cloud Shell で: `cd ~/mycoach && git pull && firebase deploy --only hosting --project mycoach-c15ae`
+2. 公開URL: https://mycoach-c15ae.web.app （authDomainのため認証はそのまま動作します）
+3. 動作確認後、案内するURLをweb.app側へ切り替え。index.htmlの og:url も新URLへ更新
+4. github.io側は当面残してOK（同じFirebaseに接続されるため、データは共通です）
+
+## STEP 9. 写真をStorage保存に切り替える（任意）
+
+1. Firebaseコンソール → 構築 → Storage →「始める」（本番モード）
+2. ルールタブに リポジトリの storage.rules を貼り付け → 公開
+3. index.html の `FIREBASE_STORAGE_ENABLED = false` を `true` に変更してコミット
+4. 以後の写真アップロードはStorage保存（URL参照）になり、Firestoreの容量制限から解放されます
