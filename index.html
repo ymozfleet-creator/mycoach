@@ -312,6 +312,9 @@ svg.pict{vertical-align:-0.18em}
 .legal-tbl th{width:32%;text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;background:var(--sky);font-weight:700}
 .legal-tbl td{padding:11px 10px;border-bottom:1px solid var(--line);line-height:1.9}
 .ct-next{background:var(--sky);border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.7}
+.pay-spin{width:44px;height:44px;border-radius:50%;border:4px solid var(--court-soft);border-top-color:var(--court);margin:0 auto;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pay-done{width:58px;height:58px;border-radius:50%;background:var(--turf);color:#fff;display:grid;place-items:center;margin:0 auto;animation:pop .35s both}
 .next-lesson{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FFF8E8;border:1px solid #F0DFAE;border-radius:10px;padding:7px 12px;font-size:12.5px}
 /* 募集・時間帯・報告書 */
 .recruit-sec{margin-bottom:22px}
@@ -1047,6 +1050,7 @@ const LocalDB = {
     this._save(db); return {id,amount:total,count:targets.length}; },
   async allPayouts(){ const db=this._load(); return (db.payouts||[]).slice().sort((a,b)=>b.ts-a.ts); },
   async myUnsettled(coach){ return this._load().payments.filter(p=>p.coach===coach&&!p.payoutId).reduce((s,p)=>s+Number(p.net||0),0); },
+  async myPayments(uid){ return this._load().payments.filter(p=>p.player===uid).sort((a,b)=>b.ts-a.ts); },
   async resetPassword(email,newPw){ const db=this._load(); const u=Object.values(db.users).find(x=>x.email===email&&!x.deleted); if(!u) throw new Error('このメールアドレスの登録が見つかりません'); u.pw=newPw; this._save(db); },
   async deleteAccount(id){ const db=this._load(); const u=db.users[id]; u.deleted=true; u.suspended=true; this._save(db); localStorage.removeItem(LS_SES); },
   resetDemo(){ localStorage.removeItem(LS_DB); localStorage.removeItem(LS_SES); location.hash=''; location.reload(); }
@@ -1247,6 +1251,8 @@ const FireDB = {
     await Promise.all(targets.map(p=>this._fs.collection('payments').doc(p.id).update({payoutId:id})));
     return {id,amount:total,count:targets.length}; },
   async allPayouts(){ const q=await this._fs.collection('payouts').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
+  async myPayments(uid){ const q=await this._fs.collection('payments').where('player','==',uid).get();
+    return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async myUnsettled(coach){ const q=await this._fs.collection('payments').where('coach','==',coach).get();
     return q.docs.map(d=>d.data()).filter(p=>!p.payoutId).reduce((s,p)=>s+Number(p.net||0),0); },
   async resetPassword(email){ await this._auth.sendPasswordResetEmail(email); },
@@ -1287,6 +1293,11 @@ const App = {
       document.body.innerHTML='<div style="max-width:560px;margin:80px auto;padding:28px;font-family:sans-serif;border:1px solid #ddd;border-radius:14px"><h2 style="margin-bottom:10px">接続エラー</h2><p style="line-height:1.9">データベースへの接続に失敗しました。ネットワーク接続と、ファイル冒頭の FIREBASE_CONFIG の設定内容をご確認ください。</p><p style="color:#888;font-size:12px;margin-top:10px">'+String((e&&e.message)||e).replace(/</g,"&lt;")+'</p></div>';
       return;
     }
+    // Stripe決済ページからの戻り（success_urlの ?paid=1）を検知して結果画面を出す
+    try{
+      const q=new URLSearchParams(location.search);
+      if(q.get('paid')==='1'){ this._paidReturn=true; history.replaceState(null,'',location.pathname+location.hash); }
+    }catch(e){}
     window.addEventListener('hashchange',()=>this.route());
     if('serviceWorker' in navigator && location.protocol.startsWith('http')){
       navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1315,6 +1326,7 @@ const App = {
         return this.viewAuth('login');
       }
     }
+    if(this._paidReturn && this.me){ this._paidReturn=false; this.handlePaymentReturn(); }
     const h=location.hash;
     if(h.startsWith('#legal/')) return this.viewLegal(h.split('/')[1]);
     if(h.startsWith('#cert/')) return this.viewCert(h.slice(6));
@@ -2102,7 +2114,9 @@ const App = {
       return `<div class="ct-card">
         <div class="top"><h3>${esc(c.title)}</h3><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></div>
         ${c.status==='proposed'?`<div class="hint ct-next">${c.proposer===this.me.id?'相手の承諾を待っています。トークで一言添えると承諾率が上がります':'内容を確認して「承諾して契約する」を押すと契約開始です'}</div>`
-         :c.status==='active'?`<div class="hint ct-next">${this.me.id===c.player?'レッスンが済んだら「支払う」からお支払いください':'受講者のお支払い後、受取分が精算されます'}</div>`
+         :c.status==='active'?`<div class="hint ct-next">${this.me.id===c.player
+            ?(pays.length?`お支払い済み（${pays.length}回）。次回のレッスン後も同じ「支払う」からお支払いください`:'レッスンが済んだら「支払う」からお支払いください')
+            :(pays.length?'受講者のお支払いを受領済みです。受取分は自動送金または精算で支払われます':'受講者のお支払い後、受取分が精算されます')}</div>`
          :c.status==='completed'&&this.me.id===c.coach?`<div class="hint ct-next">おつかれさまでした。手応えがあれば「継続プランを提案」で次につなげましょう</div>`:''}
         <div class="hint">相手：${esc(other?.name||'退会ユーザー')}（${c.coach===this.me.id?'受講者':'コーチ'}）</div>
         ${c.status==='active'?`<div class="next-lesson">${ic('bell',12)} 次回レッスン：${c.nextLesson?`<b>${esc(c.nextLesson)}</b>`:'未定'}
@@ -2306,6 +2320,50 @@ const App = {
   },
 
   /* ---------- 決済 ---------- */
+  /* Stripe決済完了後の結果表示：Webhookの記録反映をポーリングして成功画面を出す */
+  async handlePaymentReturn(){
+    this.modal(`<div style="text-align:center;padding:14px 0 6px">
+      <div class="pay-spin"></div>
+      <div style="font-weight:800;font-size:15.5px;margin-top:16px">お支払いを確認しています…</div>
+      <p class="hint" style="margin-top:8px">Stripeでの決済結果を反映中です（通常は数秒で完了します）</p>
+    </div>`);
+    const since=Date.now()-15*60000;
+    let found=null;
+    for(let i=0;i<15;i++){
+      try{
+        const ps=await DB.myPayments(this.me.id);
+        found=ps.find(p=>p.ts>=since);
+        if(found) break;
+      }catch(e){}
+      await new Promise(r=>setTimeout(r,2000));
+    }
+    if(found){
+      const auto=found.payoutId==='stripe_connect';
+      this.modal(`<div style="text-align:center;padding:10px 0 4px">
+        <div class="pay-done">${ic('check',30)}</div>
+        <div style="font-weight:800;font-size:17px;margin-top:14px">お支払いが完了しました</div>
+        <div class="fee" style="font-size:26px;margin-top:10px">${yen(found.amount)}</div>
+        <p class="hint" style="margin-top:6px">レッスン料 ${yen(found.base)} ＋ システム利用料 ${yen(found.playerFee)}</p>
+        <div class="ct-next" style="text-align:left;margin-top:16px">
+          <b>このあとの流れ</b><br>
+          ・コーチに支払い完了が通知されました${auto?'（受取分はコーチの口座へ自動送金されます）':''}<br>
+          ・レッスンの日程は、契約カードの「日程を決める」かトークで相談できます<br>
+          ・レッスンが終わったら「契約を完了にする」→ レビューでコーチを応援しましょう
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="App.closeModal();App.viewContracts()">契約を確認する</button>
+      </div>`);
+      DB.audit&&0; await this.viewContracts();
+    }else{
+      this.modal(`<div style="text-align:center;padding:10px 0 4px">
+        <div class="pay-done" style="background:var(--sky);color:var(--court)">${ic('card',26)}</div>
+        <div style="font-weight:800;font-size:16px;margin-top:14px">決済は受け付けられました</div>
+        <p class="hint" style="margin-top:10px;line-height:2">記録の反映に少し時間がかかっています。<br>
+        1分ほど待ってから画面を再読み込みしてください。<br><b>二重にお支払いいただく必要はありません。</b><br>
+        Stripeから届く決済メールが領収の控えになります。</p>
+        <button class="btn btn-soft btn-block" style="margin-top:14px" onclick="location.reload()">再読み込みする</button>
+      </div>`);
+    }
+  },
   async openPay(ctId){
     const cts=await DB.listContracts(this.me.id);
     const c=cts.find(x=>x.id===ctId); if(!c) return;
