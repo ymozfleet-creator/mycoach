@@ -315,6 +315,7 @@ svg.pict{vertical-align:-0.18em}
 .pay-spin{width:44px;height:44px;border-radius:50%;border:4px solid var(--court-soft);border-top-color:var(--court);margin:0 auto;animation:spin 0.9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .pay-done{width:58px;height:58px;border-radius:50%;background:var(--turf);color:#fff;display:grid;place-items:center;margin:0 auto;animation:pop .35s both}
+.page-load{display:grid;place-items:center;min-height:55vh}
 .next-lesson{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FFF8E8;border:1px solid #F0DFAE;border-radius:10px;padding:7px 12px;font-size:12.5px}
 /* 募集・時間帯・報告書 */
 .recruit-sec{margin-bottom:22px}
@@ -1327,6 +1328,11 @@ const App = {
       }
     }
     if(this._paidReturn && this.me){ this._paidReturn=false; this.handlePaymentReturn(); }
+    /* 体感速度：データ取得中は軽いローディングを表示（ログイン後の主要画面のみ） */
+    if(this.me){
+      const ap=document.getElementById('app');
+      if(ap) ap.innerHTML=`<div class="page-load"><div class="pay-spin"></div></div>`;
+    }
     const h=location.hash;
     if(h.startsWith('#legal/')) return this.viewLegal(h.split('/')[1]);
     if(h.startsWith('#cert/')) return this.viewCert(h.slice(6));
@@ -1711,6 +1717,13 @@ const App = {
               :`<option value="">受講形態：すべて</option><option value="individual">個人</option><option value="team">チーム</option>`}
           </select>
           ${isPlayer?`<select id="fl-avail" onchange="App.renderBrowse()"><option value="">時間帯：すべて</option>${AVAIL.map(a=>`<option>${a}</option>`).join('')}</select>`:''}
+          <select id="fl-sort" onchange="App.renderBrowse()">
+            <option value="">おすすめ順</option>
+            <option value="new">新着順</option>
+            <option value="rating">評価が高い順</option>
+            <option value="lessons">実績が多い順</option>
+            ${isPlayer?`<option value="feeAsc">料金が安い順</option>`:''}
+          </select>
           <input id="fl-q" placeholder="キーワード検索" oninput="App.renderBrowse()">
         </div>
         ${recruitHtml}
@@ -1743,11 +1756,33 @@ const App = {
         return (u.playerType||'individual')===tp;
       })
       .filter(u=>!av||(u.avail||[]).includes(av));
+    /* 並び替え（おすすめ＝認証・実績・評価の総合スコア） */
+    const so=document.getElementById('fl-sort')?.value||'';
+    const score=u=>(u.verified==='approved'?100:0)+(u.certIssued?50:0)+(u.lessonCount||0)*2+(u.ratingAvg||0)*10+(u.ratingCount||0)+((u.photo)?5:0);
+    if(so==='new') list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    else if(so==='rating') list.sort((a,b)=>((b.ratingAvg||0)-(a.ratingAvg||0))||((b.ratingCount||0)-(a.ratingCount||0)));
+    else if(so==='lessons') list.sort((a,b)=>(b.lessonCount||0)-(a.lessonCount||0));
+    else if(so==='feeAsc') list.sort((a,b)=>((a.fee>0?a.fee:Infinity)-(b.fee>0?b.fee:Infinity)));
+    else list.sort((a,b)=>score(b)-score(a));
+    /* フィルタが変わったらページングをリセット */
+    const sig=[sp,ar,q,tp,av,so].join('|');
+    if(this._browseSig!==sig){ this._browseSig=sig; this._browseN=24; }
     const grid=document.getElementById('browse-grid');
     if(!list.length){ grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ic">${ic('search',44)}</div>条件に合う相手が見つかりませんでした。<br>条件を広げると出会いの幅が広がります。<br>
-      <button class="btn btn-sm btn-soft" style="margin-top:14px" onclick="App.resetBrowseFilters()">${ic('refresh',13)} 条件をリセットして全員表示</button></div>`; return; }
-    const countLine=`<div class="hint" style="grid-column:1/-1;margin:-2px 0 -4px">${list.length}名が見つかりました</div>`;
-    grid.innerHTML=countLine+list.map(u=>{
+      <p class="hint" style="margin-top:12px">${this.me.role==='coach'
+        ?'この条件の受講希望者はまだ登録がありません。プロフィールと写真を充実させておくと、登録時に見つけてもらいやすくなります。'
+        :(this.me.playerType==='team'
+          ?'お急ぎの場合はチームの募集を掲載しておくと、条件に合うコーチ側から「いいね」が届きます。'
+          :'コーチは順次増えています。エリアを広げるか、日を置いてまたご覧ください。')}</p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+        <button class="btn btn-sm btn-soft" onclick="App.resetBrowseFilters()">${ic('refresh',13)} 条件をリセットして全員表示</button>
+        ${this.me.role!=='coach'&&this.me.playerType==='team'?`<button class="btn btn-sm btn-primary" onclick="App.openRecruitForm()">${ic('doc',13)} 募集を掲載する</button>`:''}
+      </div></div>`; return; }
+    const countLine=`<div class="hint" style="grid-column:1/-1;margin:-2px 0 -4px">${list.length}名が見つかりました${so===''?'（おすすめ順）':''}</div>`;
+    const shown=list.slice(0, this._browseN||24);
+    const moreBtn=list.length>shown.length?`<div style="grid-column:1/-1;text-align:center;margin-top:4px">
+      <button class="btn btn-soft" onclick="App._browseN=(App._browseN||24)+24;App.renderBrowse()">さらに表示（残り${list.length-shown.length}名）</button></div>`:'';
+    grid.innerHTML=countLine+shown.map(u=>{
       const matched=matchedIds.has(u.id), sent=sentTo.has(u.id), recv=recvFrom.has(u.id);
       return `<div class="ucard">
         ${recv&&!matched?`<span class="likedby pill pill-flag">${ic('heart',12)} あなたに興味あり</span>`:''}
@@ -1772,7 +1807,7 @@ const App = {
             : `<button class="btn btn-sm ${recv?'btn-flag':'btn-primary'}" onclick="App.sendLike('${u.id}')">${recv?ic('heart',15)+' いいねを返す':ic('thumb',15)+' いいね'}</button>`}
         </div>
       </div>`;
-    }).join('');
+    }).join('')+moreBtn;
   },
 
   async openProfile(id){
@@ -1817,6 +1852,8 @@ const App = {
   },
 
   async sendLike(to){
+    if(this._likeBusy) return;
+    this._likeBusy=true;
     try{
     // マッチ済み・送信済みの再タップをガード
     const ex=await DB.findMatch(this.me.id,to).catch(()=>null);
@@ -1834,7 +1871,7 @@ const App = {
       this.toast('いいねを送りました！');
       if(location.hash===''||location.hash==='#browse') this.viewBrowse(); else this.route();
     }
-    }catch(e){ this.toast('送信に失敗しました：'+(e.message||e.code||'不明なエラー')); }
+    }catch(e){ this.toast('送信に失敗しました：'+(e.message||e.code||'不明なエラー')); }finally{ this._likeBusy=false; }
   },
 
   showMatchFX(other, matchId){
