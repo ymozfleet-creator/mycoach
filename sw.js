@@ -1,20 +1,43 @@
-/* MyCOACH Service Worker: network-first（常に最新のindex.htmlを取りに行き、オフライン時のみキャッシュ） */
-const CACHE = 'mycoach-v1';
-self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+/* MyCOACH-MyTEAM Service Worker
+   - ページ(HTML)：ネットワーク優先で常に最新版を表示。3秒以内に返らない／オフライン時のみ保存版を表示
+   - アイコン等の静的ファイル：保存版を即表示し、裏で更新
+   - 版を上げると古いキャッシュはすべて削除される */
+const VERSION = 'mcmt-2026-11-13-4';
+const SHELL = ['./', './index.html', './app.html', './manifest.json', './icons/icon-192.png'];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).catch(() => {}));
 });
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys()
+    .then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+
+function networkFirst(req, timeoutMs) {
+  return new Promise(resolve => {
+    let done = false;
+    const fallback = () => caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req));
+    const timer = setTimeout(() => { if (!done) { done = true; resolve(fallback()); } }, timeoutMs);
+    fetch(req, { cache: 'no-store' }).then(res => {
+      if (res && res.ok) { const cp = res.clone(); caches.open(VERSION).then(c => c.put(req, cp)); }
+      if (!done) { done = true; clearTimeout(timer); resolve(res); }
+    }).catch(() => { if (!done) { done = true; clearTimeout(timer); resolve(fallback()); } });
+  });
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || !req.url.startsWith('http')) return;
-  const isShell = req.mode === 'navigate' || req.url.includes('index.html');
-  if (isShell) {
-    // ネットワーク優先：最新版を配信し、成功したらキャッシュ更新。失敗（オフライン）時のみキャッシュ
-    e.respondWith(
-      fetch(req).then(res => { const cp = res.clone(); caches.open(CACHE).then(c => c.put(req, cp)); return res; })
-        .catch(() => caches.match(req))
-    );
-  } else if (req.url.includes('/icons/') || req.url.includes('manifest.json') || req.url.includes('gstatic.com') || req.url.includes('googleapis.com/css')) {
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => { const cp = res.clone(); caches.open(CACHE).then(c => c.put(req, cp)); return res; })));
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;            // 外部（フォント・気象API・決済）は触らない
+  if (req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    e.respondWith(networkFirst(req, 3000));
+    return;
   }
+  e.respondWith(caches.match(req).then(hit => {
+    const net = fetch(req).then(res => { if (res && res.ok) { const cp = res.clone(); caches.open(VERSION).then(c => c.put(req, cp)); } return res; });
+    return hit || net;
+  }));
 });

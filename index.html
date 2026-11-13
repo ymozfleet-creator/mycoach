@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyCOACH-MyTEAM｜部活動の地域展開を、ひとつの運営基盤で</title>
+<meta name="description" content="部活動の地域展開に取り組む自治体・地域クラブ運営団体向けの運営基盤。AIによる指導者マッチングと審査、熱中症（WBGT）の自動監視、会費集金・出欠・自治体への実績報告の自動化までをひとつにまとめます。">
+<meta name="theme-color" content="#0F2A4A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
+<style>
+:root{
+  --navy:#0F2A4A; --navy2:#16365E; --blue:#2E7CE0; --blue-l:#E8F1FC;
+  --lime:#B7F03C; --orange:#FF8A3D; --red:#E5484D;
+  --ink:#14202E; --sub:#55657A; --line:#E3E9F1; --bg:#F6F8FB; --white:#fff;
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif;color:var(--ink);background:var(--white);line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 26px;border-radius:999px;font-weight:700;text-decoration:none;font-size:15px;transition:.2s;border:2px solid transparent;cursor:pointer}
+.btn-primary{background:var(--lime);color:var(--navy)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(183,240,60,.35)}
+.btn-ghost{border-color:rgba(255,255,255,.5);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-dark{background:var(--navy);color:#fff}
+.btn-dark:hover{background:var(--navy2)}
+
+/* header */
+header{position:sticky;top:0;z-index:50;background:rgba(15,42,74,.92);backdrop-filter:blur(10px);color:#fff}
+.hd{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{white-space:nowrap;font-weight:900;letter-spacing:.02em;font-size:18px;text-decoration:none;display:flex;align-items:center;gap:8px}
+.logo b{color:var(--lime)}
+.logo small{font-weight:500;font-size:11px;opacity:.7;display:block;line-height:1.2}
+.sp-only{display:none}
+nav ul{display:flex;gap:24px;list-style:none;font-size:14px}
+nav a{text-decoration:none;opacity:.85}
+nav a:hover{opacity:1}
+.hd .btn{padding:9px 18px;font-size:13px}
+.login-link{color:#fff;opacity:.85;text-decoration:none;font-size:13px;font-weight:700;padding:8px 10px}.login-link:hover{opacity:1}
+.menu-btn{display:none;background:none;border:0;color:#fff;font-size:24px}
+
+/* hero */
+.hero{background:radial-gradient(1200px 500px at 85% -10%,#2E7CE0 0%,transparent 60%),linear-gradient(160deg,#0F2A4A 0%,#0B1F38 100%);color:#fff;padding:88px 0 96px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-120px;bottom:-160px;width:520px;height:520px;border:60px solid rgba(183,240,60,.08);border-radius:50%}
+.tag{display:inline-block;font-size:13px;font-weight:700;background:rgba(183,240,60,.15);color:var(--lime);padding:6px 14px;border-radius:999px;margin-bottom:20px}
+.hero h1{font-size:clamp(32px,5.2vw,56px);line-height:1.3;font-weight:900;letter-spacing:.01em}
+.hero h1 em{font-style:normal;color:var(--lime)}
+.hero p.lead{margin-top:20px;font-size:clamp(15px,1.8vw,18px);opacity:.88;max-width:640px}
+.hero .ctas{margin-top:32px;display:flex;gap:12px;flex-wrap:wrap}
+.hero-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;align-items:center;position:relative;z-index:1}
+.stat-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px}
+.stat-card h3{font-size:13px;font-weight:700;opacity:.7;margin-bottom:16px}
+.stat{display:flex;align-items:baseline;gap:10px;padding:14px 0;border-top:1px solid rgba(255,255,255,.1)}
+.stat:first-of-type{border-top:0}
+.stat b{white-space:nowrap;font-size:34px;font-weight:900;color:var(--lime);line-height:1}
+.stat span{font-size:13px;opacity:.85;line-height:1.5}
+.stat-card .src{font-size:11px;opacity:.55;margin-top:12px;line-height:1.5}
+
+section{padding:96px 0}
+.sec-head{text-align:center;margin-bottom:56px}
+.sec-head .en{font-size:12px;letter-spacing:.2em;color:var(--blue);font-weight:700}
+.sec-head h2{font-size:clamp(26px,3.4vw,38px);font-weight:900;line-height:1.4;margin-top:8px}
+.sec-head p{color:var(--sub);margin-top:14px}
+
+/* problems */
+.bg{background:var(--bg)}
+.prob-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.prob{background:#fff;border-radius:var(--r);padding:26px 22px;border:1px solid var(--line)}
+.prob .q{font-size:13px;font-weight:700;color:var(--red)}
+.prob h3{font-size:18px;margin:6px 0 10px;line-height:1.5}
+.prob p{font-size:14px;color:var(--sub)}
+.arrow{text-align:center;font-size:28px;color:var(--blue);margin:28px 0 8px}
+.answer{text-align:center;font-size:clamp(18px,2.4vw,24px);font-weight:900}
+.answer em{font-style:normal;background:linear-gradient(transparent 60%,var(--lime) 60%)}
+
+/* features */
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:48px 0;border-top:1px solid var(--line)}
+.feat:first-of-type{border-top:0}
+.feat:nth-child(even) .feat-txt{order:2}
+.feat .no{font-size:13px;font-weight:900;color:var(--blue);letter-spacing:.1em}
+.feat h3{font-size:clamp(22px,2.8vw,30px);line-height:1.45;margin:8px 0 16px;font-weight:900}
+.feat p{color:var(--sub)}
+.feat ul{list-style:none;margin-top:18px}
+.feat li{padding-left:26px;position:relative;margin:8px 0;font-size:15px}
+.feat li:before{content:"";position:absolute;left:0;top:8px;width:16px;height:16px;border-radius:50%;background:var(--blue-l);border:4px solid var(--blue)}
+.mock{background:var(--navy);border-radius:20px;padding:22px;color:#fff;box-shadow:0 20px 50px rgba(15,42,74,.25);font-size:13px}
+.mock .bar{display:flex;gap:6px;margin-bottom:14px}
+.mock .bar i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2)}
+.mrow{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;margin:8px 0;gap:10px}
+.mrow small{opacity:.65;display:block;font-size:11px}
+.pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.p-lime{background:var(--lime);color:var(--navy)}
+.p-org{background:var(--orange);color:#fff}
+.p-red{background:var(--red);color:#fff}
+.p-blue{background:var(--blue);color:#fff}
+.score{font-size:22px;font-weight:900;color:var(--lime)}
+.wbgt{display:flex;gap:16px;align-items:center}
+.wbgt .big{font-size:48px;font-weight:900;line-height:1;color:var(--orange)}
+.gauge{height:10px;border-radius:99px;background:linear-gradient(90deg,#3FA9F5,#7ED957 25%,#FFD23F 45%,#FF8A3D 65%,#E5484D 85%);position:relative;margin:12px 0 4px}
+.gauge b{position:absolute;top:-5px;width:4px;height:20px;background:#fff;border-radius:2px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:10px}
+.bars i{flex:1;background:var(--blue);border-radius:4px 4px 0 0}
+.bars i.hi{background:var(--orange)}
+
+/* who */
+.tabs{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.tabs button{border:1px solid var(--line);background:#fff;padding:10px 20px;border-radius:999px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--sub)}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.panel{display:none;background:#fff;border-radius:20px;padding:36px;border:1px solid var(--line)}
+.panel.on{display:grid;grid-template-columns:1fr 1.3fr;gap:36px}
+.panel h3{font-size:24px;line-height:1.5}
+.panel .who-sub{color:var(--sub);margin-top:10px;font-size:15px}
+.panel ul{list-style:none;display:grid;gap:12px}
+.panel li{background:var(--bg);border-radius:12px;padding:14px 16px;font-size:15px}
+.panel li b{display:block;font-size:15px}
+.panel li span{font-size:13px;color:var(--sub)}
+
+/* safety */
+.safe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.safe{border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.safe .ic{width:44px;height:44px;border-radius:12px;background:var(--blue-l);display:grid;place-items:center;font-size:22px;margin-bottom:14px}
+.safe h3{font-size:17px;margin-bottom:6px}
+.safe p{font-size:14px;color:var(--sub)}
+
+/* flow */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:f}
+.step{background:#fff;border-radius:var(--r);padding:26px 22px;border:1px solid var(--line);position:relative}
+.step:before{counter-increment:f;content:"STEP " counter(f);font-size:12px;font-weight:900;color:var(--blue);letter-spacing:.1em}
+.step h3{font-size:17px;margin:6px 0 8px}
+.step p{font-size:14px;color:var(--sub)}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.price{border:1px solid var(--line);border-radius:20px;padding:30px 26px;display:flex;flex-direction:column}
+.price.feature{background:var(--navy);color:#fff;border-color:var(--navy)}
+.price .for{font-size:13px;font-weight:700;color:var(--blue)}
+.price.feature .for{color:var(--lime)}
+.price h3{font-size:20px;margin:4px 0 14px}
+.price .amt{font-size:34px;font-weight:900;line-height:1.2}
+.price .amt small{font-size:14px;font-weight:500;opacity:.75}
+.price ul{list-style:none;margin:18px 0 0;font-size:14px;flex:1}
+.price li{padding:6px 0;border-top:1px dashed var(--line)}
+.price.feature li{border-color:rgba(255,255,255,.15)}
+.note{font-size:12px;color:var(--sub);margin-top:16px;text-align:center}
+
+/* faq */
+details{border-bottom:1px solid var(--line);padding:18px 4px}
+summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary:after{content:"+";color:var(--blue);font-size:22px;line-height:1}
+details[open] summary:after{content:"−"}
+details p{color:var(--sub);margin-top:10px;font-size:15px}
+.faq{max-width:820px;margin:0 auto}
+
+/* cta */
+.cta{background:linear-gradient(135deg,var(--navy),#123C6B);color:#fff;text-align:center;border-radius:28px;padding:64px 24px}
+.cta h2{font-size:clamp(24px,3.2vw,34px);font-weight:900;line-height:1.5}
+.cta p{opacity:.85;margin:12px 0 28px}
+.cta .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+form.contact{max-width:640px;margin:32px auto 0;display:grid;gap:12px;text-align:left}
+form.contact .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form.contact label{font-size:13px;opacity:.85}
+form.contact input,form.contact select,form.contact textarea{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font:inherit;font-size:15px}
+form.contact select option{color:var(--ink)}
+form.contact button{justify-self:center;margin-top:8px}
+
+footer{padding:40px 0;font-size:13px;color:var(--sub)}
+.ft{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+
+@media (max-width:900px){
+  nav ul{display:none}
+  nav.open .sp-only{display:list-item}
+  nav.open ul{display:flex;flex-direction:column;position:absolute;top:64px;left:0;right:0;background:var(--navy);padding:20px;gap:14px}
+  .menu-btn{display:block}
+  .logo small{display:none}
+  .stat b{font-size:28px}
+  .hd .btn,.login-link{display:none}
+  .hero-grid,.feat,.panel.on{grid-template-columns:1fr}
+  .feat:nth-child(even) .feat-txt{order:0}
+  .prob-grid,.flow{grid-template-columns:1fr 1fr}
+  .safe-grid,.price-grid{grid-template-columns:1fr}
+  section{padding:72px 0}
+  form.contact .row{grid-template-columns:1fr}
+}
+@media (max-width:560px){.prob-grid,.flow{grid-template-columns:1fr}.panel{padding:24px}}
+
+/* ===== motion & swipe ===== */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--lime),#7EE8FA);z-index:60;transition:width .1s linear}
+header{transition:background .3s,box-shadow .3s}
+header.scrolled{background:rgba(15,42,74,.97);box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.reveal.in{opacity:1;transform:none}
+.mock.reveal{transform:translateY(40px) scale(.96)}
+.mock.reveal.in{transform:none}
+.mock{transition:transform .5s cubic-bezier(.2,.7,.2,1),box-shadow .5s}
+@media (hover:hover){.mock:hover{transform:translateY(-6px) rotate(-.4deg);box-shadow:0 30px 60px rgba(15,42,74,.32)}
+ .prob:hover,.safe:hover,.step:hover,.price:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(15,42,74,.10)}}
+.prob,.safe,.step,.price{transition:transform .35s,box-shadow .35s}
+.hero .blob{position:absolute;width:520px;height:520px;border-radius:50%;filter:blur(80px);opacity:.35;pointer-events:none}
+.hero .b1{background:#2E7CE0;top:-180px;right:-120px;animation:drift 14s ease-in-out infinite alternate}
+.hero .b2{background:#B7F03C;bottom:-260px;left:-160px;opacity:.12;animation:drift 18s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(-60px,40px) scale(1.15)}}
+.hero h1,.hero .tag,.hero p.lead,.hero .ctas,.stat-card{animation:heroIn .9s cubic-bezier(.2,.7,.2,1) both}
+.hero .tag{animation-delay:.05s}.hero h1{animation-delay:.15s}.hero p.lead{animation-delay:.3s}.hero .ctas{animation-delay:.45s}.stat-card{animation-delay:.55s}
+@keyframes heroIn{from{opacity:0;transform:translateY(24px)}}
+.gauge b{transition:left 1.4s cubic-bezier(.2,.7,.2,1)}
+.mock.reveal:not(.in) .gauge b{left:0!important}
+.bars i{transform-origin:bottom;transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.mock.reveal:not(.in) .bars i{transform:scaleY(.05)}
+.mock .mrow{transition:opacity .5s,transform .5s}
+.mock.reveal:not(.in) .mrow{opacity:0;transform:translateX(16px)}
+.mock.in .mrow:nth-of-type(2){transition-delay:.15s}.mock.in .mrow:nth-of-type(3){transition-delay:.3s}.mock.in .mrow:nth-of-type(4){transition-delay:.45s}
+.tabs{position:relative}
+.panel.on{animation:panelIn .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px)}}
+.btn:active{transform:scale(.97)}
+.dots{display:none;justify-content:center;gap:6px;margin-top:14px}
+.dots i{width:7px;height:7px;border-radius:99px;background:#CBD5E1;transition:.3s}
+.dots i.on{width:22px;background:var(--blue)}
+.mcta{display:none}
+@media (max-width:900px){
+  .swipe{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding:4px 20px 8px;margin:0 -20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .swipe::-webkit-scrollbar{display:none}
+  .swipe>*{flex:0 0 84%;scroll-snap-align:center}
+  .swipe + .dots{display:flex}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;padding-bottom:4px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{white-space:nowrap}
+  .mcta{display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:55;gap:8px;padding:8px;border-radius:999px;background:rgba(15,42,74,.92);backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.25);transform:translateY(120%);transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+  .mcta.show{transform:none}
+  .mcta .btn{flex:1;padding:12px 10px;font-size:14px}
+  footer{padding-bottom:96px}
+}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<header id="hdr">
+  <div class="wrap hd">
+    <a class="logo" href="#top"><span>My<b>COACH</b>-My<b>TEAM</b></span><small>部活動の地域展開 運営基盤</small></a>
+    <nav id="nav">
+      <ul>
+        <li><a href="#problem">課題</a></li>
+        <li><a href="#features">機能</a></li>
+        <li><a href="#who">ご利用者別</a></li>
+        <li><a href="#safety">安全・信頼</a></li>
+        <li><a href="#pricing">料金</a></li>
+        <li><a href="#faq">よくある質問</a></li>
+        <li class="sp-only"><a href="mycoach-app.html">ログイン</a></li>
+      </ul>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center"><a href="mycoach-app.html" class="login-link">ログイン</a><a class="btn btn-primary" href="#contact">導入のご相談</a></div>
+    <button class="menu-btn" aria-label="メニュー" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <i class="blob b1"></i><i class="blob b2"></i>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tag">2026年度から「改革実行期間」がスタート</span>
+      <h1>部活動の地域展開を、<br><em>ひとつの運営基盤</em>で。</h1>
+      <p class="lead">指導者の確保と審査、熱中症などの安全管理、会費の集金、自治体への実績報告。地域クラブの運営に必要な仕事を、AIとリアルタイムの気象データでまとめて支えます。</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#contact">導入のご相談（無料）</a>
+        <a class="btn btn-ghost" href="app.html">デモを触ってみる →</a>
+      </div>
+    </div>
+    <div class="stat-card">
+      <h3>国の部活動改革の動き</h3>
+      <div class="stat"><b data-count="2031" data-plain="1">2031</b><span>年度までに、休日の部活動は<br>原則すべて地域展開をめざす</span></div>
+      <div class="stat"><b>約3割</b><span>2026年度に地域展開する<br>休日の部活動の見込み（38,954部）</span></div>
+      <div class="stat"><b data-count="1097">1,097</b><span>2026年度に地域展開に取り組む<br>自治体数（スポーツ）</span></div>
+      <p class="src">出典：スポーツ庁・文化庁「部活動改革の取組状況に関する調査」、文部科学省「教育委員会月報」2026年7月号</p>
+    </div>
+  </div>
+</section>
+
+<section id="problem" class="bg">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">PROBLEM</div>
+      <h2>地域展開の現場で起きている、4つの壁</h2>
+      <p>学校から地域へ活動の場が移ると、これまで先生が担ってきた仕事の受け皿が必要になります。</p>
+    </div>
+    <div class="prob-grid swipe">
+      <div class="prob"><div class="q">指導者</div><h3>人が足りない。<br>質も見えない。</h3><p>人材バンクに登録があっても、資格・研修・実績を比べて適任者を選ぶ手間が大きい。</p></div>
+      <div class="prob"><div class="q">安全</div><h3>中止の判断が<br>人によって違う。</h3><p>熱中症の判断や事故の記録が指導者任せになり、運営団体が把握できない。</p></div>
+      <div class="prob"><div class="q">お金</div><h3>会費の集金と<br>家庭の負担。</h3><p>現金集金や未納の督促が負担に。経済的に厳しい家庭への減免の管理も手作業。</p></div>
+      <div class="prob"><div class="q">報告</div><h3>自治体への<br>実績報告が重い。</h3><p>活動日数・参加者・指導者の記録を、毎回集計し直して報告書をつくっている。</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <p class="answer">MyCOACH-MyTEAMなら、<em>4つの仕事をひとつの画面で</em>回せます。</p>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">FEATURES</div>
+      <h2>最新の技術で、運営の手間を減らす</h2>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <div class="no">01 / AI指導者マッチング・審査</div>
+        <h3>種目・地域・曜日・資格から、<br>適任の指導者をAIが提案</h3>
+        <p>クラブの条件と指導者のプロフィールを照らし合わせ、相性の高い順にスコアで並べます。本人確認・資格・研修受講の状況もまとめて管理できます。</p>
+        <ul>
+          <li>種目、活動地域からの距離、空いている曜日、資格、評価をもとにマッチ度を算出</li>
+          <li>本人確認・指導者資格・安全研修の受講を「審査済み」バッジで見える化</li>
+          <li>教員の兼職兼業での登録にも対応</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <b>おすすめの指導者｜中野区 地域バスケットボールクラブ（土曜）</b>
+        <div class="mrow"><div>佐藤 健太<small>バスケ・JSPO公認コーチ1・2.1km</small></div><span class="pill p-lime">審査済</span><span class="score">94</span></div>
+        <div class="mrow"><div>山田 美咲<small>バスケ・元実業団・3.8km</small></div><span class="pill p-lime">審査済</span><span class="score">88</span></div>
+        <div class="mrow"><div>鈴木 大輔<small>バスケ・教員（兼職兼業）・1.2km</small></div><span class="pill p-org">研修未了</span><span class="score">81</span></div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <div class="no">02 / 熱中症・安全管理</div>
+        <h3>活動場所のWBGTを自動で推定。<br>中止の判断をそろえる</h3>
+        <p>気象データ（気温・湿度・日射・風速）から暑さ指数（WBGT）を1時間ごとに推定し、日本スポーツ協会の指針に沿って「運動は原則中止」などの判断を表示します。</p>
+        <ul>
+          <li>活動予定の時間帯ごとに危険度を表示し、事前に時間変更・中止を判断</li>
+          <li>危険度が上がると運営団体と保護者に通知</li>
+          <li>ケガ・ヒヤリハットの報告をその場で記録し、運営団体が一覧で把握</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <b>本日 14:00 富士見グラウンド</b>
+        <div class="wbgt" style="margin-top:12px"><div class="big">29.4</div><div><span class="pill p-org">厳重警戒</span><br><small style="opacity:.7">激しい運動は中止。こまめな休憩と水分補給を</small></div></div>
+        <div class="gauge"><b style="left:68%"></b></div>
+        <div style="display:flex;justify-content:space-between;opacity:.6;font-size:11px"><span>ほぼ安全</span><span>注意</span><span>警戒</span><span>厳重警戒</span><span>運動は原則中止</span></div>
+        <div class="mrow" style="margin-top:14px"><div>16:00 にずらすと<small>推定WBGT 26.1（警戒）</small></div><span class="pill p-blue">時間変更を提案</span></div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <div class="no">03 / AI練習メニュー・コンディション</div>
+        <h3>練習の負荷と体調を記録し、<br>やりすぎを先回りで防ぐ</h3>
+        <p>練習後に選手がスマホで「きつさ」と睡眠・疲労を入力するだけ。練習の負荷を自動で計算し、急に負荷が増えた選手を知らせます。AIは目的・時間・人数に合わせた練習メニュー案もつくります。</p>
+        <ul>
+          <li>主観的運動強度（RPE）×時間で練習負荷を算出し、直近1週と4週の比率で急増を検知</li>
+          <li>目的・時間・人数・暑さ指数に合わせて、AIが練習メニュー案を作成</li>
+          <li>食事の写真による栄養チェックも利用可能（※参考情報であり、医学的な診断ではありません）</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <b>練習負荷（直近8週）｜中学2年 田中さん</b>
+        <div class="bars"><i style="height:40%"></i><i style="height:45%"></i><i style="height:42%"></i><i style="height:48%"></i><i style="height:50%"></i><i style="height:47%"></i><i style="height:52%"></i><i class="hi" style="height:88%"></i></div>
+        <div class="mrow" style="margin-top:14px"><div>今週の負荷が急増しています<small>負荷比 1.62（目安 0.8〜1.3）・睡眠 5.5時間</small></div><span class="pill p-red">要注意</span></div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-txt">
+        <div class="no">04 / 事務の自動化</div>
+        <h3>会費・出欠・実績報告を、<br>ほぼ自動で</h3>
+        <p>月会費はカードで自動決済し、未納には自動で督促します。出欠は保護者がアプリで回答。記録はそのまま自治体向けの実績報告に集計され、CSVでも出力できます。</p>
+        <ul>
+          <li>月会費の自動決済と、未納時の自動リマインド</li>
+          <li>経済的な事情のある家庭への会費減免を設定・管理</li>
+          <li>活動回数・参加人数・指導時間・安全記録を、自治体向けの実績報告に自動で集計</li>
+          <li>指導者への謝金は、指導の実施が確認できてから支払う仕組み</li>
+        </ul>
+      </div>
+      <div class="mock">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <b>11月の実績報告（自動集計）</b>
+        <div class="mrow"><div>活動回数<small>土日 8回・平日 4回</small></div><b>12回</b></div>
+        <div class="mrow"><div>延べ参加人数<small>登録会員 28人</small></div><b>291人</b></div>
+        <div class="mrow"><div>会費の回収率<small>減免 3世帯を含む</small></div><b>96%</b></div>
+        <div class="mrow"><div>安全記録<small>ヒヤリハット 1件・事故 0件</small></div><span class="pill p-lime">提出可能</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="who" class="bg">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">FOR WHOM</div>
+      <h2>関わるすべての人に、それぞれの便利を</h2>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="on" data-t="gov">自治体・教育委員会</button>
+      <button data-t="club">地域クラブ運営団体</button>
+      <button data-t="coach">指導者</button>
+      <button data-t="family">保護者・生徒</button>
+    </div>
+    <div class="panel on" id="t-gov">
+      <div><h3>地域全体のクラブ活動を、<br>データで見える化</h3><p class="who-sub">域内の複数クラブの活動状況、指導者の審査状況、安全記録をまとめて確認。国や都道府県への報告づくりの負担を減らします。</p></div>
+      <ul>
+        <li><b>指導者の人材バンクとして活用</b><span>登録・審査・研修の管理と、クラブへの紹介まで一元化</span></li>
+        <li><b>安全管理の基準をそろえる</b><span>暑さ指数による中止判断と事故報告のルールを全クラブ共通に</span></li>
+        <li><b>実績データを自動で集計</b><span>活動回数・参加者・指導時間をクラブごと・月ごとに出力</span></li>
+      </ul>
+    </div>
+    <div class="panel" id="t-club">
+      <div><h3>運営の事務作業を、<br>スマホとPCで完結</h3><p class="who-sub">会員管理、会費の集金、出欠、連絡、指導者の手配までをひとつに。少人数の事務局でも回せる運営を実現します。</p></div>
+      <ul>
+        <li><b>会費の自動決済と未納の督促</b><span>現金の受け渡しと手作業の催促をなくす</span></li>
+        <li><b>指導者を探す・審査する</b><span>AIのおすすめから選び、資格や研修の状況も確認</span></li>
+        <li><b>連絡と出欠をアプリで</b><span>中止連絡や時間変更も一斉に届く</span></li>
+      </ul>
+    </div>
+    <div class="panel" id="t-coach">
+      <div><h3>指導する機会を見つけ、<br>指導に集中できる</h3><p class="who-sub">登録は無料。条件の合うクラブからの依頼を受け、日程調整や謝金の受け取りもアプリで完結します。</p></div>
+      <ul>
+        <li><b>条件に合う依頼が届く</b><span>種目・地域・空いている曜日にもとづいてマッチング</span></li>
+        <li><b>練習メニューづくりをAIが手伝う</b><span>目的・時間・人数・暑さに合わせたメニュー案</span></li>
+        <li><b>謝金の受け取りまで安心</b><span>指導の実施が確認されたあと、確実に支払われる</span></li>
+      </ul>
+    </div>
+    <div class="panel" id="t-family">
+      <div><h3>子どもの活動を、<br>安心して任せられる</h3><p class="who-sub">審査済みの指導者が担当し、暑さや体調への配慮も記録として残ります。会費の支払いや欠席連絡もスマホで。</p></div>
+      <ul>
+        <li><b>会費はカードで自動支払い</b><span>封筒での現金のやりとりが不要に</span></li>
+        <li><b>中止・時間変更の連絡がすぐ届く</b><span>暑さ指数が高い日は事前にお知らせ</span></li>
+        <li><b>体調と練習の記録</b><span>やりすぎや睡眠不足のサインに気づける</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="safety">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">TRUST &amp; SAFETY</div>
+      <h2>子どもが関わるサービスだからこそ</h2>
+      <p>教育の現場での利用を前提に、指導者・お金・データの扱いに基準を設けています。</p>
+    </div>
+    <div class="safe-grid swipe">
+      <div class="safe"><div class="ic">🪪</div><h3>指導者の本人確認と審査</h3><p>運転免許証などの公的書類による本人確認に加え、指導者資格や安全研修の受講状況を確認し、審査済みの指導者だけを紹介します。</p></div>
+      <div class="safe"><div class="ic">🌡️</div><h3>暑さ指数にもとづく判断</h3><p>日本スポーツ協会の「熱中症予防運動指針」に沿って、暑さ指数ごとの運動の目安を表示。判断を指導者任せにしません。</p></div>
+      <div class="safe"><div class="ic">🔒</div><h3>カード情報を保存しない</h3><p>決済はPCI DSSに準拠した決済代行会社（Stripe）で処理し、カード情報を当社のサーバーには保存しません。</p></div>
+      <div class="safe"><div class="ic">🤝</div><h3>謝金は指導の確認後に</h3><p>クラブからの支払いはいったん預かり、指導の実施が確認できてから指導者へ送金。未払い・未実施のトラブルを防ぎます。</p></div>
+      <div class="safe"><div class="ic">💬</div><h3>連絡は運営団体を通して</h3><p>指導者と生徒が個人的に連絡を取り合わない運用ができ、やりとりは記録として残ります。</p></div>
+      <div class="safe"><div class="ic">🧾</div><h3>記録が残る</h3><p>出欠、練習内容、体調、事故・ヒヤリハットを記録。何かあったときに経緯を確認できます。</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="bg">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">FLOW</div>
+      <h2>導入までの流れ</h2>
+      <p>小さく試してから広げられます。</p>
+    </div>
+    <div class="flow swipe">
+      <div class="step"><h3>ご相談</h3><p>地域の状況、対象の種目・クラブ数、いまの課題をうかがいます。</p></div>
+      <div class="step"><h3>試験導入</h3><p>1〜2クラブで実際に使い、指導者の登録や会費の集金を試します。</p></div>
+      <div class="step"><h3>運用ルールの設計</h3><p>安全管理の基準、会費・減免、報告の形式を地域に合わせて設定します。</p></div>
+      <div class="step"><h3>本導入・拡大</h3><p>域内のクラブへ順次広げ、実績データで効果を確認します。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="en">PRICING</div>
+      <h2>料金</h2>
+      <p>初期費用・月額固定費はかかりません。お金が動いたときだけ手数料をいただきます。</p>
+    </div>
+    <div class="price-grid swipe">
+      <div class="price">
+        <div class="for">保護者・生徒・指導者</div>
+        <h3>登録・利用</h3>
+        <div class="amt">¥0</div>
+        <ul><li>アカウント登録・月額料金なし</li><li>出欠・連絡・体調記録</li><li>暑さ指数のお知らせ</li></ul>
+      </div>
+      <div class="price feature">
+        <div class="for">地域クラブ運営団体</div>
+        <h3>成果報酬</h3>
+        <div class="amt">5%〜<small> 会費の集金額</small></div>
+        <div class="amt" style="margin-top:6px">10%〜<small> 指導者の成約時</small></div>
+        <ul><li>会費の自動決済・未納督促</li><li>AI指導者マッチング・審査管理</li><li>安全管理・実績報告の自動集計</li></ul>
+      </div>
+      <div class="price">
+        <div class="for">自治体・教育委員会</div>
+        <h3>地域一括導入</h3>
+        <div class="amt" style="font-size:26px">個別にご相談</div>
+        <ul><li>域内の複数クラブをまとめて管理</li><li>指導者の人材バンク運用</li><li>報告様式に合わせたデータ出力</li></ul>
+      </div>
+    </div>
+    <p class="note">※決済手数料などのオプション料金は、取引金額に応じて別途かかる場合があります。詳しくはお問い合わせください。</p>
+  </div>
+</section>
+
+<section id="faq" class="bg">
+  <div class="wrap">
+    <div class="sec-head"><div class="en">FAQ</div><h2>よくある質問</h2></div>
+    <div class="faq">
+      <details><summary>どの種目に対応していますか？</summary><p>運動部・スポーツクラブであれば種目を問わずご利用いただけます。暑さ指数の管理は屋外競技だけでなく、体育館での活動にも使えます。</p></details>
+      <details><summary>暑さ指数（WBGT）はどうやって出していますか？</summary><p>活動場所の気温・湿度・日射量・風速の予報データから、環境省が採用している推定式で計算しています。あくまで推定値のため、現地に暑さ指数計がある場合は、その実測値を優先してください。</p></details>
+      <details><summary>AIの提案は、そのまま使わないといけませんか？</summary><p>いいえ。AIのマッチングや練習メニューは判断を助ける「提案」です。最終的な決定は、運営団体や指導者が行います。</p></details>
+      <details><summary>学校の先生が指導者として登録できますか？</summary><p>できます。兼職兼業の許可を得たうえで、指導者として登録・活動いただけます。</p></details>
+      <details><summary>会費を払うのが難しい家庭への配慮はできますか？</summary><p>運営団体が家庭ごとに会費の減免を設定でき、集金と報告にも自動で反映されます。</p></details>
+      <details><summary>まず試してみることはできますか？</summary><p>はい。<a href="app.html">デモ画面</a>で主な機能を触っていただけます。実際の導入も、1〜2クラブの試験導入から始められます。</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="cta">
+      <h2>地域展開の準備、<br>まずは話を聞いてみませんか。</h2>
+      <p>自治体・教育委員会・地域クラブ運営団体の方からのご相談を受け付けています。</p>
+      <div class="ctas"><a class="btn btn-ghost" href="app.html">デモを触ってみる →</a></div>
+      <form class="contact" id="contactForm">
+        <div class="row">
+          <div><label>お名前</label><input name="name" required></div>
+          <div><label>団体名・自治体名</label><input name="org" required></div>
+        </div>
+        <div class="row">
+          <div><label>メールアドレス</label><input name="email" type="email" required></div>
+          <div><label>ご立場</label><select name="role"><option>自治体・教育委員会</option><option>地域クラブ運営団体</option><option>学校</option><option>指導者</option><option>その他</option></select></div>
+        </div>
+        <div><label>ご相談内容</label><textarea name="msg" rows="4" placeholder="対象の種目やクラブ数、困っていることなど"></textarea></div>
+        <button class="btn btn-primary" type="submit">相談内容を送る</button>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="mcta" id="mcta"><a class="btn btn-ghost" href="app.html">デモを見る</a><a class="btn btn-primary" href="#contact">導入のご相談</a></div>
+<footer>
+  <div class="wrap ft">
+    <div><b style="color:var(--ink)">MyCOACH-MyTEAM</b>　部活動の地域展開 運営基盤<br>運営：RELIGHT　<a href="mycoach-app.html">ログイン（MyCOACHアプリ）</a></div>
+    <div>© 2026 RELIGHT / MyCOACH-MyTEAM</div>
+  </div>
+</footer>
+
+<script>
+/* お問い合わせ先：受付用のメールアドレスを設定してください */
+const CONTACT_EMAIL = '';
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.panel').forEach(p=>{p.classList.toggle('on',p.id==='t-'+b.dataset.t); if(p.id==='t-'+b.dataset.t) p.classList.add('in');});
+  b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}));
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>document.getElementById('nav').classList.remove('open')));
+document.getElementById('contactForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const f=new FormData(e.target);
+  const body=`お名前：${f.get('name')}\n団体名：${f.get('org')}\nメール：${f.get('email')}\nご立場：${f.get('role')}\n\n${f.get('msg')}`;
+  if(!CONTACT_EMAIL){alert('お問い合わせ窓口は準備中です。恐れ入りますが、しばらくしてから再度お試しください。');return;}
+  location.href=`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('【MyCOACH-MyTEAM】導入のご相談：'+f.get('org'))}&body=${encodeURIComponent(body)}`;
+});
+
+/* ===== motion & swipe ===== */
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // スクロールで要素をふわっと表示
+  const targets = document.querySelectorAll('.sec-head,.prob,.feat-txt,.mock,.panel,.safe,.step,.price,.faq details,.cta,.arrow,.answer');
+  targets.forEach(el=>{ el.classList.add('reveal'); const sib=[...el.parentElement.children].filter(x=>x.classList.contains('reveal')); el.style.setProperty('--d',(Math.min(sib.indexOf(el),5)*0.08)+'s'); });
+  if(reduce||!('IntersectionObserver' in window)){ targets.forEach(el=>el.classList.add('in')); }
+  else { const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }),{threshold:.15,rootMargin:'0px 0px -40px 0px'}); targets.forEach(el=>io.observe(el)); }
+  // 数字のカウントアップ
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const to=+el.dataset.count, plain=el.dataset.plain; if(reduce) return;
+    const from = plain? to-15 : 0; const t0=performance.now(), dur=1400;
+    const step=t=>{ const p=Math.min(1,(t-t0)/dur), v=Math.round(from+(to-from)*(1-Math.pow(1-p,3))); el.textContent= plain? v : v.toLocaleString('ja-JP'); if(p<1) requestAnimationFrame(step); };
+    setTimeout(()=>requestAnimationFrame(step),600);
+  });
+  // スワイプ（スマホ）のページ送りドット
+  document.querySelectorAll('.swipe').forEach(sw=>{
+    const n=sw.children.length; const dots=document.createElement('div'); dots.className='dots'; dots.innerHTML=Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join(''); sw.after(dots);
+    sw.addEventListener('scroll',()=>{ const w=sw.children[0].getBoundingClientRect().width+14; const i=Math.round(sw.scrollLeft/w); [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i)); },{passive:true});
+    [...dots.children].forEach((d,k)=>d.addEventListener('click',()=>sw.children[k].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})));
+  });
+  // ヘッダー・進捗バー・スマホ下部ボタン
+  const hdr=document.getElementById('hdr'), bar=document.getElementById('progress'), mcta=document.getElementById('mcta'), contact=document.getElementById('contact');
+  const onScroll=()=>{ const y=scrollY, h=document.documentElement.scrollHeight-innerHeight; bar.style.width=(h>0?y/h*100:0)+'%'; hdr.classList.toggle('scrolled',y>10);
+    const nearContact = contact.getBoundingClientRect().top < innerHeight*0.8; mcta.classList.toggle('show', y>innerHeight*0.6 && !nearContact); };
+  addEventListener('scroll',onScroll,{passive:true}); onScroll();
+})();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});}
+</script>
+</body>
+</html>

@@ -15,11 +15,31 @@
       "setup/**",
       "**/.*",
       "**/node_modules/**",
-      "README.md"
+      "README.md",
+      "cosapo/**",
+      "functions/**"
     ],
     "headers": [
       {
-        "source": "index.html",
+        "source": "**/*.@(html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "sw.js",
         "headers": [
           {
             "key": "Cache-Control",

@@ -2,734 +2,658 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>コサポ｜学生アスリート × 個人スポンサー</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyCOACH-MyTEAM｜地域クラブ運営コンソール（デモ）</title>
+<meta name="theme-color" content="#0F2A4A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
 <style>
-:root{--ink:#0B1F3A;--ink-soft:#31456B;--paper:#FAFBFD;--line:#DDE3EE;--gold:#F2B705;--gold-deep:#C79000;--lane:#1D5FD0;--mono:'IBM Plex Mono',monospace;--jp:'Zen Kaku Gothic New',sans-serif}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--jp);color:var(--ink);background:var(--paper);line-height:1.7;font-size:15px}
-a{color:inherit;text-decoration:none}
-:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-button{font-family:var(--jp);cursor:pointer}
-.container{max-width:1080px;margin:0 auto;padding:0 20px}
-header{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff}
-.nav{display:flex;align-items:center;justify-content:space-between;height:60px;gap:14px}
-.logo{font-weight:900;font-size:20px}.logo em{font-style:normal;color:var(--gold)}
-.userbox{display:flex;align-items:center;gap:12px;font-size:12.5px;color:#C7D2E6}
-.userbox .rolebadge{background:#2B4370;border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700}
-main{padding:34px 0 80px}
-.view{display:none}.view.active{display:block}
-.page-head{margin-bottom:24px}
-.page-head .en{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--gold-deep)}
-.page-head h1{font-size:23px;font-weight:900;margin-top:4px}
-.page-head p{color:var(--ink-soft);font-size:13.5px;margin-top:6px;max-width:46em}
-.panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:26px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
-@media(max-width:760px){.grid2{grid-template-columns:1fr}}
-fieldset{border:none;margin-bottom:22px}
-legend{font-weight:900;font-size:15px;padding-bottom:9px;border-bottom:2px solid var(--ink);width:100%;margin-bottom:14px}
-label{display:block;font-size:12.5px;font-weight:700;margin-bottom:5px}
-label .req{color:#C0392B;font-size:11px;margin-left:4px}
-label .opt{color:var(--ink-soft);font-weight:400;font-size:11px;margin-left:4px}
-input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:5px;font-family:var(--jp);font-size:14px;background:#fff}
-input:focus,select:focus,textarea:focus{border-color:var(--lane);outline:none}
-textarea{resize:vertical;min-height:84px}
-input[type=checkbox]{width:16px;height:16px}
-input[type=file]{border:none;padding:6px 0}
-.hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
-.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-top:10px}
-.check input{margin-top:4px;flex-shrink:0}
-.notice{background:#FFF8E1;border:1px solid #EAD48A;border-radius:6px;padding:12px 14px;font-size:12.5px;margin-top:10px}
-.errbox{background:#FDECEA;border:1px solid #E8B3AC;color:#8A2B22;border-radius:6px;padding:12px 14px;font-size:12.5px;margin-top:12px;display:none}
-.btn{display:inline-block;padding:11px 26px;border-radius:5px;font-weight:900;font-size:14px;border:2px solid var(--ink);transition:transform .12s;background:#fff;color:var(--ink)}
-.btn:hover{transform:translateY(-1px)}
-.btn-gold{background:var(--gold);border-color:var(--gold)}
-.btn-solid{background:var(--ink);color:#fff}
-.btn-sm{padding:8px 16px;font-size:12.5px;font-weight:700}
-.btn[disabled]{opacity:.5;cursor:wait;transform:none}
-.status-banner{border-radius:8px;padding:16px 20px;font-size:13.5px;font-weight:700;margin-bottom:20px;border:1px solid}
-.st-pending{background:#FFF8E1;border-color:#EAD48A;color:#8a6d00}
-.st-approved{background:#EAF7EE;border-color:#B7DFC2;color:#1E6B34}
-.st-suspended{background:#FDECEA;border-color:#E8B3AC;color:#8A2B22}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
-.tab{background:#fff;border:1px solid var(--line);color:var(--ink-soft);border-radius:99px;padding:8px 18px;font-size:12.5px;font-weight:700}
-.tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
-.snsrow{display:grid;grid-template-columns:140px 1fr;gap:10px;margin-bottom:10px}
-.recordrow{display:grid;grid-template-columns:100px 1fr;gap:10px;margin-bottom:10px}
-.addline{background:none;border:1px dashed var(--ink-soft);color:var(--ink-soft);border-radius:5px;padding:8px 14px;font-size:12.5px;width:100%}
-.photo-pick{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--line);background:#fff}
-.avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.45);flex-shrink:0;background:#fff}
-.avatar-fb{display:inline-flex;align-items:center;justify-content:center;background:#2B4370;color:#fff;font-weight:900;font-size:18px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.card{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
-.card-top{background:linear-gradient(135deg,#132B52,#0B1F3A);color:#fff;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.card-top .nm{font-weight:900;font-size:15.5px;min-width:0}
-.card-top .nm small{display:block;font-weight:400;font-size:11px;color:#8FA2C4}
-.card-top .pb{font-family:var(--mono);color:var(--gold);font-size:17px;text-align:right;flex-shrink:0}
-.card-top .pb small{display:block;font-size:9px;letter-spacing:.12em;color:#8FA2C4}
-.card-mid{padding:14px 18px;font-size:12.5px;color:var(--ink-soft);flex:1}
-.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.badge{font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:99px;padding:2px 10px;color:var(--ink-soft)}
-.badge.hs{background:#FFF3D6;border-color:#EAD48A;color:#8a6d00}
-.card-foot{display:flex;gap:8px;padding:0 18px 15px}
-.card-foot .btn{flex:1;text-align:center}
-.checked-btn{background:var(--lane)!important;border-color:var(--lane)!important;color:#fff!important}
-.feed{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:8px;padding:16px 20px;margin-bottom:20px}
-.feed h2{font-size:14px;font-weight:900;margin-bottom:6px}
-.feed ul{list-style:none}
-.feed li{display:flex;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;align-items:baseline}
-.feed li:last-child{border-bottom:none}
-.feed .ftime{font-family:var(--mono);font-size:11px;color:var(--ink-soft);min-width:88px}
-.toolbar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
-.toolbar select,.toolbar input[type=text]{max-width:220px}
-.admin-table{width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;font-size:13px}
-.admin-table th{background:var(--ink);color:#fff;padding:11px 13px;text-align:left;font-size:12px;white-space:nowrap}
-.admin-table td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-.admin-table tr:last-child td{border-bottom:none}
-.status-sel{padding:6px 8px;border:1px solid var(--line);border-radius:5px;font-family:var(--jp);font-size:12px;width:auto}
-dialog{border:none;border-radius:10px;max-width:640px;width:92vw;padding:0;box-shadow:0 30px 80px rgba(0,0,0,.4)}
-dialog::backdrop{background:rgba(11,31,58,.55)}
-.modal-head{background:var(--ink);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start}
-.modal-head h2{font-size:19px;font-weight:900}
-.modal-head .sub{font-size:12px;color:#8FA2C4;margin-top:2px}
-.modal-close{background:none;border:none;color:#fff;font-size:22px;line-height:1}
-.modal-body{padding:22px 24px;max-height:62vh;overflow-y:auto}
-.mrow{margin-bottom:16px}
-.mrow h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--gold-deep);margin-bottom:7px}
-.rec-strip{background:var(--ink);color:#fff;border-radius:6px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center}
-.rec-strip .v{font-family:var(--mono);font-size:19px;color:var(--gold)}
-.reslist{list-style:none;font-size:13px}
-.reslist li{display:flex;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
-.reslist .yr{font-family:var(--mono);color:var(--ink-soft);min-width:44px}
-.snslinks{display:flex;gap:8px;flex-wrap:wrap}
-.snslinks a{border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700}
-.modal-foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 26px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:.3s;z-index:99;max-width:90vw;text-align:center}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.empty{text-align:center;color:var(--ink-soft);padding:50px 0;font-size:13.5px}
-.auth-card{max-width:440px;margin:40px auto}
-.auth-switch{text-align:center;margin-top:14px;font-size:13px}
-.auth-switch a{color:var(--lane);font-weight:700;cursor:pointer}
-.code{font-family:var(--mono);background:#F0F3F9;border-radius:4px;padding:2px 6px;font-size:12px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+:root{--navy:#0F2A4A;--navy2:#16365E;--blue:#2E7CE0;--blue-l:#E8F1FC;--lime:#B7F03C;--orange:#FF8A3D;--yellow:#F5C400;--red:#E5484D;--green:#2BB673;--ink:#14202E;--sub:#5B6B80;--line:#E3E9F1;--bg:#F3F6FA}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.7}
+button,input,select,textarea{font:inherit}
+.layout{display:grid;grid-template-columns:252px 1fr;min-height:100vh}
+.layout>div,.grid>*{min-width:0}
+aside{background:var(--navy);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh}
+.brand{font-weight:900;font-size:16px;padding:0 8px 4px}
+.brand b{color:var(--lime)}
+.club{font-size:12px;opacity:.7;padding:0 8px 18px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:12px}
+.navb{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;color:#fff;opacity:.75;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px}
+.navb:hover{opacity:1;background:rgba(255,255,255,.06)}
+.navb.on{opacity:1;background:rgba(183,240,60,.14);color:var(--lime);font-weight:700}
+.navb .bd{margin-left:auto;background:var(--red);color:#fff;font-size:11px;border-radius:99px;padding:0 7px}
+.aside-ft{position:absolute;bottom:16px;left:14px;right:14px;font-size:11px;opacity:.6}
+.aside-ft a{color:#fff}
+main{padding:28px 32px 60px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+h1{font-size:22px;font-weight:900}
+.top p{color:var(--sub);font-size:13px}
+.demo-badge{background:#FFF4E5;color:#9A4B00;border:1px solid #FFD9A8;font-size:12px;border-radius:8px;padding:6px 10px}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}.g21{grid-template-columns:2fr 1fr}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.card h2 small{font-weight:400;color:var(--sub);font-size:12px}
+.kpi .lbl{font-size:12px;color:var(--sub)}
+.kpi .val{font-size:28px;font-weight:900;line-height:1.3}
+.kpi .val small{font-size:13px;font-weight:500;color:var(--sub)}
+.kpi .sub{font-size:12px;color:var(--sub)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.ok{background:#E3F7EC;color:#167A49}.warn{background:#FFF1E0;color:#B45309}.ng{background:#FDE8E8;color:#B42318}.info{background:var(--blue-l);color:#1C5FB8}.mute{background:#EEF1F5;color:var(--sub)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--sub);font-weight:500}
+td.num,th.num{text-align:right}
+.btn{border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px}
+.b-pri{background:var(--navy);color:#fff}.b-pri:hover{background:var(--navy2)}
+.b-lime{background:var(--lime);color:var(--navy)}
+.b-line{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.b-sm{padding:5px 10px;font-size:12px}
+.field{display:grid;gap:4px;font-size:12px;color:var(--sub)}
+.field input,.field select,.field textarea{padding:8px 10px;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:14px;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.hide{display:none!important}
+.score{font-size:26px;font-weight:900;color:var(--blue);line-height:1}
+.coach{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.coach:last-child{border-bottom:0}
+.av{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#fff;font-size:18px}
+.why{font-size:12px;color:var(--sub);margin-top:4px}
+.why span{display:inline-block;background:var(--bg);border-radius:6px;padding:1px 7px;margin:2px 4px 0 0}
+.bar{height:6px;background:var(--line);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue)}
+/* WBGT */
+.wbgt-now{display:flex;gap:18px;align-items:center}
+.wbgt-num{font-size:56px;font-weight:900;line-height:1}
+.hours{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
+.hr{border-radius:8px;padding:6px 4px;text-align:center;font-size:11px;color:#14202E}
+.hr b{display:block;font-size:15px}
+.hr.act{outline:3px solid var(--navy);outline-offset:-3px}
+.lv0{background:#D6ECFF}.lv1{background:#CFF3C9}.lv2{background:#FFF0A6}.lv3{background:#FFC999}.lv4{background:#FF9B9B}
+.legend{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;margin-top:10px}
+.legend span{padding:2px 8px;border-radius:6px}
+/* chart */
+.chart{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
+.chart i{flex:1;background:var(--blue);border-radius:4px 4px 0 0;position:relative;min-height:2px}
+.chart i.hi{background:var(--orange)}.chart i.vh{background:var(--red)}
+.chart-x{display:flex;gap:4px;font-size:10px;color:var(--sub)}.chart-x span{flex:1;text-align:center}
+.menu-out{background:var(--bg);border-radius:12px;padding:14px;margin-top:12px}
+.menu-out .blk{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.menu-out .blk:last-child{border-bottom:0}
+.menu-out .blk b{color:var(--blue)}
+.alert{border-radius:10px;padding:10px 12px;font-size:13px;margin:8px 0;display:flex;gap:8px;align-items:flex-start}
+.alert.ng{border:1px solid #F7C1C1}.alert.warn{border:1px solid #FFD9A8}.alert.info{border:1px solid #C8DDF7}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:90vw}
+.toast.on{opacity:1}
+dialog{border:0;border-radius:16px;padding:22px;max-width:560px;width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(15,42,74,.45)}
+dialog textarea{width:100%;min-height:180px;padding:10px;border:1px solid var(--line);border-radius:10px;margin:10px 0}
+.mobile-nav{display:none}
+@media (max-width:980px){
+  .layout{grid-template-columns:1fr}
+  aside{display:none}
+  .mobile-nav{display:flex;overflow-x:auto;gap:6px;background:var(--navy);padding:10px;position:sticky;top:0;z-index:20}
+  .mobile-nav .navb{white-space:nowrap;width:auto;padding:8px 12px}
+  main{padding:18px 14px 60px}
+  .g4{grid-template-columns:1fr 1fr}.g3,.g2,.g21{grid-template-columns:1fr}
+  .tbl-wrap{overflow-x:auto}
+}
+@media print{aside,.mobile-nav,.noprint,.demo-badge{display:none!important}.layout{display:block}main{padding:0}.card{break-inside:avoid}body{background:#fff}}
+
+/* ===== motion & swipe ===== */
+@keyframes up{from{opacity:0;transform:translateY(14px)}}
+main>.top,main>.grid>*,main>.card{animation:up .5s cubic-bezier(.2,.7,.2,1) both}
+main>.grid>*:nth-child(2){animation-delay:.05s}main>.grid>*:nth-child(3){animation-delay:.1s}main>.grid>*:nth-child(4){animation-delay:.15s}
+main>.grid:nth-of-type(2)>*{animation-delay:.12s}
+.card{transition:box-shadow .3s,transform .3s}
+@media (hover:hover){.card:hover{box-shadow:0 10px 28px rgba(15,42,74,.08)}}
+.btn{transition:transform .12s,background .2s,box-shadow .2s}
+.btn:active{transform:scale(.96)}
+.navb{transition:background .2s,color .2s,opacity .2s}
+.chart i{transform-origin:bottom;animation:grow .8s cubic-bezier(.2,.7,.2,1) both}
+.chart i:nth-child(n){animation-delay:calc(var(--i,0)*60ms)}
+@keyframes grow{from{transform:scaleY(0)}}
+.bar i{animation:barIn .9s cubic-bezier(.2,.7,.2,1) both;transform-origin:left}
+@keyframes barIn{from{transform:scaleX(0)}}
+.hr{animation:up .4s both;transition:transform .2s}
+@media (hover:hover){.hr:hover{transform:translateY(-3px)}}
+.coach{animation:up .45s both}
+.coach:nth-child(3){animation-delay:.05s}.coach:nth-child(4){animation-delay:.1s}.coach:nth-child(5){animation-delay:.15s}.coach:nth-child(6){animation-delay:.2s}.coach:nth-child(7){animation-delay:.25s}
+.alert{animation:up .45s both}
+.alert a{display:inline-block;white-space:nowrap;font-weight:700;color:inherit;text-decoration:none;border-bottom:2px solid currentColor;line-height:1.3;margin-left:2px}
+.alert a:after{content:" ›"}
+.skel{display:inline-block;height:1em;width:3.2em;border-radius:6px;background:linear-gradient(90deg,#E8EDF3 25%,#F5F7FA 50%,#E8EDF3 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;vertical-align:middle}
+@keyframes shimmer{to{background-position:-200% 0}}
+.toast{transform:translate(-50%,20px)}
+.toast.on{transform:translate(-50%,0);transition:.3s cubic-bezier(.2,.7,.2,1)}
+dialog[open]{animation:dlgIn .3s cubic-bezier(.2,.7,.2,1)}
+@keyframes dlgIn{from{opacity:0;transform:translateY(20px) scale(.97)}}
+::view-transition-old(root){animation:vtOut .18s ease both}
+::view-transition-new(root){animation:vtIn .28s cubic-bezier(.2,.7,.2,1) both}
+@keyframes vtOut{to{opacity:0}}@keyframes vtIn{from{opacity:0;transform:translateY(8px)}}
+.mtop{display:none}
+.sw-dots{display:none}
+@media (max-width:980px){
+  .mtop{display:flex;align-items:center;justify-content:space-between;background:var(--navy);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:20}
+  .mtop b{font-weight:900}.mtop b em{font-style:normal;color:var(--lime)}
+  .mtop small{display:block;font-size:11px;opacity:.7}
+  .mobile-nav{position:fixed;top:auto;bottom:0;left:0;right:0;z-index:30;display:grid;grid-template-columns:repeat(6,1fr);gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);overflow:visible}
+  .mobile-nav .navb{flex-direction:column;gap:2px;padding:6px 2px;color:var(--sub);opacity:1;font-size:10px;border-radius:12px;justify-content:center;position:relative;width:100%}
+  .mobile-nav .navb .ic{font-size:20px;line-height:1;transition:transform .25s}
+  .mobile-nav .navb .lb-l{display:none}
+  .mobile-nav .navb.on{background:var(--blue-l);color:var(--blue);font-weight:700}
+  .mobile-nav .navb.on .ic{transform:translateY(-2px) scale(1.1)}
+  .mobile-nav .navb .bd{position:absolute;top:2px;right:18%;margin:0;font-size:10px}
+  main{padding:16px 14px 110px}
+  .demo-badge{font-size:11px}
+  .grid.g4,.grid.g3{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:14px;gap:12px;margin:0 -14px;padding:2px 14px 6px;scrollbar-width:none}
+  .grid.g4::-webkit-scrollbar,.grid.g3::-webkit-scrollbar{display:none}
+  .grid.g4>*,.grid.g3>*{flex:0 0 72%;scroll-snap-align:start}
+  .g4 + .sw-dots,.g3 + .sw-dots{display:flex;justify-content:center;gap:5px;margin:6px 0 4px}
+  .sw-dots i{width:6px;height:6px;border-radius:9px;background:#CBD5E1;transition:.3s}.sw-dots i.on{width:18px;background:var(--blue)}
+  .hours{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:6px;padding-bottom:6px;scrollbar-width:thin}
+  .hours .hr{flex:0 0 62px;scroll-snap-align:start}
+  .coach{grid-template-columns:44px 1fr auto;gap:10px}
+  .av{width:44px;height:44px;font-size:15px}
+  .score{font-size:22px}
+  dialog{position:fixed;margin:auto auto 0;max-width:none;width:100%;border-radius:20px 20px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+  dialog[open]{animation:sheetIn .35s cubic-bezier(.2,.7,.2,1)}
+  @keyframes sheetIn{from{transform:translateY(100%)}}
+  .toast{bottom:90px}
+}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-
-<header>
-  <div class="container nav">
-    <div class="logo">コ<em>サポ</em></div>
-    <div class="userbox" id="userbox" style="display:none">
-      <span class="rolebadge" id="roleBadge"></span>
-      <span id="userEmail"></span>
-      <button class="btn btn-sm" id="logoutBtn" style="border-color:#2B4370;background:transparent;color:#C7D2E6">ログアウト</button>
-    </div>
+<div class="layout">
+  <aside>
+    <div class="brand">My<b>COACH</b>-My<b>TEAM</b></div>
+    <div class="club" id="clubName"></div>
+    <div id="navList"></div>
+    <div class="aside-ft">デモ版：データはこのブラウザ内だけに保存されます<br><a href="#" onclick="resetDemo();return false">デモデータを初期化</a>　<a href="index.html">サービス紹介へ</a></div>
+  </aside>
+  <div>
+    <div class="mtop"><div><b>My<em>COACH</em>-My<em>TEAM</em></b><small id="clubNameM"></small></div><a href="index.html" style="color:#fff;font-size:12px;opacity:.8">サービス紹介</a></div>
+    <div class="mobile-nav" id="navMobile"></div>
+    <main id="main"></main>
   </div>
-</header>
-
-<main class="container">
-
-<section class="view active" id="v-loading"><p class="empty">読み込み中…</p></section>
-
-<!-- ===== 設定未完了 ===== -->
-<section class="view" id="v-setup">
-  <div class="panel auth-card">
-    <h1 style="font-size:19px;font-weight:900;margin-bottom:12px">初期設定が必要です</h1>
-    <p style="font-size:13.5px;color:var(--ink-soft)">このファイル冒頭の <span class="code">CONFIG</span> に、SupabaseプロジェクトのURLとanonキーを設定してください。手順は「コサポ_セットアップ手順書_P1.md」を参照。</p>
-  </div>
-</section>
-
-<!-- ===== 認証 ===== -->
-<section class="view" id="v-auth">
-  <div class="panel auth-card">
-    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px" id="authTitle">ログイン</h1>
-    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:18px" id="authLead">学生・企業・運営共通のログイン画面です。</p>
-    <div id="signupRoleWrap" style="display:none;margin-bottom:14px">
-      <label>登録種別<span class="req">必須</span></label>
-      <select id="authRole"><option value="student">学生アスリートとして登録</option><option value="company">スポンサー企業として登録</option></select>
-    </div>
-    <div style="margin-bottom:14px"><label>メールアドレス</label><input type="email" id="authEmail" autocomplete="email"></div>
-    <div style="margin-bottom:18px"><label>パスワード</label><input type="password" id="authPass" autocomplete="current-password"><p class="hint">8文字以上</p></div>
-    <button class="btn btn-gold" id="authSubmit" style="width:100%">ログイン</button>
-    <div class="errbox" id="authErr"></div>
-    <p class="auth-switch" id="authSwitch">アカウントがない方は <a id="toSignup">新規登録</a></p>
-    <p class="auth-switch" id="forgotWrap"><a id="forgotLink">パスワードをお忘れの方</a></p>
-  </div>
-</section>
-
-<!-- ===== 学生ダッシュボード ===== -->
-<section class="view" id="v-student">
-  <div class="page-head"><span class="en">STUDENT DASHBOARD</span><h1>マイページ</h1>
-    <p>プロフィールを登録・更新できます。掲載内容は運営の審査後に企業へ公開されます。掲載・利用はすべて無料です。</p></div>
-  <div id="stuStatusBanner"></div>
-  <form class="panel" id="stuForm" novalidate>
-    <fieldset><legend>基本情報</legend>
-      <div class="grid2">
-        <div><label>氏名<span class="req">必須</span></label><input type="text" id="s_name" required></div>
-        <div><label>フリガナ</label><input type="text" id="s_kana"></div>
-        <div><label>区分<span class="req">必須</span></label>
-          <select id="s_category" required><option value="">選択してください</option><option value="univ">大学生・専門学校生・高専生等（18歳以上）</option><option value="hs">高校生</option></select></div>
-        <div><label>学校名・学部<span class="req">必須</span></label><input type="text" id="s_school" required></div>
-        <div><label>都道府県</label><input type="text" id="s_pref"></div>
-      </div>
-      <div class="notice" id="s_hsNotice" style="display:none">高校生は保護者同意書の提出が必要です。運営が同意を確認するまで公開されません。契約時は保護者を交えた三者面談を行います。</div>
-      <div class="check" id="s_parentWrap" style="display:none">
-        <input type="checkbox" id="s_chkParent">
-        <span><b>保護者の同意を得ています。</b>登録後、保護者同意書を提出することを了承します。</span>
-      </div>
-      <div style="margin-top:16px"><label>顔写真<span class="opt">任意・推奨</span></label>
-        <div class="photo-pick"><img id="s_photoPrev" class="avatar-lg" style="display:none" alt=""><input type="file" id="s_photo" accept="image/*" style="max-width:280px"></div>
-        <p class="hint">本人確認と企業の検討材料になります。自動で縮小されます。</p></div>
-    </fieldset>
-    <fieldset><legend>競技情報</legend>
-      <div class="grid2">
-        <div><label>競技<span class="req">必須</span></label><select id="s_sport" required></select><p class="hint">※野球は学生野球憲章の制限により登録できません。</p></div>
-        <div><label>種目・ポジション</label><input type="text" id="s_event"></div>
-        <div><label>自己ベスト・主要記録<span class="req">必須</span></label><input type="text" id="s_pb" required placeholder="例：10.42"></div>
-        <div><label>記録ラベル</label><input type="text" id="s_pbLabel" placeholder="例：100m PB"></div>
-      </div>
-      <div style="margin-top:14px"><label>主な戦績</label><div id="s_records"></div><button type="button" class="addline" id="s_addRecord">＋ 戦績を追加</button></div>
-      <div style="margin-top:14px"><label>トレーニング結果・取り組み</label><textarea id="s_training"></textarea></div>
-    </fieldset>
-    <fieldset><legend>アピール・SNS・動画</legend>
-      <div><label>自己アピール<span class="req">必須</span></label><textarea id="s_appeal" required></textarea></div>
-      <div style="margin-top:14px"><label>SNSアカウント<span class="opt">任意</span></label><div id="s_sns"></div><button type="button" class="addline" id="s_addSns">＋ SNSを追加</button>
-        <p class="hint">スポンサーPRを投稿する際は「PR」表記が必要です（ステマ規制）。</p></div>
-      <div style="margin-top:14px"><label>競技動画URL<span class="opt">任意</span></label><input type="url" id="s_video" placeholder="YouTube限定公開URLを推奨"><p class="hint">大会映像は主催者規約を確認。他選手が映る映像は掲載不可（自主練習・本人のみ推奨）。</p></div>
-    </fieldset>
-    <fieldset id="s_agreeWrap"><legend>確認事項（初回登録時）</legend>
-      <div class="check"><input type="checkbox" id="s_chkFed"><span><b>所属連盟・学連等の規定を確認しました。</b>個人スポンサー契約が規定に抵触しないことを確認済みです。</span></div>
-      <div class="check"><input type="checkbox" id="s_chkTruth"><span><b>記載した戦績・記録は事実です。</b>虚偽が判明した場合は登録抹消に同意します。</span></div>
-      <div class="check"><input type="checkbox" id="s_chkTerms"><span><b>利用規約・プライバシーポリシーに同意します。</b></span></div>
-    </fieldset>
-    <button type="submit" class="btn btn-gold" id="s_save">保存する</button>
-    <div class="errbox" id="s_err"></div>
-  </form>
-</section>
-
-<!-- ===== 企業ダッシュボード ===== -->
-<section class="view" id="v-company">
-  <div id="c_regWrap" style="display:none">
-    <div class="page-head"><span class="en">SPONSOR REGISTRATION</span><h1>スポンサー企業登録</h1>
-      <p>登録・学生の閲覧・チェックは無料です。費用が発生するのは年間スポンサー契約成立時のみ（成約手数料：年間契約料の20%）。</p></div>
-    <form class="panel" id="compForm" novalidate>
-      <fieldset><legend>企業情報</legend>
-        <div class="grid2">
-          <div><label>企業名<span class="req">必須</span></label><input type="text" id="c_name" required></div>
-          <div><label>業種</label><select id="c_industry"><option></option><option>製造業</option><option>IT・通信</option><option>小売・飲食</option><option>建設・不動産</option><option>金融・保険</option><option>医療・ヘルスケア</option><option>スポーツ関連</option><option>その他</option></select></div>
-          <div><label>所在地</label><input type="text" id="c_addr"></div>
-          <div><label>WebサイトURL</label><input type="url" id="c_url"></div>
-          <div><label>ご担当者名<span class="req">必須</span></label><input type="text" id="c_person" required></div>
-          <div><label>想定年間支援額</label><select id="c_budget"><option value="">未定</option><option>〜30万円</option><option>30〜60万円</option><option>60〜100万円</option><option>100万円以上</option></select></div>
-        </div>
-        <div style="margin-top:14px"><label>関心のある競技</label><input type="text" id="c_interest" placeholder="例：陸上、競泳"></div>
-        <div style="margin-top:14px"><label>支援の目的</label><textarea id="c_purpose"></textarea></div>
-      </fieldset>
-      <div class="check"><input type="checkbox" id="c_chkFee"><span><b>料金体系を理解しました。</b>契約成立時に年間契約料の20%の成約手数料が発生します。</span></div>
-      <div class="check"><input type="checkbox" id="c_chkTerms"><span><b>利用規約に同意し、反社会的勢力に該当しないことを表明・保証します。</b></span></div>
-      <div style="margin-top:18px"><button type="submit" class="btn btn-solid" id="c_save">企業アカウントを申請する</button></div>
-      <div class="errbox" id="c_err"></div>
-    </form>
-  </div>
-
-  <div id="c_pendingWrap" style="display:none">
-    <div class="status-banner st-pending">企業アカウントは<b>審査中</b>です。承認されると学生情報の閲覧・チェックが可能になります。運営からの連絡をお待ちください。</div>
-    <button class="btn btn-sm" onclick="loadCompanyView()">審査状況を確認</button>
-  </div>
-
-  <div id="c_mainWrap" style="display:none">
-    <div class="page-head"><span class="en">FIND ATHLETES</span><h1>学生をさがす</h1>
-      <p>気になる学生に「チェック」で目星をつけて管理できます。チェックは企業側だけの機能で、学生には一切表示されません。支援したい学生が見つかったら「支援を相談」から事務局にご連絡ください。</p></div>
-    <div class="feed"><h2>更新フィード</h2><p class="hint" id="feedHint"></p><ul id="feedList"></ul></div>
-    <div class="toolbar">
-      <select id="filterSport"></select>
-      <input type="text" id="filterText" placeholder="キーワード検索">
-      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin:0"><input type="checkbox" id="filterChecked" style="width:15px;height:15px">チェック済みのみ</label>
-      <button class="btn btn-sm" id="reloadBtn">最新に更新</button>
-    </div>
-    <div class="cards" id="athleteCards"></div>
-    <p class="empty" id="noResults" style="display:none">条件に合う学生が見つかりませんでした。</p>
-  </div>
-</section>
-
-<!-- ===== 事務局 ===== -->
-<section class="view" id="v-admin">
-  <div class="page-head"><span class="en">ADMIN</span><h1>事務局管理</h1>
-    <p>学生・企業の審査と、支援相談の案件管理を行います。</p></div>
-  <div class="tabs">
-    <button class="tab active" data-atab="a-students">学生審査</button>
-    <button class="tab" data-atab="a-companies">企業審査</button>
-    <button class="tab" data-atab="a-inquiries">支援相談</button>
-    <button class="btn btn-sm" id="adminReload" style="margin-left:auto">最新に更新</button>
-  </div>
-  <div id="a-students" style="overflow-x:auto"><table class="admin-table"><thead><tr><th>学生</th><th>区分</th><th>競技</th><th>連絡先</th><th>保護者同意</th><th>ステータス</th></tr></thead><tbody id="adminStudents"></tbody></table></div>
-  <div id="a-companies" style="display:none;overflow-x:auto"><table class="admin-table"><thead><tr><th>企業</th><th>担当者</th><th>連絡先</th><th>想定支援額</th><th>ステータス</th></tr></thead><tbody id="adminCompanies"></tbody></table></div>
-  <div id="a-inquiries" style="display:none;overflow-x:auto"><table class="admin-table"><thead><tr><th>受付</th><th>企業</th><th>学生</th><th>想定支援額</th><th>メッセージ</th><th>ステータス</th></tr></thead><tbody id="adminInquiries"></tbody></table></div>
-</section>
-
-</main>
-
-<!-- 学生詳細モーダル -->
-<dialog id="detailModal">
-  <div class="modal-head">
-    <div style="display:flex;align-items:center;gap:14px">
-      <img id="md_photo" class="avatar" style="width:56px;height:56px;display:none" alt="">
-      <span id="md_photo_fb" class="avatar avatar-fb" style="width:56px;height:56px"></span>
-      <div><h2 id="md_name"></h2><div class="sub" id="md_sub"></div></div>
-    </div>
-    <button class="modal-close" id="mdClose">×</button>
-  </div>
-  <div class="modal-body">
-    <div class="mrow"><div class="rec-strip"><span id="md_pbLabel" style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:#8FA2C4"></span><span class="v" id="md_pb"></span></div></div>
-    <div class="mrow"><h3>APPEAL</h3><p id="md_appeal" style="font-size:13.5px"></p></div>
-    <div class="mrow"><h3>RESULTS</h3><ul class="reslist" id="md_results"></ul></div>
-    <div class="mrow"><h3>TRAINING</h3><p id="md_training" style="font-size:13px;color:var(--ink-soft)"></p></div>
-    <div class="mrow"><h3>SNS</h3><div class="snslinks" id="md_sns"></div></div>
-    <div class="mrow"><h3>VIDEO</h3><p id="md_video" style="font-size:13px"></p></div>
-  </div>
-  <div class="modal-foot">
-    <button class="btn btn-sm" id="mdCloseBtn">閉じる</button>
-    <button class="btn btn-sm btn-gold" id="mdContact">この学生の支援を相談する</button>
-  </div>
-</dialog>
-
-<!-- 支援相談モーダル -->
-<dialog id="inquiryModal">
-  <div class="modal-head"><div><h2>支援の相談</h2><div class="sub" id="iq_target"></div></div><button class="modal-close" id="iqClose">×</button></div>
-  <div class="modal-body">
-    <p style="font-size:13px;margin-bottom:14px">送信すると<b>コサポ事務局</b>に連絡が届き、担当者が条件のすり合わせと面談の設定をご案内します。学生に直接連絡は送られません。</p>
-    <div style="margin-bottom:12px"><label>想定年間支援額</label><select id="iq_budget"><option>未定（相談したい）</option><option>〜30万円</option><option>30〜60万円</option><option>60〜100万円</option><option>100万円以上</option></select></div>
-    <div><label>事務局へのメッセージ<span class="opt">任意</span></label><textarea id="iq_msg"></textarea></div>
-  </div>
-  <div class="modal-foot"><button class="btn btn-sm" id="iqCancel">キャンセル</button><button class="btn btn-sm btn-gold" id="iqSend">事務局に相談を送信する</button></div>
-</dialog>
-
+</div>
 <div class="toast" id="toast"></div>
+<dialog id="dlg"><h3 id="dlgT" style="font-size:16px"></h3><div id="dlgB"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn b-line" onclick="dlg.close()">閉じる</button><button class="btn b-pri hide" id="dlgOk"></button></div></dialog>
 
 <script>
-/* ============================================================
-   コサポ 本番アプリ（Supabase接続版）P1
-   下の CONFIG にSupabaseの接続情報を設定してください（手順書§3）
-============================================================ */
-const CONFIG = {
-  SUPABASE_URL: "https://klsyhucvlfuoprgiorgw.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_7R6Sob1qnfsAXxV7LxND4Q_gmb7LSZs"  // Project Settings > API Keys > Publishable key（公開してよいキー）
+/* =====================================================================
+   MyCOACH-MyTEAM 地域クラブ運営コンソール（スタンドアロンデモ）
+   - 指導者マッチング：条件にもとづくマッチ度スコア（理由つき）
+   - 安全管理：Open-Meteoの予報から暑さ指数（WBGT）を推定（環境省採用の推定式）
+   - 練習・コンディション：RPE×時間の練習負荷、直近7日/28日の負荷比（ACWR）
+   - 事務自動化：会費の回収・減免・督促文、出欠、自治体向け実績報告（CSV）
+   本番接続時は Firestore（firestore.rules）と Cloud Functions（functions/）に置き換える
+   ===================================================================== */
+
+/* 任意：生成AIで練習メニューを作る場合のエンドポイント（Cloud Functions等）。空なら内蔵ロジックで作成 */
+const AI_MENU_ENDPOINT = '';
+
+const KEY = 'mcmt_demo_v2';
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const DOW = ['日','月','火','水','木','金','土'];
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- シードデータ ---------- */
+function rng(seed){ let s=seed; return ()=>{ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
+function seed(){
+  const r = rng(42);
+  const club = { name:'中野区 地域バスケットボールクラブ', sport:'バスケットボール', area:'東京都中野区', lat:35.7074, lon:139.6638,
+    venue:'中野区立 江原小学校 体育館', outdoorVenue:'富士見グラウンド', days:[6,0], fee:3000, needLicense:true };
+  const coaches = [
+    {id:'c1',name:'佐藤 健太',sport:'バスケットボール',lat:35.715,lon:139.650,days:[6,0,3],license:'JSPO公認コーチ1',verified:true,training:true,rating:4.8,count:126,teacher:false,color:'#2E7CE0'},
+    {id:'c2',name:'山田 美咲',sport:'バスケットボール',lat:35.690,lon:139.700,days:[6],license:'元実業団選手',verified:true,training:true,rating:4.9,count:88,teacher:false,color:'#E5484D'},
+    {id:'c3',name:'鈴木 大輔',sport:'バスケットボール',lat:35.712,lon:139.655,days:[6,0],license:'JSPO公認スタートコーチ',verified:true,training:false,rating:4.5,count:40,teacher:true,color:'#2BB673'},
+    {id:'c4',name:'高橋 翔',sport:'バスケットボール',lat:35.760,lon:139.600,days:[0,2],license:'',verified:false,training:false,rating:4.2,count:12,teacher:false,color:'#9B5DE5'},
+    {id:'c5',name:'伊藤 さくら',sport:'バスケットボール',lat:35.705,lon:139.680,days:[6,0,5],license:'JSPO公認コーチ3',verified:true,training:true,rating:4.7,count:210,teacher:false,color:'#FF8A3D'},
+    {id:'c6',name:'渡辺 隼',sport:'サッカー',lat:35.708,lon:139.665,days:[6,0],license:'JFA C級',verified:true,training:true,rating:4.9,count:150,teacher:false,color:'#0F2A4A'},
+    {id:'c7',name:'中村 遥',sport:'バレーボール',lat:35.700,lon:139.640,days:[6],license:'JSPO公認コーチ1',verified:true,training:true,rating:4.6,count:64,teacher:true,color:'#00A6A6'},
+    {id:'c8',name:'小林 拓海',sport:'バスケットボール',lat:35.650,lon:139.560,days:[6,0],license:'JSPO公認コーチ1',verified:true,training:true,rating:4.4,count:30,teacher:false,color:'#6C757D'},
+  ];
+  const names = ['田中 陽向','加藤 結衣','吉田 蓮','山口 葵','松本 湊','井上 凛','木村 悠真','林 心春','清水 大和','森 結菜','池田 颯','橋本 芽依'];
+  const members = names.map((n,i)=>({ id:'m'+(i+1), name:n, grade:'中学'+(1+(i%3))+'年', guardian:n.split(' ')[0]+' 様',
+    discount: i===3?50:(i===7||i===10)?100:0 }));
+  // 過去8週の活動（土日）
+  const sessions = []; const att = {}; const loads = {};
+  for(let d=56; d>=1; d--){
+    const day = addDays(TODAY,-d);
+    if(!club.days.includes(day.getDay())) continue;
+    const id='s'+iso(day);
+    sessions.push({id,date:iso(day),start:'09:00',min:150,coach:d%14<7?'c1':'c5',venue:club.venue,status:'done'});
+    att[id] = members.filter(()=>r()>0.15).map(m=>m.id);
+  }
+  // 今後2週の予定
+  for(let d=0; d<=14; d++){
+    const day = addDays(TODAY,d);
+    if(!club.days.includes(day.getDay())) continue;
+    sessions.push({id:'s'+iso(day),date:iso(day),start: day.getDay()===0?'13:00':'09:00',min:150,coach:'c1',venue: day.getDay()===0?club.outdoorVenue:club.venue,status:'plan'});
+  }
+  // 練習負荷ログ（RPE×分）
+  members.forEach((m,i)=>{
+    loads[m.id]=[];
+    sessions.filter(s=>s.status==='done' && att[s.id].includes(m.id)).forEach(s=>{
+      const daysAgo = (TODAY - new Date(s.date))/864e5;
+      let rpe = 4 + Math.round(r()*2);
+      if(i===0 && daysAgo<=7) rpe = 8;               // 田中さん：直近で急増
+      if(i===4 && daysAgo<=7) rpe = 7;
+      loads[m.id].push({date:s.date,rpe,min: (i===0 && daysAgo<=7)?210:s.min,sleep: (i===0&&daysAgo<=7)?5.5:6.5+Math.round(r()*2*10)/10,fatigue: (i===0&&daysAgo<=7)?4:2});
+    });
+    // 自主練（平日）を一部追加
+    if(i===0){ [2,4,5].forEach(k=>loads[m.id].push({date:iso(addDays(TODAY,-k)),rpe:7,min:90,sleep:5.5,fatigue:4})); }
+  });
+  // 会費（当月・前月）
+  const ym = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const thisM = ym(TODAY), prevM = ym(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
+  const fees = {};
+  [prevM,thisM].forEach(mo=>{ fees[mo]={}; members.forEach((m,i)=>{
+    const due = club.fee*(100-m.discount)/100;
+    let st = due===0?'exempt':'paid';
+    if(mo===thisM && (i===2||i===8)) st='unpaid';
+    fees[mo][m.id]={due,status:st,reminded:null};
+  }); });
+  const incidents = [{id:'i1',date:iso(addDays(TODAY,-20)),type:'ヒヤリハット',who:'松本 湊',desc:'着地時に足首をひねりかけた。アイシングし練習は見学。',action:'保護者へ連絡済'}];
+  return {club,coaches,members,sessions,att,loads,fees,incidents,selectedCoach:null,months:{thisM,prevM}};
+}
+let S;
+function load(){ try{ S=JSON.parse(localStorage.getItem(KEY)); }catch(e){} if(!S) { S=seed(); save(); } }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function resetDemo(){ if(confirm('デモデータを初期状態に戻しますか？')){ try{localStorage.removeItem(KEY);}catch(e){} S=seed(); save(); go(cur); toast('初期化しました'); } }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('on'),2600); }
+const dlg = document.getElementById('dlg');
+function openDlg(title,html,okLabel,onOk){ dlgT.textContent=title; dlgB.innerHTML=html; const b=document.getElementById('dlgOk'); if(okLabel){b.textContent=okLabel;b.classList.remove('hide');b.onclick=()=>{onOk();dlg.close();};}else b.classList.add('hide'); dlg.showModal(); }
+
+/* ---------- 共通計算 ---------- */
+function km(a,b,c,d){ const R=6371,toR=x=>x*Math.PI/180; const dl=toR(c-a),dn=toR(d-b); const h=Math.sin(dl/2)**2+Math.cos(toR(a))*Math.cos(toR(c))*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function matchScore(c, club, opt){
+  if(c.sport!==club.sport) return null;
+  const dist = km(club.lat,club.lon,c.lat,c.lon);
+  const overlap = club.days.filter(d=>c.days.includes(d)).length/club.days.length;
+  const parts = [
+    {k:'距離',v: Math.max(0,1-dist/12)*25, note:`${dist.toFixed(1)}km`},
+    {k:'曜日',v: overlap*25, note: overlap===1?'活動日すべて可':overlap>0?'一部の活動日のみ':'活動日と合わない'},
+    {k:'資格',v: c.license?(c.license.includes('JSPO')||c.license.includes('JFA')?15:10):0, note:c.license||'資格なし'},
+    {k:'審査',v: (c.verified?10:0)+(c.training?10:0), note:`${c.verified?'本人確認済':'本人確認未'}・${c.training?'安全研修済':'安全研修未'}`},
+    {k:'評価',v: (c.rating-4)/1*10 + Math.min(c.count,150)/150*5, note:`★${c.rating}（${c.count}回）`},
+  ];
+  let score = parts.reduce((a,p)=>a+p.v,0);
+  if(opt.requireVerified && !(c.verified&&c.training)) score -= 30;
+  if(opt.preferTeacher && c.teacher) score += 5;
+  return {score: Math.max(0,Math.min(100,Math.round(score))), parts, dist};
+}
+function wbgtLevel(w){
+  if(w>=31) return {lv:4,label:'運動は原則中止',cls:'ng',advice:'特別な場合以外は運動を中止。特に子どもの場合は中止すべき。'};
+  if(w>=28) return {lv:3,label:'厳重警戒',cls:'ng',advice:'激しい運動や持久走は避ける。10〜20分おきに休憩と水分・塩分補給。'};
+  if(w>=25) return {lv:2,label:'警戒',cls:'warn',advice:'積極的に休憩をとり、水分・塩分を補給。激しい運動では30分おきくらいに休憩。'};
+  if(w>=21) return {lv:1,label:'注意',cls:'info',advice:'熱中症の兆候に注意し、運動の合間に積極的に水分・塩分を補給。'};
+  return {lv:0,label:'ほぼ安全',cls:'ok',advice:'通常は熱中症の危険は小さいが、適宜水分・塩分を補給。'};
+}
+/* 環境省 熱中症予防情報サイトで用いられる推定式（小野ら）: Ta[℃], RH[%], SR[kW/m2], WS[m/s] */
+function estWBGT(Ta,RH,SR,WS){ return 0.735*Ta + 0.0374*RH + 0.00292*Ta*RH + 7.619*SR - 4.557*SR*SR - 0.0572*WS - 4.064; }
+function acwr(mid){
+  const logs = S.loads[mid]||[];
+  const sum = (from,to)=>logs.filter(l=>{const a=(TODAY-new Date(l.date))/864e5; return a>=from && a<to;}).reduce((t,l)=>t+l.rpe*l.min,0);
+  const acute = sum(0,7), chronic = sum(0,28)/4;
+  const last = logs.filter(l=>(TODAY-new Date(l.date))/864e5<7);
+  const sleep = last.length? last.reduce((t,l)=>t+l.sleep,0)/last.length : null;
+  const ratio = chronic? acute/chronic : 0;
+  let st = {cls:'ok',label:'良好'};
+  if(ratio>1.5 || (sleep && sleep<6)) st={cls:'ng',label:'要注意'};
+  else if(ratio>1.3 || ratio<0.8 && acute>0) st={cls:'warn',label:'確認'};
+  if(acute===0) st={cls:'mute',label:'記録なし'};
+  return {acute,chronic,ratio,sleep,st};
+}
+function weeklyLoads(mid){ const w=[]; for(let k=7;k>=0;k--){ w.push((S.loads[mid]||[]).filter(l=>{const a=(TODAY-new Date(l.date))/864e5; return a>=k*7 && a<(k+1)*7;}).reduce((t,l)=>t+l.rpe*l.min,0)); } return w; }
+
+/* ---------- 天気（Open-Meteo） ---------- */
+let WX = {status:'idle', hours:[], src:'', simulate:false};
+async function loadWeather(){
+  WX.status='loading';
+  try{
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${S.club.lat}&longitude=${S.club.lon}&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=3`;
+    const r = await fetch(u); if(!r.ok) throw 0; const j = await r.json(); const h=j.hourly;
+    WX.hours = h.time.map((t,i)=>({t, Ta:h.temperature_2m[i], RH:h.relative_humidity_2m[i], SR:(h.shortwave_radiation[i]||0)/1000, WS:h.wind_speed_10m[i]}));
+    WX.src='Open-Meteo（予報）'; WX.status='ok';
+  }catch(e){ WX.status='fail'; WX.src='取得できませんでした'; WX.hours=[]; }
+  if(cur==='safety'||cur==='dash') go(cur);
+}
+function summerSample(){ // 真夏日のサンプル（気象データ取得不可時や季節外の確認用）
+  const base = iso(TODAY); const out=[];
+  for(let h=0;h<24;h++){ const Ta=27+7*Math.sin((h-9)/24*2*Math.PI)+ (h>=10&&h<=15?1.5:0); const SR=Math.max(0,Math.sin((h-5)/14*Math.PI))*0.85; out.push({t:`${base}T${String(h).padStart(2,'0')}:00`,Ta,RH:68-(Ta-27)*2,SR,WS:2}); }
+  return out;
+}
+function wxHours(indoor){
+  const src = WX.simulate || WX.status!=='ok' ? summerSample() : WX.hours;
+  return src.map(h=>{ const w = indoor? estWBGT(h.Ta,h.RH,0,0) : estWBGT(h.Ta,h.RH,h.SR,h.WS); return {...h, w: Math.round(w*10)/10}; });
+}
+
+/* ---------- ナビ ---------- */
+const PAGES = [
+  ['dash','📊','ダッシュボード','ホーム'],['match','🤝','指導者マッチング','指導者'],['safety','🌡️','安全管理（暑さ指数）','暑さ'],
+  ['cond','💪','練習・コンディション','体調'],['admin','💳','会費・出欠','会費'],['report','🧾','自治体への実績報告','報告'],
+];
+let cur='dash';
+function renderNav(){
+  const alerts = S.members.filter(m=>acwr(m.id).st.cls==='ng').length;
+  const unpaid = Object.values(S.fees[S.months.thisM]).filter(f=>f.status==='unpaid').length;
+  const b = id => id==='cond'&&alerts?`<span class="bd">${alerts}</span>`:id==='admin'&&unpaid?`<span class="bd">${unpaid}</span>`:'';
+  navList.innerHTML = PAGES.map(([id,ic,lb])=>`<button class="navb ${cur===id?'on':''}" onclick="go('${id}')">${ic} ${lb}${b(id)}</button>`).join('');
+  navMobile.innerHTML = PAGES.map(([id,ic,lb,sh])=>`<button class="navb ${cur===id?'on':''}" onclick="go('${id}')" aria-label="${lb}"><span class="ic">${ic}</span><span>${sh}</span>${b(id)}</button>`).join('');
+  clubName.textContent=S.club.name; clubNameM.textContent=S.club.name;
+}
+function render(p){ const changed = p!==cur; cur=p; renderNav(); main.innerHTML = VIEWS[p](); if(changed) window.scrollTo({top:0}); enhance(); if(AFTER[p]) AFTER[p](); }
+function go(p){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(p!==cur && document.startViewTransition && !reduce){ document.startViewTransition(()=>render(p)); }
+  else { const keep = p===cur? scrollY : 0; render(p); if(p===cur) window.scrollTo({top:keep}); }
+}
+/* 表示後の演出：数字のカウントアップ・グラフの順次表示・スワイプのドット */
+const COUNTED = new Set();
+function enhance(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  main.querySelectorAll('.chart i').forEach((el,i)=>el.style.setProperty('--i',i));
+  main.querySelectorAll('.hr').forEach((el,i)=>el.style.animationDelay=(i*25)+'ms');
+  if(!reduce && !COUNTED.has(cur)){ COUNTED.add(cur);
+    main.querySelectorAll('.kpi .val').forEach(el=>{
+      const tn=[...el.childNodes].find(n=>n.nodeType===3 && /[0-9]/.test(n.textContent)); if(!tn) return;
+      const raw=tn.textContent, m=raw.match(/^(¥?)([0-9,]+)(.*)$/); if(!m || raw.includes('/')) return;
+      const to=+m[2].replace(/,/g,''); if(!to) return; const t0=performance.now();
+      const st=t=>{ const p=Math.min(1,(t-t0)/900), v=Math.round(to*(1-Math.pow(1-p,3))); tn.textContent=m[1]+(m[2].includes(',')||m[1]?v.toLocaleString('ja-JP'):v)+m[3]; if(p<1) requestAnimationFrame(st); };
+      requestAnimationFrame(st);
+    });
+  }
+  main.querySelectorAll('.grid.g4,.grid.g3').forEach(g=>{
+    const d=document.createElement('div'); d.className='sw-dots'; d.innerHTML=[...g.children].map((_,i)=>`<i class="${i?'':'on'}"></i>`).join(''); g.after(d);
+    g.addEventListener('scroll',()=>{ const w=g.children[0].getBoundingClientRect().width+12; const i=Math.round(g.scrollLeft/w); [...d.children].forEach((x,k)=>x.classList.toggle('on',k===i)); },{passive:true});
+  });
+}
+const head = (t,s)=>`<div class="top"><div><h1>${t}</h1><p>${s}</p></div><span class="demo-badge">デモ版：表示中のデータは架空のものです</span></div>`;
+const AFTER = {};
+const VIEWS = {};
+
+/* ---------- ダッシュボード ---------- */
+VIEWS.dash = ()=>{
+  const next = S.sessions.filter(s=>s.status==='plan').sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const nd = new Date(next.date); const indoor = next.venue===S.club.venue;
+  const hh = parseInt(next.start);
+  const atNext = WX.status==='ok' ? wxHours(indoor).find(h=>h.t===`${next.date}T${String(hh).padStart(2,'0')}:00`) : null;
+  const lv = atNext? wbgtLevel(atNext.w):null;
+  const al = S.members.map(m=>({m,a:acwr(m.id)})).filter(x=>x.a.st.cls==='ng');
+  const fm = S.fees[S.months.thisM]; const due = Object.values(fm).reduce((t,f)=>t+f.due,0); const paid = Object.values(fm).filter(f=>f.status==='paid').reduce((t,f)=>t+f.due,0);
+  const unpaid = Object.entries(fm).filter(([,f])=>f.status==='unpaid');
+  const coach = S.coaches.find(c=>c.id===next.coach);
+  const doneM = S.sessions.filter(s=>s.status==='done'&&s.date.startsWith(S.months.thisM));
+  return head('ダッシュボード',`${S.club.area}｜${S.club.sport}｜会員 ${S.members.length}人`)+`
+  <div class="grid g4">
+    <div class="card kpi"><div class="lbl">次回の活動</div><div class="val">${fmt(nd)}<small>（${DOW[nd.getDay()]}）${next.start}</small></div><div class="sub">${esc(next.venue)}・${esc(coach?.name||'')}</div></div>
+    <div class="card kpi"><div class="lbl">次回の暑さ指数（推定）</div><div class="val">${atNext?atNext.w.toFixed(1):(WX.status==='loading'||WX.status==='idle')?'<span class="skel"></span>':'—'}</div><div class="sub">${lv?`<span class="pill ${lv.cls}">${lv.label}</span>`:WX.status==='loading'||WX.status==='idle'?'気象データを取得中…':atNext===undefined?'予報の範囲外（3日先まで）':'気象データを取得できません'} ${indoor?'屋内':'屋外'}</div></div>
+    <div class="card kpi"><div class="lbl">今月の会費 回収率</div><div class="val">${due?Math.round(paid/due*100):100}<small>%</small></div><div class="sub">${yen(paid)} / ${yen(due)}</div></div>
+    <div class="card kpi"><div class="lbl">今月の活動回数</div><div class="val">${doneM.length}<small>回</small></div><div class="sub">延べ ${doneM.reduce((t,s)=>t+(S.att[s.id]||[]).length,0)}人が参加</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h2>対応が必要なこと</h2>
+      ${al.map(x=>`<div class="alert ng">⚠️ <div><b>${esc(x.m.name)}</b> さんの練習負荷が急増しています（負荷比 ${x.a.ratio.toFixed(2)}${x.a.sleep?`・睡眠 平均${x.a.sleep.toFixed(1)}時間`:''}）。<a href="#" onclick="go('cond');return false">確認する</a></div></div>`).join('')}
+      ${unpaid.length?`<div class="alert warn">💳 <div>今月の会費が未納の家庭が <b>${unpaid.length}件</b> あります。<a href="#" onclick="go('admin');return false">督促する</a></div></div>`:''}
+      ${lv && lv.lv>=3?`<div class="alert ng">🌡️ <div>次回の活動時間帯は「${lv.label}」の見込みです。<a href="#" onclick="go('safety');return false">時間変更を検討</a></div></div>`:''}
+      ${S.coaches.filter(c=>c.sport===S.club.sport && (!c.training||!c.verified)).length?`<div class="alert info">🪪 <div>審査が完了していない指導者が ${S.coaches.filter(c=>c.sport===S.club.sport&&(!c.training||!c.verified)).length}人 います。<a href="#" onclick="go('match');return false">確認する</a></div></div>`:''}
+    </div>
+    <div class="card"><h2>今後の予定 <small>土日の活動</small></h2>
+      <table>${S.sessions.filter(s=>s.status==='plan').sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{const d=new Date(s.date);const c=S.coaches.find(x=>x.id===s.coach);return `<tr><td>${fmt(d)}（${DOW[d.getDay()]}）</td><td>${s.start}〜</td><td>${esc(s.venue)}</td><td>${esc(c?.name||'未定')}</td></tr>`}).join('')}</table>
+    </div>
+  </div>`;
 };
 
-const SPORTS=["陸上競技","競泳","サッカー","バスケットボール","バレーボール","テニス","バドミントン","卓球","柔道","剣道","レスリング","ウエイトリフティング","体操","ラグビー","ハンドボール","自転車","ボート","フェンシング","アーチェリー","スキー・スノーボード","スケート","ゴルフ","陸上ホッケー","空手","ボクシング","トライアスロン","クライミング","その他"];
-// ※野球は学生野球憲章の制限により含めない（DB側のCHECK制約でも遮断）
-
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
-function showView(id){$$(".view").forEach(v=>v.classList.remove("active"));$("#"+id).classList.add("active");}
-function fmtTime(ts){const d=new Date(ts);return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
-const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:"";};
-async function photoSrc(p){
-  if(!p)return "";
-  if(/^https?:\/\//i.test(p))return p;
-  const {data}=await sb.storage.from("photos").createSignedUrl(p,3600);
-  return (data&&data.signedUrl)||"";
+/* ---------- 指導者マッチング ---------- */
+let MOPT = {requireVerified:true, preferTeacher:false, day:'all'};
+VIEWS.match = ()=>{
+  const list = S.coaches.map(c=>({c,m:matchScore(c,S.club,MOPT)})).filter(x=>x.m).filter(x=>MOPT.day==='all'||x.c.days.includes(+MOPT.day)).sort((a,b)=>b.m.score-a.m.score);
+  const others = S.coaches.filter(c=>c.sport!==S.club.sport);
+  return head('指導者マッチング',`「${S.club.sport}・${S.club.area}・${S.club.days.map(d=>DOW[d]).join('')}曜」の条件で、マッチ度の高い順に表示しています`)+`
+  <div class="card noprint" style="margin-bottom:16px"><div class="row">
+    <label class="field">活動曜日で絞り込み<select onchange="MOPT.day=this.value;go('match')"><option value="all">すべて</option>${S.club.days.map(d=>`<option value="${d}" ${MOPT.day==d?'selected':''}>${DOW[d]}曜に入れる人</option>`).join('')}</select></label>
+    <label class="row" style="gap:6px;align-items:center"><input type="checkbox" ${MOPT.requireVerified?'checked':''} onchange="MOPT.requireVerified=this.checked;go('match')"> 審査（本人確認・安全研修）が済んだ人を優先</label>
+    <label class="row" style="gap:6px;align-items:center"><input type="checkbox" ${MOPT.preferTeacher?'checked':''} onchange="MOPT.preferTeacher=this.checked;go('match')"> 教員（兼職兼業）を優先</label>
+  </div></div>
+  <div class="grid g21">
+    <div class="card"><h2>おすすめの指導者 <small>${list.length}人</small></h2>
+      ${list.map(({c,m})=>`<div class="coach">
+        <div class="av" style="background:${c.color}">${esc(c.name[0])}</div>
+        <div><b>${esc(c.name)}</b> ${c.verified&&c.training?'<span class="pill ok">審査済</span>':!c.verified?'<span class="pill ng">本人確認未</span>':'<span class="pill warn">安全研修未</span>'} ${c.teacher?'<span class="pill info">教員・兼職兼業</span>':''}
+          <div class="why">${m.parts.map(p=>`<span>${p.k}：${esc(p.note)}</span>`).join('')}</div>
+        </div>
+        <div style="text-align:right"><div class="score">${m.score}</div><div style="font-size:11px;color:var(--sub)">マッチ度</div><button class="btn b-sm ${S.selectedCoach===c.id?'b-lime':'b-pri'}" style="margin-top:6px" onclick="requestCoach('${c.id}')">${S.selectedCoach===c.id?'依頼済':'依頼する'}</button></div>
+      </div>`).join('')}
+    </div>
+    <div class="card"><h2>マッチ度の考え方</h2>
+      <p style="color:var(--sub);font-size:13px">クラブの条件と指導者のプロフィールを照らし合わせ、100点満点で採点しています。点数の内訳は各指導者の下に表示されます。</p>
+      <table style="margin-top:10px">
+        <tr><td>活動場所からの距離</td><td class="num">25点</td></tr>
+        <tr><td>活動曜日の重なり</td><td class="num">25点</td></tr>
+        <tr><td>指導者資格</td><td class="num">15点</td></tr>
+        <tr><td>本人確認・安全研修</td><td class="num">20点</td></tr>
+        <tr><td>評価と指導実績</td><td class="num">15点</td></tr>
+      </table>
+      <p style="color:var(--sub);font-size:12px;margin-top:10px">※審査が済んでいない指導者は、優先設定がオンのとき30点を差し引きます。<br>※種目が異なる指導者（${others.length}人）は対象外です。</p>
+    </div>
+  </div>`;
+};
+function requestCoach(id){
+  const c=S.coaches.find(x=>x.id===id);
+  if(!(c.verified&&c.training)){ openDlg('審査が完了していません',`<p style="margin-top:8px">${esc(c.name)}さんは${!c.verified?'本人確認':'安全研修の受講'}が完了していません。審査が済むまで、指導の依頼はできません。</p>`); return; }
+  S.selectedCoach=id; save(); go('match'); toast(`${c.name}さんに指導を依頼しました（デモ）`);
 }
-function resizeImage(file,max,cb){
-  const r=new FileReader();
-  r.onload=()=>{const img=new Image();img.onload=()=>{
-    const sc=Math.min(1,max/Math.max(img.width,img.height));
-    const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
-    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-    c.toBlob(b=>cb(b),"image/jpeg",0.82);
-  };img.src=r.result;};r.readAsDataURL(file);
-}
-const snsRowHtml=(type="",url="")=>`<div class="snsrow"><select class="sns-type">${["X","Instagram","TikTok","YouTube","note","その他"].map(t=>`<option ${t===type?"selected":""}>${t}</option>`).join("")}</select><input type="url" class="sns-url" placeholder="https://..." value="${esc(url)}"></div>`;
-const recRowHtml=(yr="",tx="")=>`<div class="recordrow"><input type="text" class="rec-yr" placeholder="年" value="${esc(yr)}"><input type="text" class="rec-tx" placeholder="大会名・結果" value="${esc(tx)}"></div>`;
 
-let sb=null, session=null, role=null, myStudent=null, myCompany=null, recoveryMode=false;
-let checks=new Set(), browseList=[], inquiryTargetId=null, isSignup=false, sPhotoBlob=null;
+/* ---------- 安全管理 ---------- */
+let SAFE = {venue:'out', day:0};
+VIEWS.safety = ()=>{
+  const indoor = SAFE.venue==='in';
+  const all = wxHours(indoor);
+  const day = iso(addDays(TODAY,SAFE.day));
+  const hrs = WX.simulate||WX.status!=='ok' ? all : all.filter(h=>h.t.startsWith(day));
+  const planned = S.sessions.filter(s=>s.status==='plan'&&s.date===day);
+  const actHours = new Set(); planned.forEach(s=>{ const st=parseInt(s.start); for(let h=st;h<st+Math.ceil(s.min/60);h++) actHours.add(h); });
+  const daytime = hrs.filter(h=>{const H=+h.t.slice(11,13); return H>=6&&H<=19;});
+  const peak = daytime.reduce((a,b)=>b.w>a.w?b:a, daytime[0]||{w:0,t:'T00'});
+  const pl = wbgtLevel(peak.w);
+  const best = daytime.filter(h=>+h.t.slice(11,13)>=8 && +h.t.slice(11,13)<=17).sort((a,b)=>a.w-b.w)[0];
+  const statusTxt = WX.simulate? '真夏日のサンプルを表示中' : WX.status==='ok'? `気象データ：${WX.src}` : WX.status==='loading'?'気象データを取得中…':'気象データを取得できなかったため、サンプルを表示しています';
+  return head('安全管理（暑さ指数）',`活動場所の予報から暑さ指数（WBGT）を1時間ごとに推定し、日本スポーツ協会「熱中症予防運動指針」の目安を表示します`)+`
+  <div class="card noprint" style="margin-bottom:16px"><div class="row">
+    <label class="field">日付<select onchange="SAFE.day=+this.value;go('safety')" ${WX.simulate||WX.status!=='ok'?'disabled':''}>${[0,1,2].map(k=>{const d=addDays(TODAY,k);return `<option value="${k}" ${SAFE.day===k?'selected':''}>${fmt(d)}（${DOW[d.getDay()]}）${k===0?' 今日':''}</option>`}).join('')}</select></label>
+    <label class="field">活動場所<select onchange="SAFE.venue=this.value;go('safety')"><option value="out" ${!indoor?'selected':''}>屋外：${esc(S.club.outdoorVenue)}</option><option value="in" ${indoor?'selected':''}>屋内：${esc(S.club.venue)}</option></select></label>
+    <button class="btn b-line" onclick="WX.simulate=!WX.simulate;go('safety')">${WX.simulate?'実際の予報に戻す':'真夏日のサンプルで確認'}</button>
+    <span style="font-size:12px;color:var(--sub)">${statusTxt}</span>
+  </div></div>
+  <div class="grid g21">
+    <div class="card"><h2>時間ごとの暑さ指数 <small>${indoor?'屋内（日射・風なしとして推定）':'屋外'}</small></h2>
+      <div class="hours">${daytime.map(h=>{const H=+h.t.slice(11,13);const L=wbgtLevel(h.w);return `<div class="hr lv${L.lv} ${actHours.has(H)?'act':''}" title="${L.label}">${H}時<b>${h.w.toFixed(1)}</b>${Math.round(h.Ta)}℃</div>`}).join('')}</div>
+      <div class="legend"><span class="lv0">21未満 ほぼ安全</span><span class="lv1">21〜 注意</span><span class="lv2">25〜 警戒</span><span class="lv3">28〜 厳重警戒</span><span class="lv4">31〜 運動は原則中止</span><span style="outline:2px solid var(--navy)">枠：活動予定の時間</span></div>
+      <p style="font-size:12px;color:var(--sub);margin-top:10px">推定式：WBGT ＝ 0.735×気温 ＋ 0.0374×湿度 ＋ 0.00292×気温×湿度 ＋ 7.619×日射量 − 4.557×日射量² − 0.0572×風速 − 4.064（環境省 熱中症予防情報サイトで用いられている推定式）。現地に暑さ指数計がある場合は実測値を優先してください。</p>
+    </div>
+    <div class="card"><h2>この日の判断</h2>
+      <div class="wbgt-now"><div class="wbgt-num" style="color:${['#2E7CE0','#2BB673','#C9A000','#FF8A3D','#E5484D'][pl.lv]}">${peak.w.toFixed(1)}</div><div>最高（${+peak.t.slice(11,13)}時ごろ）<br><span class="pill ${pl.cls}">${pl.label}</span></div></div>
+      <p style="margin-top:10px">${pl.advice}</p>
+      ${best?`<div class="alert info">🕒 <div>8〜17時でいちばん涼しいのは <b>${+best.t.slice(11,13)}時ごろ</b>（推定 ${best.w.toFixed(1)}・${wbgtLevel(best.w).label}）です。</div></div>`:''}
+      ${planned.length?planned.map(s=>{const st=parseInt(s.start);const ws=daytime.filter(h=>{const H=+h.t.slice(11,13);return H>=st&&H<st+Math.ceil(s.min/60);});const mx=ws.length?Math.max(...ws.map(h=>h.w)):null;const L=mx!=null?wbgtLevel(mx):null;return `<div class="alert ${L&&L.lv>=3?'ng':L&&L.lv>=2?'warn':'info'}">📅 <div>予定：${s.start}〜（${esc(s.venue)}）<br>活動中の最高 ${mx!=null?mx.toFixed(1):'—'} ${L?`<span class="pill ${L.cls}">${L.label}</span>`:''}${L&&L.lv>=3?`<br><button class="btn b-sm b-pri" style="margin-top:6px" onclick="notifyChange('${s.id}')">保護者に中止・時間変更を連絡</button>`:''}</div></div>`}).join(''):'<p style="color:var(--sub);font-size:13px;margin-top:8px">この日の活動予定はありません。</p>'}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>ケガ・ヒヤリハットの記録 <button class="btn b-sm b-pri noprint" onclick="addIncident()">＋ 記録する</button></h2>
+    <div class="tbl-wrap"><table><tr><th>日付</th><th>区分</th><th>対象</th><th>内容</th><th>対応</th></tr>${S.incidents.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i=>`<tr><td>${fmt(new Date(i.date))}</td><td><span class="pill ${i.type==='事故'?'ng':'warn'}">${esc(i.type)}</span></td><td>${esc(i.who)}</td><td>${esc(i.desc)}</td><td>${esc(i.action)}</td></tr>`).join('')}</table></div>
+  </div>`;
+};
+function notifyChange(sid){
+  const s=S.sessions.find(x=>x.id===sid); const d=new Date(s.date);
+  openDlg('保護者への連絡文（案）',`<p style="font-size:12px;color:var(--sub);margin-top:6px">内容を確認・修正してから送信してください。デモでは実際には送信されません。</p><textarea id="msgTxt">保護者の皆さま\n\n${fmt(d)}（${DOW[d.getDay()]}）${s.start}からの活動について、暑さ指数が「厳重警戒」以上になる見込みのため、活動時間の変更または中止を検討しています。\n決定しだい、あらためてお知らせします。\n\n${S.club.name} 運営事務局</textarea>`,'送信する（デモ）',()=>toast('保護者 '+S.members.length+'人に送信しました（デモ）'));
+}
+function addIncident(){
+  openDlg('ケガ・ヒヤリハットを記録',`<div class="grid" style="margin-top:10px"><label class="field">区分<select id="iT"><option>ヒヤリハット</option><option>事故</option></select></label><label class="field">対象<select id="iW">${S.members.map(m=>`<option>${esc(m.name)}</option>`).join('')}</select></label><label class="field">内容<input id="iD" placeholder="何が起きたか"></label><label class="field">対応<input id="iA" placeholder="応急処置・連絡など"></label></div>`,'記録する',()=>{
+    const desc=document.getElementById('iD').value.trim(); if(!desc){toast('内容を入力してください');return;}
+    S.incidents.push({id:'i'+Date.now(),date:iso(TODAY),type:iT.value,who:iW.value,desc,action:document.getElementById('iA').value.trim()||'—'}); save(); go('safety'); toast('記録しました');
+  });
+}
+
+/* ---------- 練習・コンディション ---------- */
+let COND = {sel:null, menu:null};
+VIEWS.cond = ()=>{
+  const rows = S.members.map(m=>({m,a:acwr(m.id)})).sort((x,y)=>({ng:0,warn:1,ok:2,mute:3}[x.a.st.cls])-({ng:0,warn:1,ok:2,mute:3}[y.a.st.cls]));
+  const sel = COND.sel? S.members.find(m=>m.id===COND.sel) : rows[0].m;
+  const wk = weeklyLoads(sel.id); const mx = Math.max(...wk,1); const a = acwr(sel.id);
+  return head('練習・コンディション','練習後の「きつさ（RPE 1〜10）」×練習時間で負荷を計算し、直近7日と過去4週平均の比（負荷比）で急な増加を見つけます')+`
+  <div class="grid g21">
+    <div class="card"><h2>選手の状態 <small>負荷比の目安：0.8〜1.3</small></h2>
+      <div class="tbl-wrap"><table><tr><th>選手</th><th>学年</th><th class="num">直近7日の負荷</th><th class="num">負荷比</th><th class="num">睡眠</th><th>状態</th></tr>
+      ${rows.map(({m,a})=>`<tr style="cursor:pointer;${sel.id===m.id?'background:var(--blue-l)':''}" onclick="COND.sel='${m.id}';go('cond')"><td>${esc(m.name)}</td><td>${m.grade}</td><td class="num">${a.acute.toLocaleString()}</td><td class="num">${a.chronic?a.ratio.toFixed(2):'—'}</td><td class="num">${a.sleep?a.sleep.toFixed(1)+'h':'—'}</td><td><span class="pill ${a.st.cls}">${a.st.label}</span></td></tr>`).join('')}
+      </table></div>
+    </div>
+    <div class="card"><h2>${esc(sel.name)} さん <span class="pill ${a.st.cls}">${a.st.label}</span></h2>
+      <div style="font-size:12px;color:var(--sub)">週ごとの練習負荷（直近8週）</div>
+      <div class="chart">${wk.map((v,i)=>`<i class="${i===7&&a.ratio>1.5?'vh':i===7&&a.ratio>1.3?'hi':''}" style="height:${v/mx*100}%" title="${v}"></i>`).join('')}</div>
+      <div class="chart-x">${wk.map((_,i)=>`<span>${i===7?'今週':(7-i)+'週前'}</span>`).join('')}</div>
+      ${a.st.cls==='ng'?`<div class="alert ng">⚠️ <div>負荷が急に増えています${a.sleep&&a.sleep<6?'。睡眠も短めです':''}。次回は強度を下げる・休養日を入れるなど、本人と保護者に確認してください。</div></div>`:''}
+      <h2 style="margin-top:14px">今日の記録を入力</h2>
+      <div class="row"><label class="field">きつさ（RPE）<input id="cR" type="number" min="1" max="10" value="5" style="width:70px"></label><label class="field">時間（分）<input id="cM" type="number" min="10" max="300" value="120" style="width:80px"></label><label class="field">睡眠（時間）<input id="cS" type="number" step="0.5" min="0" max="12" value="7" style="width:80px"></label><button class="btn b-pri" onclick="addLoad('${sel.id}')">記録</button></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>AI練習メニュー作成 <small>目的・時間・人数・当日の暑さ指数に合わせて作成</small></h2>
+    <div class="row noprint">
+      <label class="field">目的<select id="pG"><option>基礎技術（ドリブル・パス）</option><option>シュート力の向上</option><option>ディフェンス強化</option><option>試合形式・実戦</option><option>体力づくり</option></select></label>
+      <label class="field">時間<select id="pT"><option value="90">90分</option><option value="120" selected>120分</option><option value="150">150分</option></select></label>
+      <label class="field">人数<input id="pN" type="number" value="${S.members.length}" min="2" max="60" style="width:70px"></label>
+      <label class="field">暑さ指数<select id="pW"><option value="20">21未満</option><option value="23">21〜25</option><option value="26">25〜28</option><option value="29">28〜31</option></select></label>
+      <button class="btn b-lime" onclick="makeMenu()">メニューを作る</button>
+    </div>
+    <div id="menuOut">${COND.menu||''}</div>
+  </div>`;
+};
+function addLoad(mid){
+  const rpe=+cR.value,min=+cM.value,sleep=+cS.value;
+  if(!(rpe>=1&&rpe<=10&&min>0)){toast('値を確認してください');return;}
+  S.loads[mid].push({date:iso(TODAY),rpe,min,sleep,fatigue:2}); save(); COND.sel=mid; go('cond'); toast('記録しました');
+}
+async function makeMenu(){
+  const goal=pG.value, T=+pT.value, N=+pN.value, W=+pW.value; const L=wbgtLevel(W);
+  if(AI_MENU_ENDPOINT){
+    try{ const r=await fetch(AI_MENU_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sport:S.club.sport,goal,minutes:T,players:N,wbgt:W})}); if(r.ok){ const j=await r.json(); if(j.html){COND.menu=j.html; menuOut.innerHTML=j.html; return;} } }catch(e){}
+  }
+  const LIB = {
+    '基礎技術（ドリブル・パス）':['ハンドリング（その場・移動）','2人組パス（チェスト・バウンド・オーバーヘッド）','ジグザグドリブル→レイアップ','3対2のパス回し'],
+    'シュート力の向上':['フォームシュート（ゴール下）','ミドルレンジの5か所シュート','キャッチ＆シュート（パスから）','シュート競争（チーム対抗）'],
+    'ディフェンス強化':['ディフェンスのフットワーク','1対1（ボールマン・ディフェンス）','ヘルプディフェンスの位置どり','3対3（守備の約束事を確認）'],
+    '試合形式・実戦':['速攻の3対2・2対1','セットオフェンスの確認','5対5（時間区切り）','振り返り（良かった点・次の課題）'],
+    '体力づくり':['ダイナミックストレッチ','ラダー・アジリティ','シャトルラン（距離調整）','体幹トレーニング'],
+  };
+  const hot = L.lv>=2, vhot=L.lv>=3;
+  const warm=15, cool=10; let main=T-warm-cool;
+  const breaks = vhot? Math.floor(main/15) : hot? Math.floor(main/30) : Math.floor(main/45);
+  const brMin = vhot?5:3; main -= breaks*brMin;
+  const drills = LIB[goal]; const per = Math.floor(main/drills.length);
+  const grp = N>16? `${Math.ceil(N/8)}グループ（8人前後）に分けて回す`: N>8? '2グループに分けて回す':'全員で実施';
+  let t=0; const blk=[]; const push=(m,txt)=>{blk.push(`<div class="blk"><b>${t}〜${t+m}分</b><div>${txt}</div></div>`); t+=m;};
+  push(warm,'ウォームアップ：ジョグ・ダイナミックストレッチ・軽いボールハンドリング');
+  drills.forEach((d,i)=>{ const intense = vhot && /1対1|シャトル|速攻|5対5/.test(d); push(per, d + (intense?'　<span class="pill warn">強度を下げて短く</span>':'')); if(i<breaks && breaks>0) push(brMin,'休憩：水分・塩分補給（日陰・風通しのよい場所で）'); });
+  push(T-t,'クールダウン：静的ストレッチ・振り返り・体調チェック（RPE入力）');
+  COND.menu = `<div class="menu-out"><div style="margin-bottom:6px"><b>${esc(goal)}／${T}分／${N}人</b>　${grp}　<span class="pill ${L.cls}">暑さ指数：${L.label}</span></div>${vhot?`<div class="alert ng">🌡️ <div>厳重警戒の条件です。激しい運動は避け、${brMin}分の休憩を約15分おきに入れています。</div></div>`:hot?'<div class="alert warn">🌡️ <div>警戒の条件のため、休憩を約30分おきに入れています。</div></div>':''}${blk.join('')}<p style="font-size:11px;color:var(--sub);margin-top:8px">※自動で作成した案です。選手の状態を見て、指導者が調整してください。</p></div>`;
+  menuOut.innerHTML = COND.menu;
+}
+
+/* ---------- 会費・出欠 ---------- */
+VIEWS.admin = ()=>{
+  const mo = S.months.thisM; const fm=S.fees[mo];
+  const due = Object.values(fm).reduce((t,f)=>t+f.due,0), paid=Object.values(fm).filter(f=>f.status==='paid').reduce((t,f)=>t+f.due,0);
+  const exempt = S.members.filter(m=>m.discount>0).length;
+  const recent = S.sessions.filter(s=>s.status==='done').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  return head('会費・出欠',`月会費 ${yen(S.club.fee)}（カードで毎月自動決済）｜減免の設定は家庭ごとに変更できます`)+`
+  <div class="grid g3">
+    <div class="card kpi"><div class="lbl">${+mo.slice(5)}月の請求額</div><div class="val">${yen(due)}</div><div class="sub">減免 ${exempt}世帯を反映済み</div></div>
+    <div class="card kpi"><div class="lbl">回収済み</div><div class="val">${yen(paid)}</div><div class="sub">回収率 ${due?Math.round(paid/due*100):100}%</div></div>
+    <div class="card kpi"><div class="lbl">未納</div><div class="val">${Object.values(fm).filter(f=>f.status==='unpaid').length}<small>件</small></div><div class="sub">${yen(due-paid)}</div></div>
+  </div>
+  <div class="grid g21" style="margin-top:16px">
+    <div class="card"><h2>${+mo.slice(5)}月の会費 <button class="btn b-sm b-pri noprint" onclick="remindAll()">未納の家庭に督促文を作成</button></h2>
+      <div class="tbl-wrap"><table><tr><th>会員</th><th>保護者</th><th>減免</th><th class="num">請求額</th><th>状態</th><th></th></tr>
+      ${S.members.map(m=>{const f=fm[m.id];return `<tr><td>${esc(m.name)}</td><td>${esc(m.guardian)}</td><td><select onchange="setDiscount('${m.id}',+this.value)" style="padding:3px;border:1px solid var(--line);border-radius:6px">${[0,50,100].map(v=>`<option value="${v}" ${m.discount===v?'selected':''}>${v===0?'なし':v===100?'全額免除':v+'%減額'}</option>`).join('')}</select></td><td class="num">${yen(f.due)}</td><td>${f.status==='paid'?'<span class="pill ok">支払済</span>':f.status==='exempt'?'<span class="pill mute">免除</span>':`<span class="pill ng">未納</span>${f.reminded?` <span style="font-size:11px;color:var(--sub)">督促 ${fmt(new Date(f.reminded))}</span>`:''}`}</td><td>${f.status==='unpaid'?`<button class="btn b-sm b-line" onclick="markPaid('${m.id}')">入金を記録</button>`:''}</td></tr>`}).join('')}
+      </table></div>
+      <p style="font-size:12px;color:var(--sub);margin-top:8px">※減免の内容は会員本人や他の保護者には表示されません。</p>
+    </div>
+    <div class="card"><h2>直近の出欠</h2>
+      <table>${recent.map(s=>{const d=new Date(s.date);const n=(S.att[s.id]||[]).length;return `<tr><td>${fmt(d)}（${DOW[d.getDay()]}）</td><td><div class="bar"><i style="width:${n/S.members.length*100}%"></i></div></td><td class="num">${n}/${S.members.length}人</td></tr>`}).join('')}</table>
+      <p style="font-size:12px;color:var(--sub);margin-top:8px">保護者がアプリで回答した出欠が自動で反映されます。</p>
+    </div>
+  </div>`;
+};
+function setDiscount(mid,v){
+  const m=S.members.find(x=>x.id===mid); m.discount=v;
+  const f=S.fees[S.months.thisM][mid]; f.due=S.club.fee*(100-v)/100;
+  if(f.due===0) f.status='exempt'; else if(f.status==='exempt') f.status='unpaid';
+  save(); go('admin'); toast('減免を変更しました');
+}
+function markPaid(mid){ S.fees[S.months.thisM][mid].status='paid'; save(); go('admin'); toast('入金を記録しました'); }
+function remindAll(){
+  const mo=S.months.thisM; const un=S.members.filter(m=>S.fees[mo][m.id].status==='unpaid');
+  if(!un.length){toast('未納の家庭はありません');return;}
+  openDlg(`督促文（案）｜${un.length}件`,`<p style="font-size:12px;color:var(--sub);margin-top:6px">宛先：${un.map(m=>esc(m.guardian)).join('、')}。内容を確認してから送信してください。デモでは実際には送信されません。</p><textarea>保護者さま\n\nいつも${S.club.name}の活動にご協力いただき、ありがとうございます。\n${+mo.slice(5)}月分の会費のお支払いが、まだ確認できておりません。\nお手数ですが、アプリの「会費」画面から登録カードの状態をご確認ください。\n\nお支払いについてご事情がある場合は、運営事務局までお気軽にご相談ください。\n\n${S.club.name} 運営事務局</textarea>`,'送信する（デモ）',()=>{ un.forEach(m=>S.fees[mo][m.id].reminded=iso(TODAY)); save(); go('admin'); toast(`${un.length}件に送信しました（デモ）`); });
+}
+
+/* ---------- 実績報告 ---------- */
+let REP = {mo:null};
+VIEWS.report = ()=>{
+  const mos=[S.months.prevM,S.months.thisM]; const mo=REP.mo||S.months.prevM;
+  const ss=S.sessions.filter(s=>s.status==='done'&&s.date.startsWith(mo)).sort((a,b)=>a.date.localeCompare(b.date));
+  const part = ss.reduce((t,s)=>t+(S.att[s.id]||[]).length,0);
+  const hours = ss.reduce((t,s)=>t+s.min,0)/60;
+  const fm=S.fees[mo]; const due=Object.values(fm).reduce((t,f)=>t+f.due,0), paid=Object.values(fm).filter(f=>f.status==='paid').reduce((t,f)=>t+f.due,0);
+  const inc=S.incidents.filter(i=>i.date.startsWith(mo));
+  const coachIds=[...new Set(ss.map(s=>s.coach))];
+  return head('自治体への実績報告','活動の記録から、月ごとの実績を自動で集計します。CSVで出力するか、そのまま印刷して提出できます')+`
+  <div class="card noprint" style="margin-bottom:16px"><div class="row">
+    <label class="field">対象月<select onchange="REP.mo=this.value;go('report')">${mos.map(m=>`<option value="${m}" ${m===mo?'selected':''}>${m.slice(0,4)}年${+m.slice(5)}月</option>`).join('')}</select></label>
+    <button class="btn b-pri" onclick="downloadCSV('${mo}')">CSVで出力</button>
+    <button class="btn b-line" onclick="print()">印刷・PDF保存</button>
+  </div></div>
+  <div class="card">
+    <h2>地域クラブ活動 実績報告書（${mo.slice(0,4)}年${+mo.slice(5)}月）</h2>
+    <table>
+      <tr><td style="width:200px">団体名</td><td>${esc(S.club.name)}</td></tr>
+      <tr><td>種目・活動場所</td><td>${esc(S.club.sport)}／${esc(S.club.venue)}</td></tr>
+      <tr><td>活動回数</td><td><b>${ss.length}回</b>（土曜 ${ss.filter(s=>new Date(s.date).getDay()===6).length}回・日曜 ${ss.filter(s=>new Date(s.date).getDay()===0).length}回）</td></tr>
+      <tr><td>活動時間の合計</td><td>${hours.toFixed(1)}時間</td></tr>
+      <tr><td>登録会員数／延べ参加人数</td><td>${S.members.length}人／<b>${part}人</b>（1回あたり平均 ${ss.length?(part/ss.length).toFixed(1):0}人）</td></tr>
+      <tr><td>指導者</td><td>${coachIds.map(id=>{const c=S.coaches.find(x=>x.id===id);return `${esc(c.name)}（${esc(c.license||'資格なし')}・${c.verified&&c.training?'審査済':'審査未了'}）`}).join('、')}</td></tr>
+      <tr><td>会費</td><td>請求 ${yen(due)}／回収 ${yen(paid)}（回収率 ${due?Math.round(paid/due*100):100}%）／減免 ${S.members.filter(m=>m.discount>0).length}世帯</td></tr>
+      <tr><td>安全管理</td><td>事故 ${inc.filter(i=>i.type==='事故').length}件／ヒヤリハット ${inc.filter(i=>i.type==='ヒヤリハット').length}件</td></tr>
+    </table>
+    <h2 style="margin-top:18px">活動の内訳</h2>
+    <div class="tbl-wrap"><table><tr><th>日付</th><th>時間</th><th>場所</th><th>指導者</th><th class="num">参加人数</th></tr>
+    ${ss.map(s=>{const d=new Date(s.date);const c=S.coaches.find(x=>x.id===s.coach);return `<tr><td>${fmt(d)}（${DOW[d.getDay()]}）</td><td>${s.start}〜（${s.min}分）</td><td>${esc(s.venue)}</td><td>${esc(c?.name)}</td><td class="num">${(S.att[s.id]||[]).length}人</td></tr>`}).join('')||'<tr><td colspan="5">記録がありません</td></tr>'}
+    </table></div>
+  </div>`;
+};
+function downloadCSV(mo){
+  const ss=S.sessions.filter(s=>s.status==='done'&&s.date.startsWith(mo)).sort((a,b)=>a.date.localeCompare(b.date));
+  const rows=[['日付','曜日','開始','活動時間(分)','場所','指導者','指導者資格','参加人数','登録会員数']];
+  ss.forEach(s=>{const d=new Date(s.date);const c=S.coaches.find(x=>x.id===s.coach);rows.push([s.date,DOW[d.getDay()],s.start,s.min,s.venue,c?.name||'',c?.license||'',(S.att[s.id]||[]).length,S.members.length]);});
+  const csv='﻿'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`実績報告_${mo}.csv`; a.click(); toast('CSVを出力しました');
+}
 
 /* ---------- 起動 ---------- */
-async function init(){
-  if(!CONFIG.SUPABASE_URL||!CONFIG.SUPABASE_ANON_KEY){showView("v-setup");return;}
-  sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
-  const {data}=await sb.auth.getSession();
-  session=data.session;
-  sb.auth.onAuthStateChange((e,s)=>{
-    session=s;
-    if(e==="PASSWORD_RECOVERY"){recoveryMode=true;showRecovery();return;}
-    route();
-  });
-  route();
-}
-async function route(){
-  if(recoveryMode){showRecovery();return;}
-  if(!session){$("#userbox").style.display="none";showView("v-auth");return;}
-  let {data:prof}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
-  if(!prof){
-    const meta=(session.user.user_metadata&&session.user.user_metadata.role)||"";
-    const role0=["student","company"].includes(meta)?meta:"student";
-    await sb.from("profiles").insert({id:session.user.id,role:role0});
-    ({data:prof}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle());
-  }
-  if(!prof){toast("プロフィール取得に失敗しました。時間をおいて再読み込みしてください");showView("v-auth");return;}
-  role=prof.role;
-  $("#userbox").style.display="flex";
-  $("#userEmail").textContent=session.user.email;
-  $("#roleBadge").textContent=role==="student"?"学生":role==="company"?"企業":"運営";
-  if(role==="student"){await loadStudentView();showView("v-student");}
-  else if(role==="company"){await loadCompanyView();showView("v-company");}
-  else{await loadAdmin();showView("v-admin");}
-}
-
-/* ---------- 認証 ---------- */
-$("#toSignup").addEventListener("click",()=>{
-  isSignup=!isSignup;
-  $("#authTitle").textContent=isSignup?"新規登録":"ログイン";
-  $("#authSubmit").textContent=isSignup?"登録する":"ログイン";
-  $("#signupRoleWrap").style.display=isSignup?"block":"none";
-  $("#toSignup").textContent=isSignup?"ログイン":"新規登録";
-  $("#authSwitch").firstChild.textContent=isSignup?"アカウントをお持ちの方は ":"アカウントがない方は ";
-});
-$("#authSubmit").addEventListener("click",async()=>{
-  const email=$("#authEmail").value.trim(),pass=$("#authPass").value;
-  const eb=$("#authErr");eb.style.display="none";
-  if(recoveryMode){
-    if(pass.length<8){eb.textContent="8文字以上のパスワードを入力してください。";eb.style.display="block";return;}
-    $("#authSubmit").disabled=true;
-    const {error}=await sb.auth.updateUser({password:pass});
-    $("#authSubmit").disabled=false;
-    if(error){eb.textContent="エラー："+error.message;eb.style.display="block";return;}
-    recoveryMode=false;
-    $("#authEmail").parentElement.style.display="block";
-    $("#authSwitch").style.display="block";$("#forgotWrap").style.display="block";
-    $("#authTitle").textContent="ログイン";$("#authSubmit").textContent="ログイン";
-    toast("パスワードを更新しました");route();return;
-  }
-  if(!email||pass.length<8){eb.textContent="メールアドレスと8文字以上のパスワードを入力してください。";eb.style.display="block";return;}
-  $("#authSubmit").disabled=true;
-  try{
-    if(isSignup){
-      const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{role:$("#authRole").value}}});
-      if(error)throw error;
-      if(!data.session){toast("確認メールを送信しました。メール内のリンクを開いてからログインしてください");}
-    }else{
-      const {error}=await sb.auth.signInWithPassword({email,password:pass});
-      if(error)throw error;
-    }
-  }catch(e){eb.textContent="エラー："+(e.message||e);eb.style.display="block";}
-  $("#authSubmit").disabled=false;
-});
-$("#logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();});
-function showRecovery(){
-  $("#authTitle").textContent="新しいパスワードを設定";
-  $("#authLead").textContent="新しいパスワード（8文字以上）を入力してください。";
-  $("#signupRoleWrap").style.display="none";
-  $("#authEmail").parentElement.style.display="none";
-  $("#authSubmit").textContent="パスワードを設定する";
-  $("#authSwitch").style.display="none";$("#forgotWrap").style.display="none";
-  showView("v-auth");
-}
-$("#forgotLink").addEventListener("click",async()=>{
-  const email=$("#authEmail").value.trim();const eb=$("#authErr");eb.style.display="none";
-  if(!email){eb.textContent="メールアドレスを入力してから「パスワードをお忘れの方」を押してください。";eb.style.display="block";return;}
-  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
-  if(error){eb.textContent="エラー："+error.message;eb.style.display="block";}
-  else toast("パスワード再設定メールを送信しました。メール内のリンクを開いてください");
-});
-
-/* ---------- 学生ダッシュボード ---------- */
-function stuBanner(st){
-  const map={pending:["st-pending","審査中：運営の確認後に企業へ公開されます。高校生は保護者同意書の確認完了も公開条件です。"],
-    approved:["st-approved","公開中：あなたのプロフィールは承認済み企業に公開されています。記録を更新すると企業のフィードに反映されます。"],
-    suspended:["st-suspended","掲載停止中：運営までお問い合わせください。"]};
-  const m=map[st]||map.pending;
-  $("#stuStatusBanner").innerHTML=`<div class="status-banner ${m[0]}">${m[1]}</div>`;
-}
-async function loadStudentView(){
-  const sel=$("#s_sport");
-  sel.innerHTML='<option value="">選択してください</option>'+SPORTS.map(s=>`<option>${s}</option>`).join("");
-  const {data:st}=await sb.from("students").select("*, student_records(*), student_sns(*)").eq("user_id",session.user.id).maybeSingle();
-  myStudent=st||null;
-  $("#s_agreeWrap").style.display=myStudent?"none":"block";
-  if(myStudent){
-    stuBanner(myStudent.status);
-    $("#s_name").value=myStudent.name||"";$("#s_kana").value=myStudent.kana||"";
-    $("#s_category").value=myStudent.category||"";$("#s_school").value=myStudent.school||"";
-    $("#s_pref").value=myStudent.pref||"";$("#s_sport").value=myStudent.sport||"";
-    $("#s_event").value=myStudent.event||"";$("#s_pb").value=myStudent.pb||"";
-    $("#s_pbLabel").value=myStudent.pb_label||"";$("#s_training").value=myStudent.training||"";
-    $("#s_appeal").value=myStudent.appeal||"";$("#s_video").value=myStudent.video_url||"";
-    const psrc=await photoSrc(myStudent.photo_url);
-    if(psrc){$("#s_photoPrev").src=psrc;$("#s_photoPrev").style.display="block";}
-    $("#s_records").innerHTML=(myStudent.student_records||[]).map(r=>recRowHtml(r.year,r.text)).join("")||recRowHtml();
-    $("#s_sns").innerHTML=(myStudent.student_sns||[]).map(s=>snsRowHtml(s.type,s.url)).join("")||snsRowHtml();
-  }else{
-    $("#stuStatusBanner").innerHTML='<div class="status-banner st-pending">未登録：プロフィールを入力して保存すると審査が始まります。</div>';
-    $("#s_records").innerHTML=recRowHtml();$("#s_sns").innerHTML=snsRowHtml();
-  }
-  const hsNow=$("#s_category").value==="hs";
-  $("#s_hsNotice").style.display=hsNow?"block":"none";
-  $("#s_parentWrap").style.display=(hsNow&&!myStudent)?"flex":"none";
-}
-$("#s_category").addEventListener("change",e=>{
-  const hs=e.target.value==="hs";
-  $("#s_hsNotice").style.display=hs?"block":"none";
-  $("#s_parentWrap").style.display=(hs&&!myStudent)?"flex":"none";
-});
-$("#s_addRecord").addEventListener("click",()=>$("#s_records").insertAdjacentHTML("beforeend",recRowHtml()));
-$("#s_addSns").addEventListener("click",()=>$("#s_sns").insertAdjacentHTML("beforeend",snsRowHtml()));
-$("#s_photo").addEventListener("change",e=>{
-  const f=e.target.files[0];if(!f)return;
-  resizeImage(f,320,b=>{sPhotoBlob=b;$("#s_photoPrev").src=URL.createObjectURL(b);$("#s_photoPrev").style.display="block";});
-});
-$("#stuForm").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const eb=$("#s_err");eb.style.display="none";
-  const f={name:$("#s_name").value.trim(),kana:$("#s_kana").value.trim(),category:$("#s_category").value,
-    school:$("#s_school").value.trim(),pref:$("#s_pref").value.trim(),sport:$("#s_sport").value,
-    event:$("#s_event").value.trim(),pb:$("#s_pb").value.trim(),pb_label:$("#s_pbLabel").value.trim()||"BEST RECORD",
-    training:$("#s_training").value.trim(),appeal:$("#s_appeal").value.trim(),video_url:$("#s_video").value.trim()};
-  if(!f.name||!f.category||!f.school||!f.sport||!f.pb||!f.appeal){eb.textContent="必須項目（氏名・区分・学校・競技・記録・アピール）を入力してください。";eb.style.display="block";return;}
-  if(!myStudent&&!($("#s_chkFed").checked&&$("#s_chkTruth").checked&&$("#s_chkTerms").checked)){eb.textContent="確認事項3点すべてにチェックしてください。";eb.style.display="block";return;}
-  if(!myStudent&&f.category==="hs"&&!$("#s_chkParent").checked){eb.textContent="高校生の登録には保護者同意のチェックが必要です。";eb.style.display="block";return;}
-  if(f.video_url&&!safeUrl(f.video_url)){eb.textContent="動画URLは https:// で始まる形式で入力してください。";eb.style.display="block";return;}
-  if([...$("#s_sns").querySelectorAll(".sns-url")].some(i=>i.value.trim()&&!safeUrl(i.value))){eb.textContent="SNSのURLは https:// で始まる形式で入力してください。";eb.style.display="block";return;}
-  $("#s_save").disabled=true;
-  try{
-    // 顔写真アップロード
-    if(sPhotoBlob){
-      const path=`${session.user.id}/photo.jpg`;
-      const {error:upErr}=await sb.storage.from("photos").upload(path,sPhotoBlob,{upsert:true,contentType:"image/jpeg"});
-      if(upErr)throw upErr;
-      f.photo_url=path;   // 非公開バケット：表示時に署名付きURLを発行
-    }
-    let sid;
-    if(myStudent){
-      const old=myStudent;
-      const {error}=await sb.from("students").update(f).eq("id",old.id);
-      if(error)throw error;
-      sid=old.id;
-      // 差分から更新通知を生成（チェック企業のフィードに届く）
-      const notes=[];
-      if(f.pb&&f.pb!==old.pb)notes.push({type:"pb",message:`記録を更新：${old.pb} → ${f.pb}`});
-      if(f.video_url&&f.video_url!==old.video_url)notes.push({type:"video",message:"新しい競技動画を公開"});
-      if(sPhotoBlob)notes.push({type:"photo",message:"顔写真を更新"});
-      if(!notes.length&&f.training!==old.training)notes.push({type:"profile",message:"トレーニング情報を更新"});
-      if(!notes.length&&f.appeal!==old.appeal)notes.push({type:"profile",message:"アピール文を更新"});
-      if(notes.length)await sb.from("notifications").insert(notes.map(n=>({student_id:sid,...n})));
-    }else{
-      const {data,error}=await sb.from("students").insert({...f,user_id:session.user.id}).select("id").single();
-      if(error)throw error;
-      sid=data.id;
-    }
-    // 戦績・SNSは全置換
-    const recs=[...$("#s_records").querySelectorAll(".recordrow")].map(r=>({student_id:sid,year:r.querySelector(".rec-yr").value.trim(),text:r.querySelector(".rec-tx").value.trim()})).filter(r=>r.text);
-    const sns=[...$("#s_sns").querySelectorAll(".snsrow")].map(r=>({student_id:sid,type:r.querySelector(".sns-type").value,url:r.querySelector(".sns-url").value.trim()})).filter(s=>s.url);
-    const oldRecCount=myStudent?(myStudent.student_records||[]).length:0;
-    await sb.from("student_records").delete().eq("student_id",sid);
-    if(recs.length)await sb.from("student_records").insert(recs);
-    await sb.from("student_sns").delete().eq("student_id",sid);
-    if(sns.length)await sb.from("student_sns").insert(sns);
-    if(myStudent&&recs.length>oldRecCount)
-      await sb.from("notifications").insert({student_id:sid,type:"record",message:`戦績を追加：${recs[recs.length-1].text}`});
-    sPhotoBlob=null;
-    toast(myStudent?"プロフィールを更新しました":"登録しました。運営の審査をお待ちください");
-    await loadStudentView();
-  }catch(err){eb.textContent="保存エラー："+(err.message||err);eb.style.display="block";}
-  $("#s_save").disabled=false;
-});
-
-/* ---------- 企業ダッシュボード ---------- */
-async function loadCompanyView(){
-  const {data:c}=await sb.from("companies").select("*").eq("user_id",session.user.id).maybeSingle();
-  myCompany=c||null;
-  $("#c_regWrap").style.display=myCompany?"none":"block";
-  $("#c_pendingWrap").style.display=myCompany&&myCompany.status!=="approved"?"block":"none";
-  $("#c_mainWrap").style.display=myCompany&&myCompany.status==="approved"?"block":"none";
-  if(myCompany&&myCompany.status==="approved")await loadBrowse();
-}
-$("#compForm").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const eb=$("#c_err");eb.style.display="none";
-  if(!$("#c_name").value.trim()||!$("#c_person").value.trim()){eb.textContent="企業名と担当者名は必須です。";eb.style.display="block";return;}
-  if(!$("#c_chkFee").checked||!$("#c_chkTerms").checked){eb.textContent="確認事項にチェックしてください。";eb.style.display="block";return;}
-  $("#c_save").disabled=true;
-  const {error}=await sb.from("companies").insert({user_id:session.user.id,name:$("#c_name").value.trim(),
-    industry:$("#c_industry").value,address:$("#c_addr").value.trim(),url:$("#c_url").value.trim(),
-    person:$("#c_person").value.trim(),budget:$("#c_budget").value,interest:$("#c_interest").value.trim(),purpose:$("#c_purpose").value.trim()});
-  $("#c_save").disabled=false;
-  if(error){eb.textContent="登録エラー："+error.message;eb.style.display="block";return;}
-  toast("申請を受け付けました。運営の審査をお待ちください");
-  await loadCompanyView();
-});
-async function loadBrowse(){
-  $("#filterSport").innerHTML='<option value="">すべての競技</option>'+SPORTS.map(s=>`<option>${s}</option>`).join("");
-  const [{data:sts},{data:cks}]=await Promise.all([
-    sb.from("students").select("*, student_records(*), student_sns(*)").eq("status","approved").order("updated_at",{ascending:false}),
-    sb.from("checks").select("student_id").eq("company_user_id",session.user.id)
-  ]);
-  browseList=sts||[];
-  checks=new Set((cks||[]).map(c=>c.student_id));
-  const paths=browseList.map(a=>a.photo_url).filter(p=>p&&!/^https?:\/\//i.test(p));
-  if(paths.length){
-    const {data:signed}=await sb.storage.from("photos").createSignedUrls(paths,3600);
-    const smap=Object.fromEntries((signed||[]).filter(x=>!x.error&&x.path).map(x=>[x.path,x.signedUrl]));
-    browseList.forEach(a=>{a._photo=/^https?:\/\//i.test(a.photo_url||"")?a.photo_url:(smap[a.photo_url]||"");});
-  }else browseList.forEach(a=>{a._photo=safeUrl(a.photo_url);});
-  await loadFeed();
-  renderCards();
-}
-async function loadFeed(){
-  if(!checks.size){$("#feedHint").textContent="学生をチェックすると、記録更新・戦績追加がここに時系列で表示されます。";$("#feedList").innerHTML="";return;}
-  const {data:nt}=await sb.from("notifications").select("*").in("student_id",[...checks]).order("created_at",{ascending:false}).limit(30);
-  if(!nt||!nt.length){$("#feedHint").textContent="チェック中の学生の新しい更新はまだありません。";$("#feedList").innerHTML="";return;}
-  $("#feedHint").textContent="";
-  $("#feedList").innerHTML=nt.map(n=>{
-    const a=browseList.find(x=>x.id===n.student_id);
-    return `<li><span class="ftime">${fmtTime(n.created_at)}</span><span style="color:var(--lane);font-weight:700;cursor:pointer" onclick="openDetail(${n.student_id})">${a?esc(a.name):"学生"}</span><span>${esc(n.message)}</span></li>`;
-  }).join("");
-}
-function renderCards(){
-  const sp=$("#filterSport").value,q=$("#filterText").value.trim(),onlyChk=$("#filterChecked").checked;
-  const list=browseList.filter(a=>(!sp||a.sport===sp)&&(!q||(a.name+a.school+a.sport+(a.event||"")).includes(q))&&(!onlyChk||checks.has(a.id)));
-  $("#noResults").style.display=list.length?"none":"block";
-  $("#athleteCards").innerHTML=list.map(a=>`
-    <article class="card">
-      <div class="card-top">
-        <div style="display:flex;align-items:center;gap:12px;min-width:0">
-          ${a._photo?`<img class="avatar" src="${esc(a._photo)}" alt="">`:`<span class="avatar avatar-fb">${esc((a.name||"?").charAt(0))}</span>`}
-          <div class="nm">${esc(a.name)}<small>${esc(a.sport)}${a.event?"・"+esc(a.event):""}</small></div>
-        </div>
-        <div class="pb"><small>${esc(a.pb_label)}</small>${esc(a.pb)}</div>
-      </div>
-      <div class="card-mid">${esc(a.school)}｜${esc(a.pref||"")}
-        <div class="badges">
-          ${a.category==="hs"?'<span class="badge hs">高校生・保護者同意済</span>':''}
-          ${(a.student_sns||[]).map(s=>`<span class="badge">${esc(s.type)}</span>`).join("")}
-          ${a.video_url?'<span class="badge">動画あり</span>':''}
-        </div></div>
-      <div class="card-foot">
-        <button class="btn btn-sm btn-solid ${checks.has(a.id)?"checked-btn":""}" onclick="toggleCheck(${a.id})">${checks.has(a.id)?"✓ チェック済み":"チェックする"}</button>
-        <button class="btn btn-sm" onclick="openDetail(${a.id})">詳細を見る</button>
-      </div>
-    </article>`).join("");
-}
-$("#filterSport").addEventListener("change",renderCards);
-$("#filterText").addEventListener("input",renderCards);
-$("#filterChecked").addEventListener("change",renderCards);
-$("#reloadBtn").addEventListener("click",async()=>{await loadBrowse();toast("最新の情報に更新しました");});
-window.toggleCheck=async id=>{
-  if(checks.has(id)){
-    await sb.from("checks").delete().eq("company_user_id",session.user.id).eq("student_id",id);
-    checks.delete(id);toast("チェックを外しました");
-  }else{
-    const {error}=await sb.from("checks").insert({company_user_id:session.user.id,student_id:id});
-    if(error){toast("エラー："+error.message);return;}
-    checks.add(id);
-    const a=browseList.find(x=>x.id===id);
-    toast(`${a?a.name:""}選手をチェックしました（学生には表示されません）`);
-  }
-  await loadFeed();renderCards();
-};
-window.openDetail=async id=>{
-  const a=browseList.find(x=>x.id===id);if(!a)return;
-  inquiryTargetId=id;
-  if(a._photo){$("#md_photo").src=a._photo;$("#md_photo").style.display="block";$("#md_photo_fb").style.display="none";}
-  else{$("#md_photo").style.display="none";$("#md_photo_fb").style.display="inline-flex";$("#md_photo_fb").textContent=(a.name||"?").charAt(0);}
-  $("#md_name").textContent=a.name;
-  $("#md_sub").textContent=`${a.sport}${a.event?"・"+a.event:""}｜${a.school}｜${a.pref||""}`;
-  $("#md_pbLabel").textContent=a.pb_label;$("#md_pb").textContent=a.pb;
-  $("#md_appeal").textContent=a.appeal||"—";
-  $("#md_results").innerHTML=(a.student_records||[]).map(r=>`<li><span class="yr">${esc(r.year)}</span>${esc(r.text)}</li>`).join("")||"<li>—</li>";
-  $("#md_training").textContent=a.training||"—";
-  const snsSafe=(a.student_sns||[]).filter(x=>safeUrl(x.url));
-  $("#md_sns").innerHTML=snsSafe.length?snsSafe.map(x=>`<a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.type)} ↗</a>`).join(""):"<span style='font-size:12.5px;color:var(--ink-soft)'>未登録</span>";
-  const vSafe=safeUrl(a.video_url);
-  $("#md_video").innerHTML=vSafe?`<a href="${esc(vSafe)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);font-weight:700">▶ 競技動画を見る ↗</a>`:"動画は未登録です";
-  // 監査ログ（誰がいつどの学生を閲覧したか）
-  sb.from("audit_logs").insert({user_id:session.user.id,action:"view_student",target:String(id)}).then(()=>{});
-  $("#detailModal").showModal();
-};
-$("#mdClose").addEventListener("click",()=>$("#detailModal").close());
-$("#mdCloseBtn").addEventListener("click",()=>$("#detailModal").close());
-$("#mdContact").addEventListener("click",()=>{
-  const a=browseList.find(x=>x.id===inquiryTargetId);if(!a)return;
-  $("#iq_target").textContent=`${a.name}（${a.sport}）への支援について`;
-  $("#iq_budget").value="未定（相談したい）";$("#iq_msg").value="";
-  $("#detailModal").close();$("#inquiryModal").showModal();
-});
-$("#iqClose").addEventListener("click",()=>$("#inquiryModal").close());
-$("#iqCancel").addEventListener("click",()=>$("#inquiryModal").close());
-$("#iqSend").addEventListener("click",async()=>{
-  $("#iqSend").disabled=true;
-  const {error}=await sb.from("inquiries").insert({company_user_id:session.user.id,student_id:inquiryTargetId,
-    budget:$("#iq_budget").value,message:$("#iq_msg").value.trim()});
-  $("#iqSend").disabled=false;
-  if(error){toast("送信エラー："+error.message);return;}
-  $("#inquiryModal").close();
-  toast("事務局に相談を送信しました。担当者からご連絡します");
-});
-
-/* ---------- 事務局 ---------- */
-$$("[data-atab]").forEach(b=>b.addEventListener("click",()=>{
-  $$("[data-atab]").forEach(x=>x.classList.remove("active"));b.classList.add("active");
-  ["a-students","a-companies","a-inquiries"].forEach(id=>$("#"+id).style.display=id===b.dataset.atab?"block":"none");
-}));
-const ST_STU={pending:"審査中",approved:"公開中",suspended:"停止"};
-const ST_CO={pending:"審査中",approved:"承認済",suspended:"停止"};
-const ST_IQ={new:"新規",meeting:"面談調整",nego:"条件すり合わせ",contracted:"契約締結",closed:"不成立"};
-const CONSENT={na:"—",waiting:"確認待ち",verified:"確認済み"};
-function selHtml(map,cur,fn,id){return `<select class="status-sel" onchange="${fn}(${id},this.value)">${Object.entries(map).map(([k,v])=>`<option value="${k}" ${k===cur?"selected":""}>${v}</option>`).join("")}</select>`;}
-async function loadAdmin(){
-  const [{data:sts},{data:cos},{data:iqs},{data:ems,error:emErr}]=await Promise.all([
-    sb.from("students").select("*").order("created_at",{ascending:false}),
-    sb.from("companies").select("*").order("created_at",{ascending:false}),
-    sb.from("inquiries").select("*").order("created_at",{ascending:false}),
-    sb.rpc("admin_user_emails")
-  ]);
-  // 連絡先メール：RPC（auth.usersから運営にのみ開示）を優先し、行のemailカラムをフォールバックに
-  const emailMap=Object.fromEntries((ems||[]).map(e=>[e.user_id,e.email]));
-  const mail=uid=>{
-    const e=emailMap[uid];
-    return e?`<a href="mailto:${esc(e)}" style="color:var(--lane);font-weight:700">${esc(e)}</a>`
-            :`<span style="color:var(--ink-soft)">${emErr?"—（admin_emails.sql 未実行）":"—"}</span>`;
-  };
-  $("#adminStudents").innerHTML=(sts||[]).map(s=>`<tr>
-    <td><b>${esc(s.name)}</b><br><small style="color:var(--ink-soft)">${esc(s.school||"")}</small></td>
-    <td>${s.category==="hs"?"高校生":"18歳以上"}</td><td>${esc(s.sport)}</td>
-    <td style="font-size:12px">${mail(s.user_id)}</td>
-    <td>${s.category==="hs"?selHtml(CONSENT,s.parent_consent,"setConsent",s.id):"—"}</td>
-    <td>${selHtml(ST_STU,s.status,"setStuStatus",s.id)}</td></tr>`).join("")||'<tr><td colspan="6">学生の登録はまだありません</td></tr>';
-  $("#adminCompanies").innerHTML=(cos||[]).map(c=>`<tr>
-    <td><b>${esc(c.name)}</b><br><small style="color:var(--ink-soft)">${esc(c.industry||"")}</small></td>
-    <td>${esc(c.person||"")}</td>
-    <td style="font-size:12px">${mail(c.user_id)}</td>
-    <td>${esc(c.budget||"未定")}</td>
-    <td>${selHtml(ST_CO,c.status,"setCoStatus",c.id)}</td></tr>`).join("")||'<tr><td colspan="5">企業の登録はまだありません</td></tr>';
-  const stMap=Object.fromEntries((sts||[]).map(s=>[s.id,s]));
-  const coMap=Object.fromEntries((cos||[]).map(c=>[c.user_id,c]));
-  $("#adminInquiries").innerHTML=(iqs||[]).map(i=>{
-    const st=stMap[i.student_id],co=coMap[i.company_user_id];
-    return `<tr><td style="font-family:var(--mono);font-size:11px">${fmtTime(i.created_at)}</td>
-    <td><b>${co?esc(co.name):"—"}</b><br><small style="font-size:11px">${mail(i.company_user_id)}</small></td><td>${st?esc(st.name):"—"}<br><small style="color:var(--ink-soft)">${st?esc(st.sport):""}</small><br><small style="font-size:11px">${st?mail(st.user_id):"—"}</small></td>
-    <td>${esc(i.budget||"未定")}</td><td style="max-width:260px;font-size:12px;color:var(--ink-soft)">${esc(i.message||"—")}</td>
-    <td>${selHtml(ST_IQ,i.status,"setIqStatus",i.id)}</td></tr>`;
-  }).join("")||'<tr><td colspan="6">支援相談はまだありません</td></tr>';
-}
-$("#adminReload").addEventListener("click",async()=>{await loadAdmin();toast("最新の情報に更新しました");});
-function adminLog(action,target){sb.from("audit_logs").insert({user_id:session.user.id,action,target}).then(()=>{});}
-window.setStuStatus=async(id,st)=>{const {error}=await sb.from("students").update({status:st}).eq("id",id);if(!error)adminLog("admin_student_status",`${id}:${st}`);toast(error?"エラー："+error.message:`学生#${id} を「${ST_STU[st]}」に変更しました`);};
-window.setConsent=async(id,v)=>{const {error}=await sb.from("students").update({parent_consent:v}).eq("id",id);toast(error?"エラー："+error.message:`保護者同意を「${CONSENT[v]}」に更新しました`);};
-window.setCoStatus=async(id,st)=>{const {error}=await sb.from("companies").update({status:st}).eq("id",id);if(!error)adminLog("admin_company_status",`${id}:${st}`);toast(error?"エラー："+error.message:`企業#${id} を「${ST_CO[st]}」に変更しました`);};
-window.setIqStatus=async(id,st)=>{
-  const {error}=await sb.from("inquiries").update({status:st}).eq("id",id);
-  if(error){toast("エラー："+error.message);return;}
-  adminLog("admin_inquiry_status",`${id}:${st}`);
-  toast(st==="contracted"?`案件#${id} 契約締結。成約手数料（年間契約料の20%）の請求フェーズへ`:`案件#${id} を「${ST_IQ[st]}」に更新しました`);
-};
-
-init();
+load();
+// 日付がずれた古いデモデータは作り直す
+if(!S.months || !S.fees[S.months.thisM] || S.months.thisM !== `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}`){ S=seed(); save(); }
+go('dash');
+loadWeather();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});}
 </script>
 </body>
 </html>
