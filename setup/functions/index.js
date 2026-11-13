@@ -10,6 +10,7 @@
    ===================================================================== */
 const { onRequest } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 admin.initializeApp();
@@ -282,3 +283,27 @@ exports.notifyMail = onDocumentCreated(
     });
   }
 );
+
+
+/* 毎朝9時(JST)：翌日にレッスン予定（予約確定済み）がある契約の両者へリマインド通知。
+   通知ドキュメントは notifyMail がメール転送するため、Trigger Email 導入済みならメールも届く */
+exports.lessonReminder = onSchedule({ region: REGION, schedule: '0 9 * * *', timeZone: 'Asia/Tokyo' }, async () => {
+  const db = admin.firestore();
+  const nowJst = new Date(Date.now() + 9 * 3600 * 1000);
+  const t0 = Date.UTC(nowJst.getUTCFullYear(), nowJst.getUTCMonth(), nowJst.getUTCDate() + 1) - 9 * 3600 * 1000;
+  const t1 = t0 + 24 * 3600 * 1000;
+  const q = await db.collection('contracts').where('status', '==', 'active').get();
+  for (const doc of q.docs) {
+    const c = doc.data();
+    if (!c.nextLessonAt || c.nextLessonAt < t0 || c.nextLessonAt >= t1) continue;
+    for (const u of [c.coach, c.player]) {
+      if (!u) continue;
+      const id = 'n' + Date.now() + Math.random().toString(36).slice(2, 8);
+      await db.collection('notifications').doc(id).set({
+        id, to: u, type: 'contract',
+        text: `明日はレッスン予定日です：${c.nextLesson || ''}（${c.title || ''}）`,
+        link: '#contracts', ts: Date.now(), read: false,
+      });
+    }
+  }
+});

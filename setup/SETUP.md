@@ -214,3 +214,17 @@ github.io は他リポジトリとオリジンを共有するため、専用オ�
 2. ルールタブに リポジトリの storage.rules を貼り付け → 公開
 3. index.html の `FIREBASE_STORAGE_ENABLED = false` を `true` に変更してコミット
 4. 以後の写真アップロードはStorage保存（URL参照）になり、Firestoreの容量制限から解放されます
+
+---
+
+## STEP 10. 2026-11アップグレードの反映（予約カレンダー・リマインダー）
+
+1. **新ルールの公開（必須）**：`setup/firestore.rules`（217行・`bookings` コレクション追加）の全文を
+   Firebaseコンソール → Firestore → ルール に上書き → 公開。
+   これを忘れると予約機能が全ユーザーで権限エラーになります。
+2. **リマインダーFunctionのデプロイ（推奨）**：Cloud Shell で
+   `cd ~/mycoach && git pull && firebase deploy --only functions:lessonReminder --project mycoach-c15ae`
+   毎朝9時(JST)に、翌日のレッスン予約がある契約の両者へ通知します（Trigger Email導入済みならメールも送信）。
+3. **本番サイトへの反映**：
+   - GitHub Pages：コミットで自動反映
+   - Firebase Hosting / 独自ドメイン（mycoach-myteam.com）：`firebase deploy --only hosting --project mycoach-c15ae`

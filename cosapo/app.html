@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コサポ｜学生アスリート × 個人スポンサー</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--ink:#0B1F3A;--ink-soft:#31456B;--paper:#FAFBFD;--line:#DDE3EE;--gold:#F2B705;--gold-deep:#C79000;--lane:#1D5FD0;--mono:'IBM Plex Mono',monospace;--jp:'Zen Kaku Gothic New',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--jp);color:var(--ink);background:var(--paper);line-height:1.7;font-size:15px}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button{font-family:var(--jp);cursor:pointer}
+.container{max-width:1080px;margin:0 auto;padding:0 20px}
+header{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff}
+.nav{display:flex;align-items:center;justify-content:space-between;height:60px;gap:14px}
+.logo{font-weight:900;font-size:20px}.logo em{font-style:normal;color:var(--gold)}
+.userbox{display:flex;align-items:center;gap:12px;font-size:12.5px;color:#C7D2E6}
+.userbox .rolebadge{background:#2B4370;border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700}
+main{padding:34px 0 80px}
+.view{display:none}.view.active{display:block}
+.page-head{margin-bottom:24px}
+.page-head .en{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--gold-deep)}
+.page-head h1{font-size:23px;font-weight:900;margin-top:4px}
+.page-head p{color:var(--ink-soft);font-size:13.5px;margin-top:6px;max-width:46em}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:26px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+fieldset{border:none;margin-bottom:22px}
+legend{font-weight:900;font-size:15px;padding-bottom:9px;border-bottom:2px solid var(--ink);width:100%;margin-bottom:14px}
+label{display:block;font-size:12.5px;font-weight:700;margin-bottom:5px}
+label .req{color:#C0392B;font-size:11px;margin-left:4px}
+label .opt{color:var(--ink-soft);font-weight:400;font-size:11px;margin-left:4px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:5px;font-family:var(--jp);font-size:14px;background:#fff}
+input:focus,select:focus,textarea:focus{border-color:var(--lane);outline:none}
+textarea{resize:vertical;min-height:84px}
+input[type=checkbox]{width:16px;height:16px}
+input[type=file]{border:none;padding:6px 0}
+.hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-top:10px}
+.check input{margin-top:4px;flex-shrink:0}
+.notice{background:#FFF8E1;border:1px solid #EAD48A;border-radius:6px;padding:12px 14px;font-size:12.5px;margin-top:10px}
+.errbox{background:#FDECEA;border:1px solid #E8B3AC;color:#8A2B22;border-radius:6px;padding:12px 14px;font-size:12.5px;margin-top:12px;display:none}
+.btn{display:inline-block;padding:11px 26px;border-radius:5px;font-weight:900;font-size:14px;border:2px solid var(--ink);transition:transform .12s;background:#fff;color:var(--ink)}
+.btn:hover{transform:translateY(-1px)}
+.btn-gold{background:var(--gold);border-color:var(--gold)}
+.btn-solid{background:var(--ink);color:#fff}
+.btn-sm{padding:8px 16px;font-size:12.5px;font-weight:700}
+.btn[disabled]{opacity:.5;cursor:wait;transform:none}
+.status-banner{border-radius:8px;padding:16px 20px;font-size:13.5px;font-weight:700;margin-bottom:20px;border:1px solid}
+.st-pending{background:#FFF8E1;border-color:#EAD48A;color:#8a6d00}
+.st-approved{background:#EAF7EE;border-color:#B7DFC2;color:#1E6B34}
+.st-suspended{background:#FDECEA;border-color:#E8B3AC;color:#8A2B22}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.tab{background:#fff;border:1px solid var(--line);color:var(--ink-soft);border-radius:99px;padding:8px 18px;font-size:12.5px;font-weight:700}
+.tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.snsrow{display:grid;grid-template-columns:140px 1fr;gap:10px;margin-bottom:10px}
+.recordrow{display:grid;grid-template-columns:100px 1fr;gap:10px;margin-bottom:10px}
+.addline{background:none;border:1px dashed var(--ink-soft);color:var(--ink-soft);border-radius:5px;padding:8px 14px;font-size:12.5px;width:100%}
+.photo-pick{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--line);background:#fff}
+.avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.45);flex-shrink:0;background:#fff}
+.avatar-fb{display:inline-flex;align-items:center;justify-content:center;background:#2B4370;color:#fff;font-weight:900;font-size:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.card{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.card-top{background:linear-gradient(135deg,#132B52,#0B1F3A);color:#fff;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card-top .nm{font-weight:900;font-size:15.5px;min-width:0}
+.card-top .nm small{display:block;font-weight:400;font-size:11px;color:#8FA2C4}
+.card-top .pb{font-family:var(--mono);color:var(--gold);font-size:17px;text-align:right;flex-shrink:0}
+.card-top .pb small{display:block;font-size:9px;letter-spacing:.12em;color:#8FA2C4}
+.card-mid{padding:14px 18px;font-size:12.5px;color:var(--ink-soft);flex:1}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.badge{font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:99px;padding:2px 10px;color:var(--ink-soft)}
+.badge.hs{background:#FFF3D6;border-color:#EAD48A;color:#8a6d00}
+.card-foot{display:flex;gap:8px;padding:0 18px 15px}
+.card-foot .btn{flex:1;text-align:center}
+.checked-btn{background:var(--lane)!important;border-color:var(--lane)!important;color:#fff!important}
+.feed{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:8px;padding:16px 20px;margin-bottom:20px}
+.feed h2{font-size:14px;font-weight:900;margin-bottom:6px}
+.feed ul{list-style:none}
+.feed li{display:flex;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;align-items:baseline}
+.feed li:last-child{border-bottom:none}
+.feed .ftime{font-family:var(--mono);font-size:11px;color:var(--ink-soft);min-width:88px}
+.toolbar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.toolbar select,.toolbar input[type=text]{max-width:220px}
+.admin-table{width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;font-size:13px}
+.admin-table th{background:var(--ink);color:#fff;padding:11px 13px;text-align:left;font-size:12px;white-space:nowrap}
+.admin-table td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+.admin-table tr:last-child td{border-bottom:none}
+.status-sel{padding:6px 8px;border:1px solid var(--line);border-radius:5px;font-family:var(--jp);font-size:12px;width:auto}
+dialog{border:none;border-radius:10px;max-width:640px;width:92vw;padding:0;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+dialog::backdrop{background:rgba(11,31,58,.55)}
+.modal-head{background:var(--ink);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start}
+.modal-head h2{font-size:19px;font-weight:900}
+.modal-head .sub{font-size:12px;color:#8FA2C4;margin-top:2px}
+.modal-close{background:none;border:none;color:#fff;font-size:22px;line-height:1}
+.modal-body{padding:22px 24px;max-height:62vh;overflow-y:auto}
+.mrow{margin-bottom:16px}
+.mrow h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--gold-deep);margin-bottom:7px}
+.rec-strip{background:var(--ink);color:#fff;border-radius:6px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center}
+.rec-strip .v{font-family:var(--mono);font-size:19px;color:var(--gold)}
+.reslist{list-style:none;font-size:13px}
+.reslist li{display:flex;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.reslist .yr{font-family:var(--mono);color:var(--ink-soft);min-width:44px}
+.snslinks{display:flex;gap:8px;flex-wrap:wrap}
+.snslinks a{border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700}
+.modal-foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 26px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:.3s;z-index:99;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.empty{text-align:center;color:var(--ink-soft);padding:50px 0;font-size:13.5px}
+.auth-card{max-width:440px;margin:40px auto}
+.auth-switch{text-align:center;margin-top:14px;font-size:13px}
+.auth-switch a{color:var(--lane);font-weight:700;cursor:pointer}
+.code{font-family:var(--mono);background:#F0F3F9;border-radius:4px;padding:2px 6px;font-size:12px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <div class="logo">コ<em>サポ</em></div>
+    <div class="userbox" id="userbox" style="display:none">
+      <span class="rolebadge" id="roleBadge"></span>
+      <span id="userEmail"></span>
+      <button class="btn btn-sm" id="logoutBtn" style="border-color:#2B4370;background:transparent;color:#C7D2E6">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+<section class="view active" id="v-loading"><p class="empty">読み込み中…</p></section>
+
+<!-- ===== 設定未完了 ===== -->
+<section class="view" id="v-setup">
+  <div class="panel auth-card">
+    <h1 style="font-size:19px;font-weight:900;margin-bottom:12px">初期設定が必要です</h1>
+    <p style="font-size:13.5px;color:var(--ink-soft)">このファイル冒頭の <span class="code">CONFIG</span> に、SupabaseプロジェクトのURLとanonキーを設定してください。手順は「コサポ_セットアップ手順書_P1.md」を参照。</p>
+  </div>
+</section>
+
+<!-- ===== 認証 ===== -->
+<section class="view" id="v-auth">
+  <div class="panel auth-card">
+    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px" id="authTitle">ログイン</h1>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:18px" id="authLead">学生・企業・運営共通のログイン画面です。</p>
+    <div id="signupRoleWrap" style="display:none;margin-bottom:14px">
+      <label>登録種別<span class="req">必須</span></label>
+      <select id="authRole"><option value="student">学生アスリートとして登録</option><option value="company">スポンサー企業として登録</option></select>
+    </div>
+    <div style="margin-bottom:14px"><label>メールアドレス</label><input type="email" id="authEmail" autocomplete="email"></div>
+    <div style="margin-bottom:18px"><label>パスワード</label><input type="password" id="authPass" autocomplete="current-password"><p class="hint">8文字以上</p></div>
+    <button class="btn btn-gold" id="authSubmit" style="width:100%">ログイン</button>
+    <div class="errbox" id="authErr"></div>
+    <p class="auth-switch" id="authSwitch">アカウントがない方は <a id="toSignup">新規登録</a></p>
+    <p class="auth-switch" id="forgotWrap"><a id="forgotLink">パスワードをお忘れの方</a></p>
+  </div>
+</section>
+
+<!-- ===== 学生ダッシュボード ===== -->
+<section class="view" id="v-student">
+  <div class="page-head"><span class="en">STUDENT DASHBOARD</span><h1>マイページ</h1>
+    <p>プロフィールを登録・更新できます。掲載内容は運営の審査後に企業へ公開されます。掲載・利用はすべて無料です。</p></div>
+  <div id="stuStatusBanner"></div>
+  <form class="panel" id="stuForm" novalidate>
+    <fieldset><legend>基本情報</legend>
+      <div class="grid2">
+        <div><label>氏名<span class="req">必須</span></label><input type="text" id="s_name" required></div>
+        <div><label>フリガナ</label><input type="text" id="s_kana"></div>
+        <div><label>区分<span class="req">必須</span></label>
+          <select id="s_category" required><option value="">選択してください</option><option value="univ">大学生・専門学校生・高専生等（18歳以上）</option><option value="hs">高校生</option></select></div>
+        <div><label>学校名・学部<span class="req">必須</span></label><input type="text" id="s_school" required></div>
+        <div><label>都道府県</label><input type="text" id="s_pref"></div>
+      </div>
+      <div class="notice" id="s_hsNotice" style="display:none">高校生は保護者同意書の提出が必要です。運営が同意を確認するまで公開されません。契約時は保護者を交えた三者面談を行います。</div>
+      <div class="check" id="s_parentWrap" style="display:none">
+        <input type="checkbox" id="s_chkParent">
+        <span><b>保護者の同意を得ています。</b>登録後、保護者同意書を提出することを了承します。</span>
+      </div>
+      <div style="margin-top:16px"><label>顔写真<span class="opt">任意・推奨</span></label>
+        <div class="photo-pick"><img id="s_photoPrev" class="avatar-lg" style="display:none" alt=""><input type="file" id="s_photo" accept="image/*" style="max-width:280px"></div>
+        <p class="hint">本人確認と企業の検討材料になります。自動で縮小されます。</p></div>
+    </fieldset>
+    <fieldset><legend>競技情報</legend>
+      <div class="grid2">
+        <div><label>競技<span class="req">必須</span></label><select id="s_sport" required></select><p class="hint">※野球は学生野球憲章の制限により登録できません。</p></div>
+        <div><label>種目・ポジション</label><input type="text" id="s_event"></div>
+        <div><label>自己ベスト・主要記録<span class="req">必須</span></label><input type="text" id="s_pb" required placeholder="例：10.42"></div>
+        <div><label>記録ラベル</label><input type="text" id="s_pbLabel" placeholder="例：100m PB"></div>
+      </div>
+      <div style="margin-top:14px"><label>主な戦績</label><div id="s_records"></div><button type="button" class="addline" id="s_addRecord">＋ 戦績を追加</button></div>
+      <div style="margin-top:14px"><label>トレーニング結果・取り組み</label><textarea id="s_training"></textarea></div>
+    </fieldset>
+    <fieldset><legend>アピール・SNS・動画</legend>
+      <div><label>自己アピール<span class="req">必須</span></label><textarea id="s_appeal" required></textarea></div>
+      <div style="margin-top:14px"><label>SNSアカウント<span class="opt">任意</span></label><div id="s_sns"></div><button type="button" class="addline" id="s_addSns">＋ SNSを追加</button>
+        <p class="hint">スポンサーPRを投稿する際は「PR」表記が必要です（ステマ規制）。</p></div>
+      <div style="margin-top:14px"><label>競技動画URL<span class="opt">任意</span></label><input type="url" id="s_video" placeholder="YouTube限定公開URLを推奨"><p class="hint">大会映像は主催者規約を確認。他選手が映る映像は掲載不可（自主練習・本人のみ推奨）。</p></div>
+    </fieldset>
+    <fieldset id="s_agreeWrap"><legend>確認事項（初回登録時）</legend>
+      <div class="check"><input type="checkbox" id="s_chkFed"><span><b>所属連盟・学連等の規定を確認しました。</b>個人スポンサー契約が規定に抵触しないことを確認済みです。</span></div>
+      <div class="check"><input type="checkbox" id="s_chkTruth"><span><b>記載した戦績・記録は事実です。</b>虚偽が判明した場合は登録抹消に同意します。</span></div>
+      <div class="check"><input type="checkbox" id="s_chkTerms"><span><b>利用規約・プライバシーポリシーに同意します。</b></span></div>
+    </fieldset>
+    <button type="submit" class="btn btn-gold" id="s_save">保存する</button>
+    <div class="errbox" id="s_err"></div>
+  </form>
+</section>
+
+<!-- ===== 企業ダッシュボード ===== -->
+<section class="view" id="v-company">
+  <div id="c_regWrap" style="display:none">
+    <div class="page-head"><span class="en">SPONSOR REGISTRATION</span><h1>スポンサー企業登録</h1>
+      <p>登録・学生の閲覧・チェックは無料です。費用が発生するのは年間スポンサー契約成立時のみ（成約手数料：年間契約料の20%）。</p></div>
+    <form class="panel" id="compForm" novalidate>
+      <fieldset><legend>企業情報</legend>
+        <div class="grid2">
+          <div><label>企業名<span class="req">必須</span></label><input type="text" id="c_name" required></div>
+          <div><label>業種</label><select id="c_industry"><option></option><option>製造業</option><option>IT・通信</option><option>小売・飲食</option><option>建設・不動産</option><option>金融・保険</option><option>医療・ヘルスケア</option><option>スポーツ関連</option><option>その他</option></select></div>
+          <div><label>所在地</label><input type="text" id="c_addr"></div>
+          <div><label>WebサイトURL</label><input type="url" id="c_url"></div>
+          <div><label>ご担当者名<span class="req">必須</span></label><input type="text" id="c_person" required></div>
+          <div><label>想定年間支援額</label><select id="c_budget"><option value="">未定</option><option>〜30万円</option><option>30〜60万円</option><option>60〜100万円</option><option>100万円以上</option></select></div>
+        </div>
+        <div style="margin-top:14px"><label>関心のある競技</label><input type="text" id="c_interest" placeholder="例：陸上、競泳"></div>
+        <div style="margin-top:14px"><label>支援の目的</label><textarea id="c_purpose"></textarea></div>
+      </fieldset>
+      <div class="check"><input type="checkbox" id="c_chkFee"><span><b>料金体系を理解しました。</b>契約成立時に年間契約料の20%の成約手数料が発生します。</span></div>
+      <div class="check"><input type="checkbox" id="c_chkTerms"><span><b>利用規約に同意し、反社会的勢力に該当しないことを表明・保証します。</b></span></div>
+      <div style="margin-top:18px"><button type="submit" class="btn btn-solid" id="c_save">企業アカウントを申請する</button></div>
+      <div class="errbox" id="c_err"></div>
+    </form>
+  </div>
+
+  <div id="c_pendingWrap" style="display:none">
+    <div class="status-banner st-pending">企業アカウントは<b>審査中</b>です。承認されると学生情報の閲覧・チェックが可能になります。運営からの連絡をお待ちください。</div>
+    <button class="btn btn-sm" onclick="loadCompanyView()">審査状況を確認</button>
+  </div>
+
+  <div id="c_mainWrap" style="display:none">
+    <div class="page-head"><span class="en">FIND ATHLETES</span><h1>学生をさがす</h1>
+      <p>気になる学生に「チェック」で目星をつけて管理できます。チェックは企業側だけの機能で、学生には一切表示されません。支援したい学生が見つかったら「支援を相談」から事務局にご連絡ください。</p></div>
+    <div class="feed"><h2>更新フィード</h2><p class="hint" id="feedHint"></p><ul id="feedList"></ul></div>
+    <div class="toolbar">
+      <select id="filterSport"></select>
+      <input type="text" id="filterText" placeholder="キーワード検索">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin:0"><input type="checkbox" id="filterChecked" style="width:15px;height:15px">チェック済みのみ</label>
+      <button class="btn btn-sm" id="reloadBtn">最新に更新</button>
+    </div>
+    <div class="cards" id="athleteCards"></div>
+    <p class="empty" id="noResults" style="display:none">条件に合う学生が見つかりませんでした。</p>
+  </div>
+</section>
+
+<!-- ===== 事務局 ===== -->
+<section class="view" id="v-admin">
+  <div class="page-head"><span class="en">ADMIN</span><h1>事務局管理</h1>
+    <p>学生・企業の審査と、支援相談の案件管理を行います。</p></div>
+  <div class="tabs">
+    <button class="tab active" data-atab="a-students">学生審査</button>
+    <button class="tab" data-atab="a-companies">企業審査</button>
+    <button class="tab" data-atab="a-inquiries">支援相談</button>
+    <button class="btn btn-sm" id="adminReload" style="margin-left:auto">最新に更新</button>
+  </div>
+  <div id="a-students" style="overflow-x:auto"><table class="admin-table"><thead><tr><th>学生</th><th>区分</th><th>競技</th><th>連絡先</th><th>保護者同意</th><th>ステータス</th></tr></thead><tbody id="adminStudents"></tbody></table></div>
+  <div id="a-companies" style="display:none;overflow-x:auto"><table class="admin-table"><thead><tr><th>企業</th><th>担当者</th><th>連絡先</th><th>想定支援額</th><th>ステータス</th></tr></thead><tbody id="adminCompanies"></tbody></table></div>
+  <div id="a-inquiries" style="display:none;overflow-x:auto"><table class="admin-table"><thead><tr><th>受付</th><th>企業</th><th>学生</th><th>想定支援額</th><th>メッセージ</th><th>ステータス</th></tr></thead><tbody id="adminInquiries"></tbody></table></div>
+</section>
+
+</main>
+
+<!-- 学生詳細モーダル -->
+<dialog id="detailModal">
+  <div class="modal-head">
+    <div style="display:flex;align-items:center;gap:14px">
+      <img id="md_photo" class="avatar" style="width:56px;height:56px;display:none" alt="">
+      <span id="md_photo_fb" class="avatar avatar-fb" style="width:56px;height:56px"></span>
+      <div><h2 id="md_name"></h2><div class="sub" id="md_sub"></div></div>
+    </div>
+    <button class="modal-close" id="mdClose">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="mrow"><div class="rec-strip"><span id="md_pbLabel" style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:#8FA2C4"></span><span class="v" id="md_pb"></span></div></div>
+    <div class="mrow"><h3>APPEAL</h3><p id="md_appeal" style="font-size:13.5px"></p></div>
+    <div class="mrow"><h3>RESULTS</h3><ul class="reslist" id="md_results"></ul></div>
+    <div class="mrow"><h3>TRAINING</h3><p id="md_training" style="font-size:13px;color:var(--ink-soft)"></p></div>
+    <div class="mrow"><h3>SNS</h3><div class="snslinks" id="md_sns"></div></div>
+    <div class="mrow"><h3>VIDEO</h3><p id="md_video" style="font-size:13px"></p></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-sm" id="mdCloseBtn">閉じる</button>
+    <button class="btn btn-sm btn-gold" id="mdContact">この学生の支援を相談する</button>
+  </div>
+</dialog>
+
+<!-- 支援相談モーダル -->
+<dialog id="inquiryModal">
+  <div class="modal-head"><div><h2>支援の相談</h2><div class="sub" id="iq_target"></div></div><button class="modal-close" id="iqClose">×</button></div>
+  <div class="modal-body">
+    <p style="font-size:13px;margin-bottom:14px">送信すると<b>コサポ事務局</b>に連絡が届き、担当者が条件のすり合わせと面談の設定をご案内します。学生に直接連絡は送られません。</p>
+    <div style="margin-bottom:12px"><label>想定年間支援額</label><select id="iq_budget"><option>未定（相談したい）</option><option>〜30万円</option><option>30〜60万円</option><option>60〜100万円</option><option>100万円以上</option></select></div>
+    <div><label>事務局へのメッセージ<span class="opt">任意</span></label><textarea id="iq_msg"></textarea></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-sm" id="iqCancel">キャンセル</button><button class="btn btn-sm btn-gold" id="iqSend">事務局に相談を送信する</button></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   コサポ 本番アプリ（Supabase接続版）P1
+   下の CONFIG にSupabaseの接続情報を設定してください（手順書§3）
+============================================================ */
+const CONFIG = {
+  SUPABASE_URL: "https://klsyhucvlfuoprgiorgw.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_7R6Sob1qnfsAXxV7LxND4Q_gmb7LSZs"  // Project Settings > API Keys > Publishable key（公開してよいキー）
+};
+
+const SPORTS=["陸上競技","競泳","サッカー","バスケットボール","バレーボール","テニス","バドミントン","卓球","柔道","剣道","レスリング","ウエイトリフティング","体操","ラグビー","ハンドボール","自転車","ボート","フェンシング","アーチェリー","スキー・スノーボード","スケート","ゴルフ","陸上ホッケー","空手","ボクシング","トライアスロン","クライミング","その他"];
+// ※野球は学生野球憲章の制限により含めない（DB側のCHECK制約でも遮断）
+
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
+function showView(id){$$(".view").forEach(v=>v.classList.remove("active"));$("#"+id).classList.add("active");}
+function fmtTime(ts){const d=new Date(ts);return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
+const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:"";};
+async function photoSrc(p){
+  if(!p)return "";
+  if(/^https?:\/\//i.test(p))return p;
+  const {data}=await sb.storage.from("photos").createSignedUrl(p,3600);
+  return (data&&data.signedUrl)||"";
+}
+function resizeImage(file,max,cb){
+  const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>{
+    const sc=Math.min(1,max/Math.max(img.width,img.height));
+    const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    c.toBlob(b=>cb(b),"image/jpeg",0.82);
+  };img.src=r.result;};r.readAsDataURL(file);
+}
+const snsRowHtml=(type="",url="")=>`<div class="snsrow"><select class="sns-type">${["X","Instagram","TikTok","YouTube","note","その他"].map(t=>`<option ${t===type?"selected":""}>${t}</option>`).join("")}</select><input type="url" class="sns-url" placeholder="https://..." value="${esc(url)}"></div>`;
+const recRowHtml=(yr="",tx="")=>`<div class="recordrow"><input type="text" class="rec-yr" placeholder="年" value="${esc(yr)}"><input type="text" class="rec-tx" placeholder="大会名・結果" value="${esc(tx)}"></div>`;
+
+let sb=null, session=null, role=null, myStudent=null, myCompany=null, recoveryMode=false;
+let checks=new Set(), browseList=[], inquiryTargetId=null, isSignup=false, sPhotoBlob=null;
+
+/* ---------- 起動 ---------- */
+async function init(){
+  if(!CONFIG.SUPABASE_URL||!CONFIG.SUPABASE_ANON_KEY){showView("v-setup");return;}
+  sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+  const {data}=await sb.auth.getSession();
+  session=data.session;
+  sb.auth.onAuthStateChange((e,s)=>{
+    session=s;
+    if(e==="PASSWORD_RECOVERY"){recoveryMode=true;showRecovery();return;}
+    route();
+  });
+  route();
+}
+async function route(){
+  if(recoveryMode){showRecovery();return;}
+  if(!session){$("#userbox").style.display="none";showView("v-auth");return;}
+  let {data:prof}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
+  if(!prof){
+    const meta=(session.user.user_metadata&&session.user.user_metadata.role)||"";
+    const role0=["student","company"].includes(meta)?meta:"student";
+    await sb.from("profiles").insert({id:session.user.id,role:role0});
+    ({data:prof}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle());
+  }
+  if(!prof){toast("プロフィール取得に失敗しました。時間をおいて再読み込みしてください");showView("v-auth");return;}
+  role=prof.role;
+  $("#userbox").style.display="flex";
+  $("#userEmail").textContent=session.user.email;
+  $("#roleBadge").textContent=role==="student"?"学生":role==="company"?"企業":"運営";
+  if(role==="student"){await loadStudentView();showView("v-student");}
+  else if(role==="company"){await loadCompanyView();showView("v-company");}
+  else{await loadAdmin();showView("v-admin");}
+}
+
+/* ---------- 認証 ---------- */
+$("#toSignup").addEventListener("click",()=>{
+  isSignup=!isSignup;
+  $("#authTitle").textContent=isSignup?"新規登録":"ログイン";
+  $("#authSubmit").textContent=isSignup?"登録する":"ログイン";
+  $("#signupRoleWrap").style.display=isSignup?"block":"none";
+  $("#toSignup").textContent=isSignup?"ログイン":"新規登録";
+  $("#authSwitch").firstChild.textContent=isSignup?"アカウントをお持ちの方は ":"アカウントがない方は ";
+});
+$("#authSubmit").addEventListener("click",async()=>{
+  const email=$("#authEmail").value.trim(),pass=$("#authPass").value;
+  const eb=$("#authErr");eb.style.display="none";
+  if(recoveryMode){
+    if(pass.length<8){eb.textContent="8文字以上のパスワードを入力してください。";eb.style.display="block";return;}
+    $("#authSubmit").disabled=true;
+    const {error}=await sb.auth.updateUser({password:pass});
+    $("#authSubmit").disabled=false;
+    if(error){eb.textContent="エラー："+error.message;eb.style.display="block";return;}
+    recoveryMode=false;
+    $("#authEmail").parentElement.style.display="block";
+    $("#authSwitch").style.display="block";$("#forgotWrap").style.display="block";
+    $("#authTitle").textContent="ログイン";$("#authSubmit").textContent="ログイン";
+    toast("パスワードを更新しました");route();return;
+  }
+  if(!email||pass.length<8){eb.textContent="メールアドレスと8文字以上のパスワードを入力してください。";eb.style.display="block";return;}
+  $("#authSubmit").disabled=true;
+  try{
+    if(isSignup){
+      const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{role:$("#authRole").value}}});
+      if(error)throw error;
+      if(!data.session){toast("確認メールを送信しました。メール内のリンクを開いてからログインしてください");}
+    }else{
+      const {error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+    }
+  }catch(e){eb.textContent="エラー："+(e.message||e);eb.style.display="block";}
+  $("#authSubmit").disabled=false;
+});
+$("#logoutBtn").addEventListener("click",async()=>{await sb.auth.signOut();});
+function showRecovery(){
+  $("#authTitle").textContent="新しいパスワードを設定";
+  $("#authLead").textContent="新しいパスワード（8文字以上）を入力してください。";
+  $("#signupRoleWrap").style.display="none";
+  $("#authEmail").parentElement.style.display="none";
+  $("#authSubmit").textContent="パスワードを設定する";
+  $("#authSwitch").style.display="none";$("#forgotWrap").style.display="none";
+  showView("v-auth");
+}
+$("#forgotLink").addEventListener("click",async()=>{
+  const email=$("#authEmail").value.trim();const eb=$("#authErr");eb.style.display="none";
+  if(!email){eb.textContent="メールアドレスを入力してから「パスワードをお忘れの方」を押してください。";eb.style.display="block";return;}
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  if(error){eb.textContent="エラー："+error.message;eb.style.display="block";}
+  else toast("パスワード再設定メールを送信しました。メール内のリンクを開いてください");
+});
+
+/* ---------- 学生ダッシュボード ---------- */
+function stuBanner(st){
+  const map={pending:["st-pending","審査中：運営の確認後に企業へ公開されます。高校生は保護者同意書の確認完了も公開条件です。"],
+    approved:["st-approved","公開中：あなたのプロフィールは承認済み企業に公開されています。記録を更新すると企業のフィードに反映されます。"],
+    suspended:["st-suspended","掲載停止中：運営までお問い合わせください。"]};
+  const m=map[st]||map.pending;
+  $("#stuStatusBanner").innerHTML=`<div class="status-banner ${m[0]}">${m[1]}</div>`;
+}
+async function loadStudentView(){
+  const sel=$("#s_sport");
+  sel.innerHTML='<option value="">選択してください</option>'+SPORTS.map(s=>`<option>${s}</option>`).join("");
+  const {data:st}=await sb.from("students").select("*, student_records(*), student_sns(*)").eq("user_id",session.user.id).maybeSingle();
+  myStudent=st||null;
+  $("#s_agreeWrap").style.display=myStudent?"none":"block";
+  if(myStudent){
+    stuBanner(myStudent.status);
+    $("#s_name").value=myStudent.name||"";$("#s_kana").value=myStudent.kana||"";
+    $("#s_category").value=myStudent.category||"";$("#s_school").value=myStudent.school||"";
+    $("#s_pref").value=myStudent.pref||"";$("#s_sport").value=myStudent.sport||"";
+    $("#s_event").value=myStudent.event||"";$("#s_pb").value=myStudent.pb||"";
+    $("#s_pbLabel").value=myStudent.pb_label||"";$("#s_training").value=myStudent.training||"";
+    $("#s_appeal").value=myStudent.appeal||"";$("#s_video").value=myStudent.video_url||"";
+    const psrc=await photoSrc(myStudent.photo_url);
+    if(psrc){$("#s_photoPrev").src=psrc;$("#s_photoPrev").style.display="block";}
+    $("#s_records").innerHTML=(myStudent.student_records||[]).map(r=>recRowHtml(r.year,r.text)).join("")||recRowHtml();
+    $("#s_sns").innerHTML=(myStudent.student_sns||[]).map(s=>snsRowHtml(s.type,s.url)).join("")||snsRowHtml();
+  }else{
+    $("#stuStatusBanner").innerHTML='<div class="status-banner st-pending">未登録：プロフィールを入力して保存すると審査が始まります。</div>';
+    $("#s_records").innerHTML=recRowHtml();$("#s_sns").innerHTML=snsRowHtml();
+  }
+  const hsNow=$("#s_category").value==="hs";
+  $("#s_hsNotice").style.display=hsNow?"block":"none";
+  $("#s_parentWrap").style.display=(hsNow&&!myStudent)?"flex":"none";
+}
+$("#s_category").addEventListener("change",e=>{
+  const hs=e.target.value==="hs";
+  $("#s_hsNotice").style.display=hs?"block":"none";
+  $("#s_parentWrap").style.display=(hs&&!myStudent)?"flex":"none";
+});
+$("#s_addRecord").addEventListener("click",()=>$("#s_records").insertAdjacentHTML("beforeend",recRowHtml()));
+$("#s_addSns").addEventListener("click",()=>$("#s_sns").insertAdjacentHTML("beforeend",snsRowHtml()));
+$("#s_photo").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  resizeImage(f,320,b=>{sPhotoBlob=b;$("#s_photoPrev").src=URL.createObjectURL(b);$("#s_photoPrev").style.display="block";});
+});
+$("#stuForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const eb=$("#s_err");eb.style.display="none";
+  const f={name:$("#s_name").value.trim(),kana:$("#s_kana").value.trim(),category:$("#s_category").value,
+    school:$("#s_school").value.trim(),pref:$("#s_pref").value.trim(),sport:$("#s_sport").value,
+    event:$("#s_event").value.trim(),pb:$("#s_pb").value.trim(),pb_label:$("#s_pbLabel").value.trim()||"BEST RECORD",
+    training:$("#s_training").value.trim(),appeal:$("#s_appeal").value.trim(),video_url:$("#s_video").value.trim()};
+  if(!f.name||!f.category||!f.school||!f.sport||!f.pb||!f.appeal){eb.textContent="必須項目（氏名・区分・学校・競技・記録・アピール）を入力してください。";eb.style.display="block";return;}
+  if(!myStudent&&!($("#s_chkFed").checked&&$("#s_chkTruth").checked&&$("#s_chkTerms").checked)){eb.textContent="確認事項3点すべてにチェックしてください。";eb.style.display="block";return;}
+  if(!myStudent&&f.category==="hs"&&!$("#s_chkParent").checked){eb.textContent="高校生の登録には保護者同意のチェックが必要です。";eb.style.display="block";return;}
+  if(f.video_url&&!safeUrl(f.video_url)){eb.textContent="動画URLは https:// で始まる形式で入力してください。";eb.style.display="block";return;}
+  if([...$("#s_sns").querySelectorAll(".sns-url")].some(i=>i.value.trim()&&!safeUrl(i.value))){eb.textContent="SNSのURLは https:// で始まる形式で入力してください。";eb.style.display="block";return;}
+  $("#s_save").disabled=true;
+  try{
+    // 顔写真アップロード
+    if(sPhotoBlob){
+      const path=`${session.user.id}/photo.jpg`;
+      const {error:upErr}=await sb.storage.from("photos").upload(path,sPhotoBlob,{upsert:true,contentType:"image/jpeg"});
+      if(upErr)throw upErr;
+      f.photo_url=path;   // 非公開バケット：表示時に署名付きURLを発行
+    }
+    let sid;
+    if(myStudent){
+      const old=myStudent;
+      const {error}=await sb.from("students").update(f).eq("id",old.id);
+      if(error)throw error;
+      sid=old.id;
+      // 差分から更新通知を生成（チェック企業のフィードに届く）
+      const notes=[];
+      if(f.pb&&f.pb!==old.pb)notes.push({type:"pb",message:`記録を更新：${old.pb} → ${f.pb}`});
+      if(f.video_url&&f.video_url!==old.video_url)notes.push({type:"video",message:"新しい競技動画を公開"});
+      if(sPhotoBlob)notes.push({type:"photo",message:"顔写真を更新"});
+      if(!notes.length&&f.training!==old.training)notes.push({type:"profile",message:"トレーニング情報を更新"});
+      if(!notes.length&&f.appeal!==old.appeal)notes.push({type:"profile",message:"アピール文を更新"});
+      if(notes.length)await sb.from("notifications").insert(notes.map(n=>({student_id:sid,...n})));
+    }else{
+      const {data,error}=await sb.from("students").insert({...f,user_id:session.user.id}).select("id").single();
+      if(error)throw error;
+      sid=data.id;
+    }
+    // 戦績・SNSは全置換
+    const recs=[...$("#s_records").querySelectorAll(".recordrow")].map(r=>({student_id:sid,year:r.querySelector(".rec-yr").value.trim(),text:r.querySelector(".rec-tx").value.trim()})).filter(r=>r.text);
+    const sns=[...$("#s_sns").querySelectorAll(".snsrow")].map(r=>({student_id:sid,type:r.querySelector(".sns-type").value,url:r.querySelector(".sns-url").value.trim()})).filter(s=>s.url);
+    const oldRecCount=myStudent?(myStudent.student_records||[]).length:0;
+    await sb.from("student_records").delete().eq("student_id",sid);
+    if(recs.length)await sb.from("student_records").insert(recs);
+    await sb.from("student_sns").delete().eq("student_id",sid);
+    if(sns.length)await sb.from("student_sns").insert(sns);
+    if(myStudent&&recs.length>oldRecCount)
+      await sb.from("notifications").insert({student_id:sid,type:"record",message:`戦績を追加：${recs[recs.length-1].text}`});
+    sPhotoBlob=null;
+    toast(myStudent?"プロフィールを更新しました":"登録しました。運営の審査をお待ちください");
+    await loadStudentView();
+  }catch(err){eb.textContent="保存エラー："+(err.message||err);eb.style.display="block";}
+  $("#s_save").disabled=false;
+});
+
+/* ---------- 企業ダッシュボード ---------- */
+async function loadCompanyView(){
+  const {data:c}=await sb.from("companies").select("*").eq("user_id",session.user.id).maybeSingle();
+  myCompany=c||null;
+  $("#c_regWrap").style.display=myCompany?"none":"block";
+  $("#c_pendingWrap").style.display=myCompany&&myCompany.status!=="approved"?"block":"none";
+  $("#c_mainWrap").style.display=myCompany&&myCompany.status==="approved"?"block":"none";
+  if(myCompany&&myCompany.status==="approved")await loadBrowse();
+}
+$("#compForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const eb=$("#c_err");eb.style.display="none";
+  if(!$("#c_name").value.trim()||!$("#c_person").value.trim()){eb.textContent="企業名と担当者名は必須です。";eb.style.display="block";return;}
+  if(!$("#c_chkFee").checked||!$("#c_chkTerms").checked){eb.textContent="確認事項にチェックしてください。";eb.style.display="block";return;}
+  $("#c_save").disabled=true;
+  const {error}=await sb.from("companies").insert({user_id:session.user.id,name:$("#c_name").value.trim(),
+    industry:$("#c_industry").value,address:$("#c_addr").value.trim(),url:$("#c_url").value.trim(),
+    person:$("#c_person").value.trim(),budget:$("#c_budget").value,interest:$("#c_interest").value.trim(),purpose:$("#c_purpose").value.trim()});
+  $("#c_save").disabled=false;
+  if(error){eb.textContent="登録エラー："+error.message;eb.style.display="block";return;}
+  toast("申請を受け付けました。運営の審査をお待ちください");
+  await loadCompanyView();
+});
+async function loadBrowse(){
+  $("#filterSport").innerHTML='<option value="">すべての競技</option>'+SPORTS.map(s=>`<option>${s}</option>`).join("");
+  const [{data:sts},{data:cks}]=await Promise.all([
+    sb.from("students").select("*, student_records(*), student_sns(*)").eq("status","approved").order("updated_at",{ascending:false}),
+    sb.from("checks").select("student_id").eq("company_user_id",session.user.id)
+  ]);
+  browseList=sts||[];
+  checks=new Set((cks||[]).map(c=>c.student_id));
+  const paths=browseList.map(a=>a.photo_url).filter(p=>p&&!/^https?:\/\//i.test(p));
+  if(paths.length){
+    const {data:signed}=await sb.storage.from("photos").createSignedUrls(paths,3600);
+    const smap=Object.fromEntries((signed||[]).filter(x=>!x.error&&x.path).map(x=>[x.path,x.signedUrl]));
+    browseList.forEach(a=>{a._photo=/^https?:\/\//i.test(a.photo_url||"")?a.photo_url:(smap[a.photo_url]||"");});
+  }else browseList.forEach(a=>{a._photo=safeUrl(a.photo_url);});
+  await loadFeed();
+  renderCards();
+}
+async function loadFeed(){
+  if(!checks.size){$("#feedHint").textContent="学生をチェックすると、記録更新・戦績追加がここに時系列で表示されます。";$("#feedList").innerHTML="";return;}
+  const {data:nt}=await sb.from("notifications").select("*").in("student_id",[...checks]).order("created_at",{ascending:false}).limit(30);
+  if(!nt||!nt.length){$("#feedHint").textContent="チェック中の学生の新しい更新はまだありません。";$("#feedList").innerHTML="";return;}
+  $("#feedHint").textContent="";
+  $("#feedList").innerHTML=nt.map(n=>{
+    const a=browseList.find(x=>x.id===n.student_id);
+    return `<li><span class="ftime">${fmtTime(n.created_at)}</span><span style="color:var(--lane);font-weight:700;cursor:pointer" onclick="openDetail(${n.student_id})">${a?esc(a.name):"学生"}</span><span>${esc(n.message)}</span></li>`;
+  }).join("");
+}
+function renderCards(){
+  const sp=$("#filterSport").value,q=$("#filterText").value.trim(),onlyChk=$("#filterChecked").checked;
+  const list=browseList.filter(a=>(!sp||a.sport===sp)&&(!q||(a.name+a.school+a.sport+(a.event||"")).includes(q))&&(!onlyChk||checks.has(a.id)));
+  $("#noResults").style.display=list.length?"none":"block";
+  $("#athleteCards").innerHTML=list.map(a=>`
+    <article class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0">
+          ${a._photo?`<img class="avatar" src="${esc(a._photo)}" alt="">`:`<span class="avatar avatar-fb">${esc((a.name||"?").charAt(0))}</span>`}
+          <div class="nm">${esc(a.name)}<small>${esc(a.sport)}${a.event?"・"+esc(a.event):""}</small></div>
+        </div>
+        <div class="pb"><small>${esc(a.pb_label)}</small>${esc(a.pb)}</div>
+      </div>
+      <div class="card-mid">${esc(a.school)}｜${esc(a.pref||"")}
+        <div class="badges">
+          ${a.category==="hs"?'<span class="badge hs">高校生・保護者同意済</span>':''}
+          ${(a.student_sns||[]).map(s=>`<span class="badge">${esc(s.type)}</span>`).join("")}
+          ${a.video_url?'<span class="badge">動画あり</span>':''}
+        </div></div>
+      <div class="card-foot">
+        <button class="btn btn-sm btn-solid ${checks.has(a.id)?"checked-btn":""}" onclick="toggleCheck(${a.id})">${checks.has(a.id)?"✓ チェック済み":"チェックする"}</button>
+        <button class="btn btn-sm" onclick="openDetail(${a.id})">詳細を見る</button>
+      </div>
+    </article>`).join("");
+}
+$("#filterSport").addEventListener("change",renderCards);
+$("#filterText").addEventListener("input",renderCards);
+$("#filterChecked").addEventListener("change",renderCards);
+$("#reloadBtn").addEventListener("click",async()=>{await loadBrowse();toast("最新の情報に更新しました");});
+window.toggleCheck=async id=>{
+  if(checks.has(id)){
+    await sb.from("checks").delete().eq("company_user_id",session.user.id).eq("student_id",id);
+    checks.delete(id);toast("チェックを外しました");
+  }else{
+    const {error}=await sb.from("checks").insert({company_user_id:session.user.id,student_id:id});
+    if(error){toast("エラー："+error.message);return;}
+    checks.add(id);
+    const a=browseList.find(x=>x.id===id);
+    toast(`${a?a.name:""}選手をチェックしました（学生には表示されません）`);
+  }
+  await loadFeed();renderCards();
+};
+window.openDetail=async id=>{
+  const a=browseList.find(x=>x.id===id);if(!a)return;
+  inquiryTargetId=id;
+  if(a._photo){$("#md_photo").src=a._photo;$("#md_photo").style.display="block";$("#md_photo_fb").style.display="none";}
+  else{$("#md_photo").style.display="none";$("#md_photo_fb").style.display="inline-flex";$("#md_photo_fb").textContent=(a.name||"?").charAt(0);}
+  $("#md_name").textContent=a.name;
+  $("#md_sub").textContent=`${a.sport}${a.event?"・"+a.event:""}｜${a.school}｜${a.pref||""}`;
+  $("#md_pbLabel").textContent=a.pb_label;$("#md_pb").textContent=a.pb;
+  $("#md_appeal").textContent=a.appeal||"—";
+  $("#md_results").innerHTML=(a.student_records||[]).map(r=>`<li><span class="yr">${esc(r.year)}</span>${esc(r.text)}</li>`).join("")||"<li>—</li>";
+  $("#md_training").textContent=a.training||"—";
+  const snsSafe=(a.student_sns||[]).filter(x=>safeUrl(x.url));
+  $("#md_sns").innerHTML=snsSafe.length?snsSafe.map(x=>`<a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.type)} ↗</a>`).join(""):"<span style='font-size:12.5px;color:var(--ink-soft)'>未登録</span>";
+  const vSafe=safeUrl(a.video_url);
+  $("#md_video").innerHTML=vSafe?`<a href="${esc(vSafe)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);font-weight:700">▶ 競技動画を見る ↗</a>`:"動画は未登録です";
+  // 監査ログ（誰がいつどの学生を閲覧したか）
+  sb.from("audit_logs").insert({user_id:session.user.id,action:"view_student",target:String(id)}).then(()=>{});
+  $("#detailModal").showModal();
+};
+$("#mdClose").addEventListener("click",()=>$("#detailModal").close());
+$("#mdCloseBtn").addEventListener("click",()=>$("#detailModal").close());
+$("#mdContact").addEventListener("click",()=>{
+  const a=browseList.find(x=>x.id===inquiryTargetId);if(!a)return;
+  $("#iq_target").textContent=`${a.name}（${a.sport}）への支援について`;
+  $("#iq_budget").value="未定（相談したい）";$("#iq_msg").value="";
+  $("#detailModal").close();$("#inquiryModal").showModal();
+});
+$("#iqClose").addEventListener("click",()=>$("#inquiryModal").close());
+$("#iqCancel").addEventListener("click",()=>$("#inquiryModal").close());
+$("#iqSend").addEventListener("click",async()=>{
+  $("#iqSend").disabled=true;
+  const {error}=await sb.from("inquiries").insert({company_user_id:session.user.id,student_id:inquiryTargetId,
+    budget:$("#iq_budget").value,message:$("#iq_msg").value.trim()});
+  $("#iqSend").disabled=false;
+  if(error){toast("送信エラー："+error.message);return;}
+  $("#inquiryModal").close();
+  toast("事務局に相談を送信しました。担当者からご連絡します");
+});
+
+/* ---------- 事務局 ---------- */
+$$("[data-atab]").forEach(b=>b.addEventListener("click",()=>{
+  $$("[data-atab]").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  ["a-students","a-companies","a-inquiries"].forEach(id=>$("#"+id).style.display=id===b.dataset.atab?"block":"none");
+}));
+const ST_STU={pending:"審査中",approved:"公開中",suspended:"停止"};
+const ST_CO={pending:"審査中",approved:"承認済",suspended:"停止"};
+const ST_IQ={new:"新規",meeting:"面談調整",nego:"条件すり合わせ",contracted:"契約締結",closed:"不成立"};
+const CONSENT={na:"—",waiting:"確認待ち",verified:"確認済み"};
+function selHtml(map,cur,fn,id){return `<select class="status-sel" onchange="${fn}(${id},this.value)">${Object.entries(map).map(([k,v])=>`<option value="${k}" ${k===cur?"selected":""}>${v}</option>`).join("")}</select>`;}
+async function loadAdmin(){
+  const [{data:sts},{data:cos},{data:iqs},{data:ems,error:emErr}]=await Promise.all([
+    sb.from("students").select("*").order("created_at",{ascending:false}),
+    sb.from("companies").select("*").order("created_at",{ascending:false}),
+    sb.from("inquiries").select("*").order("created_at",{ascending:false}),
+    sb.rpc("admin_user_emails")
+  ]);
+  // 連絡先メール：RPC（auth.usersから運営にのみ開示）を優先し、行のemailカラムをフォールバックに
+  const emailMap=Object.fromEntries((ems||[]).map(e=>[e.user_id,e.email]));
+  const mail=uid=>{
+    const e=emailMap[uid];
+    return e?`<a href="mailto:${esc(e)}" style="color:var(--lane);font-weight:700">${esc(e)}</a>`
+            :`<span style="color:var(--ink-soft)">${emErr?"—（admin_emails.sql 未実行）":"—"}</span>`;
+  };
+  $("#adminStudents").innerHTML=(sts||[]).map(s=>`<tr>
+    <td><b>${esc(s.name)}</b><br><small style="color:var(--ink-soft)">${esc(s.school||"")}</small></td>
+    <td>${s.category==="hs"?"高校生":"18歳以上"}</td><td>${esc(s.sport)}</td>
+    <td style="font-size:12px">${mail(s.user_id)}</td>
+    <td>${s.category==="hs"?selHtml(CONSENT,s.parent_consent,"setConsent",s.id):"—"}</td>
+    <td>${selHtml(ST_STU,s.status,"setStuStatus",s.id)}</td></tr>`).join("")||'<tr><td colspan="6">学生の登録はまだありません</td></tr>';
+  $("#adminCompanies").innerHTML=(cos||[]).map(c=>`<tr>
+    <td><b>${esc(c.name)}</b><br><small style="color:var(--ink-soft)">${esc(c.industry||"")}</small></td>
+    <td>${esc(c.person||"")}</td>
+    <td style="font-size:12px">${mail(c.user_id)}</td>
+    <td>${esc(c.budget||"未定")}</td>
+    <td>${selHtml(ST_CO,c.status,"setCoStatus",c.id)}</td></tr>`).join("")||'<tr><td colspan="5">企業の登録はまだありません</td></tr>';
+  const stMap=Object.fromEntries((sts||[]).map(s=>[s.id,s]));
+  const coMap=Object.fromEntries((cos||[]).map(c=>[c.user_id,c]));
+  $("#adminInquiries").innerHTML=(iqs||[]).map(i=>{
+    const st=stMap[i.student_id],co=coMap[i.company_user_id];
+    return `<tr><td style="font-family:var(--mono);font-size:11px">${fmtTime(i.created_at)}</td>
+    <td><b>${co?esc(co.name):"—"}</b><br><small style="font-size:11px">${mail(i.company_user_id)}</small></td><td>${st?esc(st.name):"—"}<br><small style="color:var(--ink-soft)">${st?esc(st.sport):""}</small><br><small style="font-size:11px">${st?mail(st.user_id):"—"}</small></td>
+    <td>${esc(i.budget||"未定")}</td><td style="max-width:260px;font-size:12px;color:var(--ink-soft)">${esc(i.message||"—")}</td>
+    <td>${selHtml(ST_IQ,i.status,"setIqStatus",i.id)}</td></tr>`;
+  }).join("")||'<tr><td colspan="6">支援相談はまだありません</td></tr>';
+}
+$("#adminReload").addEventListener("click",async()=>{await loadAdmin();toast("最新の情報に更新しました");});
+function adminLog(action,target){sb.from("audit_logs").insert({user_id:session.user.id,action,target}).then(()=>{});}
+window.setStuStatus=async(id,st)=>{const {error}=await sb.from("students").update({status:st}).eq("id",id);if(!error)adminLog("admin_student_status",`${id}:${st}`);toast(error?"エラー："+error.message:`学生#${id} を「${ST_STU[st]}」に変更しました`);};
+window.setConsent=async(id,v)=>{const {error}=await sb.from("students").update({parent_consent:v}).eq("id",id);toast(error?"エラー："+error.message:`保護者同意を「${CONSENT[v]}」に更新しました`);};
+window.setCoStatus=async(id,st)=>{const {error}=await sb.from("companies").update({status:st}).eq("id",id);if(!error)adminLog("admin_company_status",`${id}:${st}`);toast(error?"エラー："+error.message:`企業#${id} を「${ST_CO[st]}」に変更しました`);};
+window.setIqStatus=async(id,st)=>{
+  const {error}=await sb.from("inquiries").update({status:st}).eq("id",id);
+  if(error){toast("エラー："+error.message);return;}
+  adminLog("admin_inquiry_status",`${id}:${st}`);
+  toast(st==="contracted"?`案件#${id} 契約締結。成約手数料（年間契約料の20%）の請求フェーズへ`:`案件#${id} を「${ST_IQ[st]}」に更新しました`);
+};
+
+init();
+</script>
+</body>
+</html>
