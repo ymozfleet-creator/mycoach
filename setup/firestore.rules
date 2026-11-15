@@ -23,18 +23,31 @@ service cloud.firestore {
       allow read: if authed();
       allow create: if authed() && request.auth.uid == uid
         && request.resource.data.get('verified','none') != 'approved'
-        && request.resource.data.get('isAdmin', false) != true;
+        && request.resource.data.get('isAdmin', false) != true
+        && request.resource.data.get('stripeAccountId', '') == ''
+        && request.resource.data.get('stripeChargesEnabled', false) == false
+        && request.resource.data.get('ratingCount', 0) == 0
+        && request.resource.data.get('name', '').size() <= 40;
+      // 入力値の上限（大きなデータの書き込みや表示崩れを防ぐ）
+      function profileSizeOk() {
+        return request.resource.data.get('name', '').size() <= 40
+          && request.resource.data.get('bio', '').size() <= 1000
+          && request.resource.data.get('license', '').size() <= 100;
+      }
       allow update: if isAdmin()
         || (authed() && request.auth.uid == uid
             && selfVerifyOk()
+            && profileSizeOk()
+            // 差し戻し理由は事務局だけが書ける（本人は消すことのみ）
+            && request.resource.data.get('verifyNote', '') in [resource.data.get('verifyNote', ''), '']
             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
             // Stripe口座情報はFunctions（Admin SDK）のみが書き込む
             && request.resource.data.get('stripeAccountId', '') == resource.data.get('stripeAccountId', '')
-            && request.resource.data.get('stripeChargesEnabled', false) == resource.data.get('stripeChargesEnabled', false))
-        // レビュー投稿に伴う評価集計フィールドのみの更新は許可
-        // （改ざん耐性を高めたい場合は functions の recalcRating を有効化し、この行を削除）
-        || (authed()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratingAvg','ratingCount','lessonCount']));
+            && request.resource.data.get('stripeChargesEnabled', false) == resource.data.get('stripeChargesEnabled', false)
+            // 評価・指導回数はサーバー（recalcRating / recalcLessons）だけが更新する
+            && request.resource.data.get('ratingAvg', 0) == resource.data.get('ratingAvg', 0)
+            && request.resource.data.get('ratingCount', 0) == resource.data.get('ratingCount', 0)
+            && request.resource.data.get('lessonCount', 0) == resource.data.get('lessonCount', 0));
       allow delete: if false; // 退会は deleted フラグで論理削除
     }
 
@@ -77,11 +90,48 @@ service cloud.firestore {
     match /contracts/{id} {
       allow read: if authed() && (request.auth.uid == resource.data.coach
                     || request.auth.uid == resource.data.player || isAdmin());
+      // MyCOACH-MyTEAM：クラブと指導者の依頼・応募（clubId を持つ契約）
+      function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+      function clubContractCreateOk() {
+        let d = request.resource.data;
+        return d.by == request.auth.uid
+          && d.status == 'proposed'
+          && d.fee is int && d.fee >= 0 && d.fee <= 100000
+          && d.title is string && d.title.size() <= 60
+          && d.get('message', '').size() <= 1000
+          && request.auth.uid in [d.coach, d.player]
+          && d.coach != d.player
+          // クラブ側の相手（player）は、そのクラブの運営者であること
+          && d.player in club(d.clubId).adminUids
+          && (
+            // 運営者からの依頼：添付する招待コードは、そのクラブの指導者用であること
+            (request.auth.uid == d.player
+              && (!('clubCode' in d) || (invite(d.clubCode).clubId == d.clubId && invite(d.clubCode).role == 'coach')))
+            // 指導者からの応募：本人確認と安全研修が済んでいること。招待コードは付けられない
+            || (request.auth.uid == d.coach && !('clubCode' in d)
+              && me().get('verified', 'none') == 'approved' && me().get('training', false) == true)
+          );
+      }
+      function clubContractUpdateOk() {
+        let a = resource.data;
+        let b = request.resource.data;
+        return b.diff(a).affectedKeys().hasOnly(['status', 'reviewed'])
+          && (
+            // 返事（引き受け・採用・お断り）は、依頼・応募を受けた側だけができる
+            (a.status == 'proposed' && b.status in ['active', 'declined'] && request.auth.uid != a.get('by', a.player))
+            // 指導の終了は当事者のどちらでも
+            || (a.status == 'active' && b.status == 'completed')
+            // 評価済みの印は、終了後にクラブ側だけが付けられる
+            || (a.status == 'completed' && b.status == 'completed' && request.auth.uid == a.player && b.get('reviewed', false) == true)
+          );
+      }
       allow create: if authed() && (request.auth.uid == request.resource.data.coach
-                    || request.auth.uid == request.resource.data.player);
+                    || request.auth.uid == request.resource.data.player)
+        && (!('clubId' in request.resource.data) || clubContractCreateOk());
       allow update: if authed()
         && (request.auth.uid == resource.data.coach
             || request.auth.uid == resource.data.player || isAdmin())
+        && (isAdmin() || !('clubId' in resource.data) || clubContractUpdateOk())
         // 契約開始（active への遷移）は、ゲート強制ON時はコーチの受取口座設定を必須にする
         && (isAdmin()
             || !(request.resource.data.status == 'active' && resource.data.status != 'active')
@@ -93,7 +143,10 @@ service cloud.firestore {
     // 本人確認書類：本人の提出、本人と管理者のみ閲覧可
     match /verify_docs/{uid} {
       allow read: if authed() && (request.auth.uid == uid || isAdmin());
-      allow create, update: if authed() && request.auth.uid == uid;
+      allow create, update: if authed() && request.auth.uid == uid
+        && request.resource.data.get('image', '') is string
+        && request.resource.data.get('image', '').size() <= 800000
+        && request.resource.data.get('docType', '').size() <= 40;
       allow delete: if isAdmin();
     }
 
@@ -106,9 +159,14 @@ service cloud.firestore {
 
     // 通知：宛先本人のみ閲覧・既読化。作成はログインユーザー（いいね等の相手宛通知）
     match /notifications/{id} {
-      allow read, update: if authed() && (resource.data.to == request.auth.uid || isAdmin());
+      allow read: if authed() && (resource.data.to == request.auth.uid || isAdmin());
+      // 既読にするだけ（本文の書き換えは不可）
+      allow update: if isAdmin() || (authed() && resource.data.to == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']));
       allow create: if authed()
-        && request.resource.data.type in ['like','match','msg','contract','pay','review','verify','cert','announce']
+        && (request.resource.data.type in ['like','match','msg','contract','pay','review','cert','announce']
+            || (request.resource.data.type == 'verify' && isAdmin())) // 審査結果の通知は事務局だけ
+        && request.resource.data.get('read', false) == false
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 300
         && request.resource.data.to is string;
@@ -123,6 +181,8 @@ service cloud.firestore {
                     || request.auth.uid == resource.data.player || isAdmin());
       allow create: if authed()
         && request.resource.data.player == request.auth.uid
+        // クラブの謝金はStripe経由でサーバーだけが記録する（画面から支払い済みを偽装できない）
+        && !('clubId' in get(/databases/$(database)/documents/contracts/$(request.resource.data.contractId)).data)
         && request.resource.data.amount is number && request.resource.data.amount > 0
         && request.resource.data.fee is number && request.resource.data.fee >= 0;
       allow update: if isAdmin(); // 精算フラグ（payoutId）の付与のみ想定
@@ -154,7 +214,10 @@ service cloud.firestore {
         && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
         && ct().status == 'completed'
         && (request.auth.uid == ct().coach || request.auth.uid == ct().player)
-        && request.resource.data.to == (request.auth.uid == ct().coach ? ct().player : ct().coach);
+        && request.resource.data.to == (request.auth.uid == ct().coach ? ct().player : ct().coach)
+        && request.resource.data.get('text', '').size() <= 500
+        // クラブの依頼は1件につき1回だけ（ドキュメントIDを固定）
+        && (!('clubId' in ct()) || id == request.resource.data.contractId + '_' + request.auth.uid);
       allow update, delete: if isAdmin();
     }
 
@@ -233,7 +296,9 @@ service cloud.firestore {
     match /invites/{code} {
       allow get: if authed();
       allow list: if false;
-      allow create: if authed() && club(request.resource.data.clubId).ownerUid == request.auth.uid
+      allow create: if !exists(/databases/$(database)/documents/invites/$(code))
+        && isClubAdmin(request.resource.data.clubId)
+        && request.resource.data.keys().hasOnly(['clubId', 'role'])
         && request.resource.data.role in ['member', 'coach', 'school'];
       allow update, delete: if false;
     }
@@ -297,6 +362,25 @@ service cloud.firestore {
         allow read, create: if isStaff(c) || isSchool(c);
         allow update, delete: if isClubAdmin(c);
       }
+    }
+
+    // 指導者の募集：閲覧はログインユーザー、作成・更新はそのクラブの運営者
+    match /club_posts/{id} {
+      function postOk(d) {
+        return d.title is string && d.title.size() > 0 && d.title.size() <= 60
+          && d.note is string && d.note.size() <= 1000
+          && d.fee is int && d.fee >= 0 && d.fee <= 100000
+          && d.status in ['open', 'closed']
+          && d.days is list && d.days.size() <= 7;
+      }
+      allow read: if authed();
+      allow create: if isClubAdmin(request.resource.data.clubId)
+        && request.resource.data.ownerUid == request.auth.uid
+        && postOk(request.resource.data);
+      allow update: if isClubAdmin(resource.data.clubId)
+        && request.resource.data.clubId == resource.data.clubId
+        && postOk(request.resource.data);
+      allow delete: if false;
     }
 
     // 指導の依頼のメッセージ（依頼の当事者のみ）

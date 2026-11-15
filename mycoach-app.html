@@ -1239,8 +1239,8 @@ const FireDB = {
   async addReview(r){ const id=uid('rv'); const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
     const q=await this._fs.collection('reviews').where('to','==',r.to).get(); const list=q.docs.map(d=>d.data());
     const avg=list.reduce((s,x)=>s+x.rating,0)/list.length;
-    await this._fs.collection('users').doc(r.to).update({ratingAvg:Math.round(avg*10)/10, ratingCount:list.length});
-    delete this._uc[r.to]; return rv; },
+    // 評価の集計はサーバー（Cloud Functions recalcRating）が行う。改ざん防止のため、画面側からは書き込まない
+    void avg; delete this._uc[r.to]; return rv; },
   async listReviews(target){ const q=await this._fs.collection('reviews').where('to','==',target).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
   async hasReview(contractId,from){ const q=await this._fs.collection('reviews').where('contractId','==',contractId).get(); return q.docs.map(d=>d.data()).some(r=>r.from===from); },
   async addRecruit(r){ const id=uid('rc'); const rec={id, status:'open', ts:Date.now(), ...r};

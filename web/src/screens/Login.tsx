@@ -41,7 +41,8 @@ export default function Login() {
     if (!email) { setErr('先にメールアドレスを入力してください'); return }
     try { await (await import('../lib/fireBackend')).fireBackend.resetPassword(email); setInfo('パスワード再設定のメールを送りました') } catch (e) { setErr(authMsg(e)) }
   }
-  const demo = (uid: string) => { location.hash = '#/'; resetDemo(); demoSignIn(uid); switchMode('demo') }
+  // 立場を切り替えてもデモのデータは引き継ぐ（応募→審査→採用の流れを続けて体験できる）
+  const demo = (uid: string) => { location.hash = '#/'; demoSignIn(uid); switchMode('demo') }
 
   return (
     <div className="min-h-[100dvh] bg-navy text-white">
@@ -90,7 +91,10 @@ export default function Login() {
               {[['保護者・生徒', DEMO_USERS.member], ['指導者', DEMO_USERS.coach], ['クラブ運営', DEMO_USERS.admin], ['学校・教育委員会', DEMO_USERS.school]].map(([l, u]) => (
                 <Button key={u} variant="soft" size="sm" onClick={() => demo(u)}>{l}</Button>
               ))}
+              <Button variant="soft" size="sm" className="col-span-2" onClick={() => demo(DEMO_USERS.free)}>これから登録する指導者（募集に応募）</Button>
             </div>
+            <p className="mt-2 text-[11px] text-ink-3">立場を切り替えても操作した内容は残ります。「クラブ運営」では運営事務局の審査画面も確認できます。</p>
+            <button onClick={() => { resetDemo(); setInfo('デモのデータを最初の状態に戻しました') }} className="mt-1 text-[11px] text-ink-2 underline">デモのデータを最初に戻す</button>
           </div>
         </div>
       </div>

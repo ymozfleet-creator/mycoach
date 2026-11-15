@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0F2A4A" />
+<!-- 読み込めるスクリプト・通信先を限定（不正なスクリプトの実行やデータの外部送信を防ぐ） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://api.open-meteo.com https://api.met.no; frame-src https://mycoach-c15ae.firebaseapp.com https://accounts.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="icon" href="./icon-192.png" />
@@ -11,9 +14,9 @@
 <title>MyCOACH-MyTEAM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" media="print" onload="this.media='all'" />
-  <script type="module" crossorigin src="./assets/index--Dz-UlKm.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-ppq9__cN.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" />
+  <script type="module" crossorigin src="./assets/index-DGshSAcG.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B30N7Xwj.css">
 <link rel="manifest" href="./manifest.webmanifest"></head>
 <body class="bg-canvas">
 <div id="root"></div>

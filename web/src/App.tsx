@@ -20,13 +20,27 @@ const Menu = lazy(() => import('./screens/Menu'))
 const Report = lazy(() => import('./screens/Report'))
 const Safety = lazy(() => import('./screens/Safety'))
 const More = lazy(() => import('./screens/More'))
+const Jobs = lazy(() => import('./screens/Jobs'))
+const Posts = lazy(() => import('./screens/Posts'))
+const CoachProfile = lazy(() => import('./screens/CoachProfile'))
+const Verify = lazy(() => import('./screens/Verify'))
+const Training = lazy(() => import('./screens/Training'))
+const Ops = lazy(() => import('./screens/Ops'))
 
 function Tabs() {
-  const { isAdmin, isCoach, isSchool, notices, contracts, authUser } = useApp()
+  const { isAdmin, isCoach, isSchool, coachMode, club, notices, contracts, authUser } = useApp()
   const loc = useLocation()
   const unread = notices.filter(n => !n.read).length
-  const pending = contracts.filter(k => k.status === 'proposed' && k.coach === authUser?.uid).length
-  const tabs: { to: string; label: string; icon: ReactNode; badge?: number }[] = isAdmin
+  // 自分が返事をする番の依頼・応募の数
+  const pending = contracts.filter(k => k.status === 'proposed' && k.by !== authUser?.uid).length
+  const tabs: { to: string; label: string; icon: ReactNode; badge?: number }[] = coachMode && !club
+    ? [
+        { to: '/', label: 'ホーム', icon: <House size={22} /> },
+        { to: '/requests', label: '募集・依頼', icon: <Handshake size={22} />, badge: pending },
+        { to: '/news', label: 'お知らせ', icon: <Bell size={22} />, badge: unread },
+        { to: '/more', label: 'マイページ', icon: <UserRound size={22} /> },
+      ]
+    : isAdmin
     ? [
         { to: '/', label: 'ホーム', icon: <House size={22} /> },
         { to: '/schedule', label: '予定', icon: <CalendarDays size={22} /> },
@@ -39,7 +53,7 @@ function Tabs() {
           { to: '/', label: 'ホーム', icon: <House size={22} /> },
           { to: '/schedule', label: '予定', icon: <CalendarDays size={22} /> },
           { to: '/players', label: '選手', icon: <Users size={22} /> },
-          { to: '/requests', label: '依頼', icon: <Handshake size={22} />, badge: pending },
+          { to: '/requests', label: '募集・依頼', icon: <Handshake size={22} />, badge: pending },
           { to: '/more', label: 'マイページ', icon: <UserRound size={22} />, badge: unread },
         ]
       : isSchool
@@ -59,10 +73,10 @@ function Tabs() {
         ]
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
-      <div className="relative mx-auto grid max-w-lg grid-cols-5">
+      <div className="relative mx-auto grid max-w-lg" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {(() => {
           const i = tabs.findIndex(t => (t.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(t.to)))
-          return i < 0 ? null : <span aria-hidden className="absolute top-1.5 h-[48px] rounded-2xl bg-brand-50 transition-transform duration-300 ease-[cubic-bezier(.2,.7,.2,1)]" style={{ width: '20%', transform: `translateX(${i * 100}%)` }} />
+          return i < 0 ? null : <span aria-hidden className="absolute top-1.5 h-[48px] rounded-2xl bg-brand-50 transition-transform duration-300 ease-[cubic-bezier(.2,.7,.2,1)]" style={{ width: `${100 / tabs.length}%`, transform: `translateX(${i * 100}%)` }} />
         })()}
         {tabs.map(t => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'} className={({ isActive }) => cx('relative flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition', isActive ? 'text-brand' : 'text-ink-3')}>
@@ -109,6 +123,12 @@ function Shell() {
             <Route path="/report" element={<Report />} />
             <Route path="/safety" element={<Safety />} />
             <Route path="/more" element={<More />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/posts" element={<Posts />} />
+            <Route path="/coach-profile" element={<CoachProfile />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/training" element={<Training />} />
+            <Route path="/ops" element={<Ops />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </Suspense>
@@ -119,14 +139,14 @@ function Shell() {
 }
 
 export default function App() {
-  const { ready, authUser, profile, club, be } = useApp()
+  const { ready, authUser, profile, club, be, coachMode } = useApp()
   if (!ready) return <Loading />
   return (
     <HashRouter>
       {be.mode === 'demo' && authUser && (
         <div className="bg-amber-400 py-1 text-center text-[11px] font-bold text-navy">デモ表示中（架空のデータです）</div>
       )}
-      {!authUser ? <Login /> : !profile || !profile.clubIds?.length || !club ? <OnboardingGate hasClub={!!profile?.clubIds?.length} /> : <Shell />}
+      {!authUser ? <Login /> : profile && coachMode && !profile.clubIds?.length ? <Shell /> : !profile || !profile.clubIds?.length || !club ? <OnboardingGate hasClub={!!profile?.clubIds?.length} /> : <Shell />}
     </HashRouter>
   )
 }

@@ -5,6 +5,8 @@ import { useApp } from '../lib/store'
 import { AttButtons, attCounts, EventCard, useEventWbgt } from '../components/parts'
 import { Avatar, Badge, Card, CountUp, Empty, Ring, Section, cx, stagger } from '../components/ui'
 import { GuidelineCard } from '../components/Guideline'
+import { CoachSetup } from '../components/CoachSetup'
+import { JobList } from './Jobs'
 import { ComposeSheet, ConditionSheet } from '../components/sheets'
 import type { ClubEvent } from '../lib/types'
 import { addDays, dateLabel, iso, loadStatus, relTime, today, wbgtFor, wbgtLevel, yen } from '../lib/util'
@@ -129,12 +131,13 @@ function CoachHome() {
   const up = useUpcoming().filter(e => e.status !== 'canceled')
   const next = up.find(e => !e.coachUid || e.coachUid === authUser?.uid) || up[0]
   const watch = players.map(p => ({ p, s: loadStatus(conditions, p.id) })).filter(x => x.s.tone === 'danger' || x.s.tone === 'warn')
-  const offers = contracts.filter(k => k.coach === authUser?.uid && k.status === 'proposed')
+  const offers = contracts.filter(k => k.coach === authUser?.uid && k.status === 'proposed' && k.by !== authUser?.uid)
+  void profile
   return (
     <>
       <Hello />
       <div className="mt-4 space-y-2">
-        {profile?.verified !== 'approved' && <Alert icon={<ShieldAlert size={20} />} tone="info" title="指導者の審査を完了しましょう" text="本人確認と安全研修が済むと、クラブから依頼が届きます" onClick={() => nav('/more')} />}
+        <CoachSetup compact />
         {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`新しい指導の依頼（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/requests')} />}
       </div>
       <Section title="次の指導">
@@ -180,13 +183,15 @@ function AdminHome() {
   const unpaid = fees.filter(f => f.status === 'unpaid')
   const noFees = fees.length === 0 && players.length > 0
   const noAnswer = next ? attCounts(next, players).none : 0
-  const replies = contracts.filter(k => k.player === authUser?.uid && k.status === 'proposed')
+  const replies = contracts.filter(k => k.player === authUser?.uid && k.status === 'proposed' && (k.by || k.player) === authUser?.uid)
+  const apps = contracts.filter(k => k.player === authUser?.uid && k.status === 'proposed' && k.by && k.by !== authUser?.uid)
   const risky = players.filter(p => loadStatus(conditions, p.id).tone === 'danger').length
   const todo: React.ReactNode[] = []
   if (noFees) todo.push(<Alert key="nf" icon={<Wallet size={20} />} tone="warn" title="今月の会費をまだ請求していません" text="ワンタップで全員分を請求できます" onClick={() => nav('/fees')} />)
   if (unpaid.length) todo.push(<Alert i={todo.length} key="up" icon={<Wallet size={20} />} tone="warn" title={`会費の未納 ${unpaid.length}件`} text={yen(unpaid.reduce((s, f) => s + f.amount, 0))} onClick={() => nav('/fees')} />)
   if (next && noAnswer) todo.push(<Alert i={todo.length} key="na" icon={<ClipboardList size={20} />} tone="info" title={`出欠の未回答 ${noAnswer}人`} text={`${dateLabel(next.date)} ${next.title}`} onClick={() => nav(`/event/${next.id}`)} />)
   if (risky) todo.push(<Alert i={todo.length} key="rk" icon={<HeartPulse size={20} />} tone="danger" title={`練習負荷が急増している選手 ${risky}人`} text="指導者と状況を確認しましょう" onClick={() => nav('/players')} />)
+  if (apps.length) todo.push(<Alert i={todo.length} key="ap" icon={<Handshake size={20} />} tone="warn" title={`指導者からの応募 ${apps.length}件`} text={apps.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
   if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
   const thisMonth = events.filter(e => e.status !== 'canceled' && e.date.startsWith(iso(today()).slice(0, 7)) && e.date < iso(today()))
   return (
@@ -196,7 +201,7 @@ function AdminHome() {
         {[
           { i: <CalendarPlus size={22} />, l: '予定を追加', f: () => nav('/schedule?new=1') },
           { i: <Megaphone size={22} />, l: 'お知らせ', f: () => setCompose(true) },
-          { i: <Search size={22} />, l: '指導者探し', f: () => nav('/coaches') },
+          { i: <Search size={22} />, l: '指導者募集', f: () => nav('/requests') },
           { i: <ClipboardList size={22} />, l: '実績報告', f: () => nav('/report') },
         ].map(a => (
           <button key={a.l} onClick={a.f} className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-3 text-[12px] font-bold shadow-card active:scale-95">
@@ -291,8 +296,28 @@ function SchoolHome() {
   )
 }
 
+/* ---------- 指導者（クラブ未所属） ---------- */
+function CoachHub() {
+  const { contracts, authUser } = useApp()
+  const nav = useNavigate()
+  const offers = contracts.filter(k => k.status === 'proposed' && k.by !== authUser?.uid)
+  return (
+    <>
+      <Hello />
+      <div className="mt-4 space-y-2">
+        {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`返事が必要なやりとり（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/requests')} />}
+        <CoachSetup />
+      </div>
+      <Section title="あなたに合う募集" action={<button onClick={() => nav('/requests')} className="text-[13px] font-bold text-brand">すべて見る</button>}>
+        <JobList />
+      </Section>
+    </>
+  )
+}
+
 export default function Home() {
-  const { isAdmin, isCoach, isSchool } = useApp()
+  const { isAdmin, isCoach, isSchool, coachMode, club } = useApp()
+  if (coachMode && !club) return <CoachHub />
   if (isAdmin) return <AdminHome />
   if (isCoach) return <CoachHome />
   if (isSchool) return <SchoolHome />

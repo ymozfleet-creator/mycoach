@@ -24,6 +24,16 @@ const PLAYER_FEE_RATE = 0.10;           // 受講者システム利用料（上�
 const COACH_FEE_RATE = 0.20;            // コーチ事務手数料（控除・HTML側と揃える）
 const APP_URL = 'https://ymozfleet-creator.github.io/mycoach/index.html'; // メール内リンク・決済後の戻り先の既定URL
 
+/* 決済・口座設定の戻り先URLは、許可したサイトだけに限定する（外部サイトへの誘導を防ぐ） */
+const ALLOWED_RETURN = ['https://ymozfleet-creator.github.io/mycoach/', 'https://mycoach-myteam.com/', 'https://www.mycoach-myteam.com/'];
+function safeReturn(url, fallback) {
+  try {
+    const u = new URL(String(url || ''));
+    if (u.protocol === 'https:' && ALLOWED_RETURN.some(a => u.href.startsWith(a))) return u.href;
+  } catch (e) { /* 不正なURL */ }
+  return fallback;
+}
+
 /* IDトークン検証：Authorization: Bearer <token> から本人uidを取得する。
    ボディで渡されたuidは信用しない（なりすまし・他人の口座リンク取得の防止） */
 async function requireAuth(req, res) {
@@ -42,7 +52,7 @@ exports.createCheckoutSession = onRequest(
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
       const decoded = await requireAuth(req, res); if (!decoded) return;
       const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-      const { contractId, origin } = req.body || {};
+      const { contractId, origin, returnUrl } = req.body || {};
       const uid = decoded.uid; // 本人のみ。ボディのuidは使用しない
       if (!contractId) { res.status(400).json({ error: 'contractId が必要です' }); return; }
 
@@ -51,6 +61,8 @@ exports.createCheckoutSession = onRequest(
       const c = snap.data();
       if (c.player !== uid) { res.status(403).json({ error: 'この契約の支払い権限がありません' }); return; }
       if (c.status !== 'active') { res.status(400).json({ error: '契約中のもののみ支払いできます' }); return; }
+      if (!Number.isInteger(Number(c.fee)) || Number(c.fee) < 100 || Number(c.fee) > 100000) { res.status(400).json({ error: '謝金の金額が正しくありません（100円〜100,000円）' }); return; }
+      const isClub = !!c.clubId;
 
       // コーチがStripe Connectの口座設定を完了していれば自動分配（destination charge）
       const coachDoc = await admin.firestore().collection('users').doc(c.coach).get();
@@ -67,7 +79,7 @@ exports.createCheckoutSession = onRequest(
       const lineItems = [{
         price_data: {
           currency: 'jpy',
-          product_data: { name: `MyCOACH レッスン料：${c.title || ''}` },
+          product_data: { name: isClub ? `指導の謝金：${c.clubName || ''}（${c.title || ''}）` : `MyCOACH レッスン料：${c.title || ''}` },
           unit_amount: base,
         },
         quantity: 1,
@@ -87,13 +99,13 @@ exports.createCheckoutSession = onRequest(
         mode: 'payment',
         line_items: lineItems,
         metadata: {
-          contractId, coach: c.coach, player: c.player,
+          contractId, coach: c.coach, player: c.player, ...(isClub ? { clubId: c.clubId } : {}),
           connect: useConnect ? '1' : '0',
           base: String(base), playerFee: String(playerFee),
           coachFee: String(coachFee), net: String(net),
         },
-        success_url: `${origin || APP_URL}?paid=1#contracts`,
-        cancel_url: `${origin || APP_URL}#contracts`,
+        success_url: returnUrl ? safeReturn(returnUrl, `${APP_URL}?paid=1#contracts`) : `${safeReturn(origin, APP_URL)}?paid=1#contracts`,
+        cancel_url: returnUrl ? safeReturn(returnUrl, APP_URL).replace('paid=1', 'paid=0') : `${safeReturn(origin, APP_URL)}#contracts`,
       };
       if (useConnect) {
         params.payment_intent_data = {
@@ -159,6 +171,7 @@ exports.stripeWebhook = onRequest(
       await admin.firestore().collection('payments').doc(id).set({
         id,
         contractId: m.contractId || '',
+        ...(m.clubId ? { clubId: m.clubId } : {}),
         coach: m.coach || '',
         player: m.player || '',
         amount, base, playerFee, coachFee,
@@ -176,7 +189,7 @@ exports.stripeWebhook = onRequest(
         await admin.firestore().collection('notifications').doc(nid).set({
           id: nid, to: m.coach, type: 'pay',
           text: `お支払いがありました（あなたの受取額 ¥${Number(net).toLocaleString()}）`,
-          link: '#contracts', ts: Date.now(), read: false,
+          link: '#contracts', ts: Date.now(), at: Date.now(), read: false,
         });
       }
     }
@@ -193,7 +206,7 @@ exports.stripeWebhook = onRequest(
         await admin.firestore().collection('notifications').doc(nid).set({
           id: nid, to: uid2, type: 'pay',
           text: '受取口座の設定が完了しました。今後のレッスン料は自動で振り込まれます',
-          link: '#me', ts: Date.now(), read: false,
+          link: '#me', ts: Date.now(), at: Date.now(), read: false,
         });
       }
     }
@@ -210,7 +223,7 @@ exports.createConnectLink = onRequest(
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
       const decoded = await requireAuth(req, res); if (!decoded) return;
       const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-      const { origin } = req.body || {};
+      const { origin, returnUrl } = req.body || {};
       const uid = decoded.uid; // 本人のコーチアカウントのみ。ボディのuidは使用しない
 
       const ref = admin.firestore().collection('users').doc(uid);
@@ -234,8 +247,8 @@ exports.createConnectLink = onRequest(
 
       const link = await stripe.accountLinks.create({
         account: accountId,
-        refresh_url: `${origin || APP_URL}?connect=refresh#me`,
-        return_url: `${origin || APP_URL}?connect=done#me`,
+        refresh_url: returnUrl ? safeReturn(returnUrl, APP_URL).replace('connect=done', 'connect=refresh') : `${safeReturn(origin, APP_URL)}?connect=refresh#me`,
+        return_url: returnUrl ? safeReturn(returnUrl, APP_URL) : `${safeReturn(origin, APP_URL)}?connect=done#me`,
         type: 'account_onboarding',
       });
       res.json({ url: link.url });
@@ -315,7 +328,7 @@ exports.lessonReminder = onSchedule({ region: REGION, schedule: '0 9 * * *', tim
       await db.collection('notifications').doc(id).set({
         id, to: u, type: 'contract',
         text: `明日はレッスン予定日です：${c.nextLesson || ''}（${c.title || ''}）`,
-        link: '#contracts', ts: Date.now(), read: false,
+        link: '#contracts', ts: Date.now(), at: Date.now(), read: false,
       });
     }
   }
@@ -346,7 +359,7 @@ exports.createFeeCheckout = onRequest(
       const clubSnap = await admin.firestore().doc(`clubs/${clubId}`).get();
       const clubName = clubSnap.exists ? clubSnap.data().name : '';
       const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
-      const back = origin || APP_URL;
+      const back = safeReturn(origin, APP_URL);
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         line_items: [{ price_data: { currency: 'jpy', product_data: { name: `${clubName} 会費（${f.playerName}さん・${f.month}）` }, unit_amount: Number(f.amount) }, quantity: 1 }],

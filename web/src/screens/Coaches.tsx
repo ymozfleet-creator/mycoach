@@ -36,14 +36,21 @@ export default function Coaches() {
   const send = async () => {
     if (!sel) return
     setBusy(true)
-    const id = await be.createContract({ coach: sel.uid, coachName: sel.name, player: authUser.uid, playerName: profile.name, clubId: club.id, clubName: club.name, clubCode: club.coachCode, title: req.title, fee: Number(req.fee), message: req.message, status: 'proposed', at: Date.now() })
-    await be.sendMessage(id, { from: authUser.uid, fromName: profile.name, text: req.message, at: Date.now() })
-    await be.notify(sel.uid, `【指導の依頼】${club.name}から「${req.title}」の依頼が届きました`, 'contract').catch(() => {})
-    setBusy(false); setSel(null); toast('依頼を送りました'); nav(`/requests/${id}`)
+    try {
+      // 依頼ごとに専用の招待コードを発行（クラブ共通の指導者コードを相手に渡さない）
+      const code = await be.createCoachInvite(club.id)
+      const msg = req.message.trim().slice(0, 1000)
+      const id = await be.createContract({ coach: sel.uid, coachName: sel.name, player: authUser.uid, playerName: profile.name, clubId: club.id, clubName: club.name, clubCode: code, title: req.title.trim().slice(0, 60), fee: Math.max(0, Math.round(Number(req.fee))), message: msg, status: 'proposed', by: authUser.uid, at: Date.now() })
+      await be.sendMessage(id, { from: authUser.uid, fromName: profile.name, text: msg, at: Date.now() })
+      await be.notify(sel.uid, `【指導の依頼】${club.name}から「${req.title}」の依頼が届きました`, 'contract').catch(() => {})
+      setSel(null); toast('依頼を送りました'); nav(`/requests/${id}`)
+    } catch { toast('依頼を送れませんでした。時間をおいてお試しください') }
+    setBusy(false)
   }
   return (
     <>
       <PageHeader title="指導者を探す" back sub={`${club.sport}・${club.areaLabel}`} />
+      <button onClick={() => nav('/posts')} className="mb-3 flex w-full items-center gap-3 rounded-xl2 bg-navy p-3.5 text-left text-white shadow-card active:scale-[.99]"><span className="flex-1"><span className="block text-[15px] font-bold">募集を出して応募を待つ</span><span className="block text-[12px] opacity-75">曜日・時間・謝金を決めて公開すると、指導者から応募が届きます</span></span><span className="text-lime">→</span></button>
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
         <button onClick={() => setOnlyReady(true)} className={cx('shrink-0 rounded-full border px-4 py-2 text-[13px] font-bold', onlyReady ? 'border-navy bg-navy text-white' : 'border-line bg-white')}>審査済みのみ</button>
         <button onClick={() => setOnlyReady(false)} className={cx('shrink-0 rounded-full border px-4 py-2 text-[13px] font-bold', !onlyReady ? 'border-navy bg-navy text-white' : 'border-line bg-white')}>すべて</button>
@@ -79,8 +86,8 @@ export default function Coaches() {
             {matchScore(sel, club, clubDays).ready && (
               <div className="mt-5 border-t border-line pt-4">
                 <Field label="依頼の内容"><input className={inputCls} value={req.title} onChange={e => setReq({ ...req, title: e.target.value })} /></Field>
-                <Field label="1回あたりの謝金（円）" hint="指導の実施後にお支払いいただく金額です"><input type="number" inputMode="numeric" className={inputCls} value={req.fee} onChange={e => setReq({ ...req, fee: Number(e.target.value) })} /></Field>
-                <Field label="メッセージ"><textarea className={cx(inputCls, 'min-h-[110px]')} value={req.message} onChange={e => setReq({ ...req, message: e.target.value })} /></Field>
+                <Field label="1回あたりの謝金（円）" hint="アプリからカードで支払えます（別途システム利用料10%）"><input type="number" inputMode="numeric" min={0} max={100000} className={inputCls} value={req.fee} onChange={e => setReq({ ...req, fee: Number(e.target.value) })} /></Field>
+                <Field label="メッセージ"><textarea className={cx(inputCls, 'min-h-[110px]')} maxLength={1000} value={req.message} onChange={e => setReq({ ...req, message: e.target.value })} /></Field>
               </div>
             )}
           </>

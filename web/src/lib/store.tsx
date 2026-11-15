@@ -27,6 +27,10 @@ interface Ctx {
   isAdmin: boolean
   isCoach: boolean
   isSchool: boolean
+  /** 指導者として登録している（クラブ未所属でも true） */
+  coachMode: boolean
+  /** 運営事務局（審査担当） */
+  isOps: boolean
   myPlayers: Player[]
   month: string
   toast: (msg: string) => void
@@ -85,6 +89,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isAdmin = !!(club && authUser && club.adminUids.includes(authUser.uid))
   const isCoach = !!(club && authUser && club.coachUids.includes(authUser.uid))
   const isSchool = !!(club && authUser && (club.schoolUids || []).includes(authUser.uid))
+  const coachMode = profile?.role === 'coach'
+  const isOps = !!profile?.isAdmin
+
+  // 採用・引き受けが済んだクラブを、自分のクラブ一覧に加える（クラブ側で指導者として登録済みのものだけ）
+  useEffect(() => {
+    if (!authUser || !profile || profile.role !== 'coach') return
+    const ids = [...new Set(contracts.filter(k => k.coach === authUser.uid && (k.status === 'active' || k.status === 'completed') && !profile.clubIds.includes(k.clubId)).map(k => k.clubId))]
+    const us = ids.map(id => be.watchClub(id, c => {
+      if (c && c.coachUids.includes(authUser.uid) && !profile.clubIds.includes(id)) be.saveProfile({ uid: authUser.uid, clubIds: [...profile.clubIds, id] }).catch(() => {})
+    }))
+    return () => us.forEach(u => u())
+  }, [be, authUser?.uid, profile?.clubIds?.join(','), profile?.role, contracts])
 
   useEffect(() => {
     if (!clubId) { setClub(null); return }
@@ -133,7 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: Ctx = {
     be, ready: beReady && authReady && profileReady, authUser, profile, club, players, events, announcements, conditions, fees, incidents,
-    contracts, notices, weather, weatherError, isAdmin, isCoach, isSchool, myPlayers, month, toast, switchMode, selectClub,
+    contracts, notices, weather, weatherError, isAdmin, isCoach, isSchool, coachMode, isOps, myPlayers, month, toast, switchMode, selectClub,
   }
   return (
     <C.Provider value={value}>

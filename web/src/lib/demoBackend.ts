@@ -1,5 +1,5 @@
 import type { Backend } from './backend'
-import type { Announcement, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Player, Profile } from './types'
+import type { Announcement, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Review, VerifyDoc } from './types'
 import { addDays, inviteCode, iso, monthOf, today, uid6 } from './util'
 
 /** デモ：ブラウザ内（localStorage）に保存。営業時のデモや、本番ルール反映前の確認に使う */
@@ -18,9 +18,13 @@ interface DB {
   contracts: Contract[]
   msgs: Record<string, Message[]>
   notices: Notice[]
+  posts: Post[]
+  verify: Record<string, VerifyDoc>
+  payments: Payment[]
+  reviews: Review[]
 }
-const KEY = 'mcmt_demo_v6'
-export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school' } as const
+const KEY = 'mcmt_demo_v7'
+export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
 
@@ -29,14 +33,17 @@ function seed(): DB {
   const T = today()
   const clubId = 'club-nakano'
   const users: Record<string, Profile> = {
-    'demo-admin': { uid: 'demo-admin', name: '田中 恵', role: 'admin', clubIds: [clubId] },
+    'demo-admin': { uid: 'demo-admin', name: '田中 恵', role: 'admin', clubIds: [clubId], isAdmin: true },
     'demo-member': { uid: 'demo-member', name: '加藤 由美', role: 'member', clubIds: [clubId] },
     'demo-school': { uid: 'demo-school', name: '高橋 誠', role: 'school', clubIds: [clubId], org: '中野区立第五中学校' },
-    'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。' },
+    'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。', rate: 6000, trainingAt: Date.now() - 90 * 864e5 },
+    'demo-free': { uid: 'demo-free', name: '小林 拓也', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '東京都中野区', lat: 35.708, lon: 139.666, days: [6, 0], license: '', verified: 'none', training: false, bio: '', rate: 5000 },
     'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
     'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
     'c4': { uid: 'c4', name: '伊藤 さくら', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '杉並区', lat: 35.705, lon: 139.68, days: [6, 0, 5], license: 'JSPO公認コーチ3', verified: 'approved', training: true, ratingAvg: 4.7, ratingCount: 210, lessonCount: 210, bio: '小中学生の育成年代を15年指導。' },
     'c5': { uid: 'c5', name: '高橋 翔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '練馬区', lat: 35.76, lon: 139.6, days: [0, 2], license: '', verified: 'pending', training: false, ratingAvg: 4.2, ratingCount: 12, lessonCount: 12, bio: '大学生。体力づくりが得意。' },
+    'club-suginami-admin': { uid: 'club-suginami-admin', name: '森 由紀', role: 'admin', clubIds: [] },
+    'club-nerima-admin': { uid: 'club-nerima-admin', name: '石井 亮', role: 'admin', clubIds: [] },
   }
   const club: Club = {
     id: clubId, name: '中野区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: 35.7074, lon: 139.6638,
@@ -76,7 +83,8 @@ function seed(): DB {
     { id: 'a2', text: '日曜の屋外練習は、暑さ指数によって時間変更になることがあります。前日にアプリでお知らせします。', kind: 'info', byName: '田中 恵', at: now - 6 * 864e5 },
   ]
   const contracts: Contract[] = [
-    { id: 'k1', coach: 'c4', coachName: '伊藤 さくら', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土曜の指導（月2回）', fee: 6000, status: 'proposed', at: now - 864e5 },
+    { id: 'k1', coach: 'c4', coachName: '伊藤 さくら', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土曜の指導（月2回）', fee: 6000, status: 'proposed', by: 'demo-admin', at: now - 864e5 },
+    { id: 'k2', coach: 'demo-coach', coachName: '佐藤 健太', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土日の練習指導', fee: 6000, status: 'active', by: 'demo-admin', at: now - 60 * 864e5 },
   ]
   const msgs: Record<string, Message[]> = { k1: [{ id: 'm1', from: 'demo-admin', fromName: '田中 恵', text: 'はじめまして。土曜午前の練習をご担当いただけないでしょうか。', at: now - 864e5 }] }
   const notices: Notice[] = [
@@ -84,16 +92,23 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 6, auth: null, users, clubs: { [clubId]: club }, invites: { NAKANO: clubId, COACH1: clubId + '#coach', SCHOOL: clubId + '#school' },
+    v: 7, auth: null, users, clubs: { [clubId]: club }, invites: { NAKANO: clubId, COACH1: clubId + '#coach', SCHOOL: clubId + '#school' },
     players: { [clubId]: players }, events: { [clubId]: events }, ann: { [clubId]: ann }, conds: { [clubId]: conds },
     fees: { [clubId]: fees }, inc: { [clubId]: [{ id: 'i1', date: iso(addDays(T, -20)), type: 'ヒヤリハット', who: '松本 湊', desc: '着地時に足首をひねりかけた。アイシングし練習は見学。', action: '保護者へ連絡済み' }] },
     contracts, msgs, notices,
+    posts: [
+      { id: 'post1', clubId, clubName: club.name, ownerUid: 'demo-admin', ownerName: '田中 恵', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: club.lat, lon: club.lon, title: '土曜午前の練習を担当できる方', days: [6], start: '09:00', fee: 6000, note: '中学生12人。基礎練習と試合形式の指導をお願いします。', status: 'open', at: now - 2 * 864e5 },
+      { id: 'post2', clubId: 'club-suginami', clubName: '杉並区 地域バスケットボールクラブ', ownerUid: 'club-suginami-admin', ownerName: '森 由紀', sport: 'バスケットボール', areaLabel: '東京都杉並区', lat: 35.6995, lon: 139.6364, title: '日曜午後の指導者（月2回〜）', days: [0], start: '13:00', fee: 7000, note: '小学5年〜中学2年。初心者が多いクラブです。', status: 'open', at: now - 864e5 },
+      { id: 'post3', clubId: 'club-nerima', clubName: '練馬区 地域バスケットボールクラブ', ownerUid: 'club-nerima-admin', ownerName: '石井 亮', sport: 'バスケットボール', areaLabel: '東京都練馬区', lat: 35.7356, lon: 139.6517, title: '水曜夕方の体力づくり担当', days: [3], start: '17:00', fee: 5000, note: '平日の短時間（90分）です。', status: 'open', at: now - 5 * 864e5 },
+    ],
+    verify: { c5: { uid: 'c5', name: '高橋 翔', docType: '運転免許証', image: '', at: now - 3600e3 } },
+    payments: [], reviews: [],
   }
 }
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 6) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 7) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()
@@ -165,6 +180,44 @@ export const demoBackend: Backend = {
   watchIncidents: (c, cb) => watch(() => cb(clone((DB_.inc[c] || []).sort((a, b) => b.date.localeCompare(a.date))))),
   addIncident: async (c, i) => { await wait(); (DB_.inc[c] ||= []).push({ ...i, id: uid6() }); save() },
 
+  addCoach: async (clubId, uid) => {
+    const c = DB_.clubs[clubId]; if (!c) return
+    if (!c.coachUids.includes(uid)) c.coachUids.push(uid)
+    if (!c.memberUids.includes(uid)) c.memberUids.push(uid)
+    save()
+  },
+  createCoachInvite: async clubId => { const code = inviteCode() + inviteCode(); DB_.invites[code] = clubId + '#coach'; save(); return code },
+
+  watchOpenPosts: cb => watch(() => cb(clone(DB_.posts.filter(p => p.status === 'open').sort((a, b) => b.at - a.at)))),
+  watchClubPosts: (clubId, cb) => watch(() => cb(clone(DB_.posts.filter(p => p.clubId === clubId).sort((a, b) => b.at - a.at)))),
+  savePost: async p => { await wait(); const i = DB_.posts.findIndex(x => x.id === p.id); if (i >= 0) DB_.posts[i] = p; else DB_.posts.push(p); save() },
+
+  submitVerification: async d => { await wait(); DB_.verify[d.uid] = d; const u = DB_.users[d.uid]; if (u) { u.verified = 'pending'; u.verifyNote = '' } save() },
+  getVerifyDoc: async uid => clone(DB_.verify[uid] || null),
+  watchPendingVerifications: cb => watch(() => cb(clone(Object.values(DB_.users).filter(u => u.verified === 'pending')))),
+  decideVerification: async (uid, ok, note) => {
+    await wait(); const u = DB_.users[uid]; if (!u) return
+    u.verified = ok ? 'approved' : 'none'; u.verifyNote = ok ? '' : note
+    DB_.notices.push({ id: uid6(), to: uid, type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}` })
+    save()
+  },
+
+  watchPayments: (uid, cb) => watch(() => cb(clone(DB_.payments.filter(p => p.coach === uid || p.player === uid).sort((a, b) => b.ts - a.ts)))),
+  payContract: async contractId => {
+    await wait(); const k = DB_.contracts.find(x => x.id === contractId); if (!k) return null
+    const base = k.fee, amount = base + Math.round(base * 0.1), net = base - Math.round(base * 0.2)
+    DB_.payments.push({ id: uid6(), contractId, coach: k.coach, player: k.player, amount, base, net, ts: Date.now() })
+    DB_.notices.push({ id: uid6(), to: k.coach, type: 'pay', read: false, at: Date.now(), text: `お支払いがありました（あなたの受取額 ¥${net.toLocaleString()}）` })
+    save(); return null
+  },
+  connectPayout: async () => { await wait(); const u = DB_.auth ? DB_.users[DB_.auth] : null; if (u) { u.stripeAccountId = 'acct_demo'; u.stripeChargesEnabled = true; save() } return null },
+  addReview: async r => {
+    await wait(); DB_.reviews.push({ ...r, id: uid6() })
+    const list = DB_.reviews.filter(x => x.to === r.to), u = DB_.users[r.to]
+    if (u) { const n = (u.ratingCount || 0) + 1; u.ratingAvg = Math.round((((u.ratingAvg || 0) * (u.ratingCount || 0)) + r.rating) / n * 10) / 10; u.ratingCount = n }
+    void list; const k = DB_.contracts.find(x => x.id === r.contractId); if (k) k.reviewed = true
+    save()
+  },
   listCoaches: async sport => { await wait(); return clone(Object.values(DB_.users).filter(u => u.role === 'coach' && (u.sports || []).includes(sport))) },
   watchContracts: (uid, cb) => watch(() => cb(clone(DB_.contracts.filter(k => k.coach === uid || k.player === uid).sort((a, b) => b.at - a.at)))),
   createContract: async k => { await wait(); const id = uid6(); DB_.contracts.push({ ...k, id }); save(); return id },

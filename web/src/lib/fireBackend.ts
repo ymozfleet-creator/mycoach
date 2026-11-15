@@ -8,12 +8,24 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import type { Backend } from './backend'
-import type { Club, Contract } from './types'
+import type { Club, Contract, Payment, Profile, VerifyDoc } from './types'
+import { FUNCTIONS_BASE } from './config'
 import { inviteCode } from './util'
 
 const strip = <T extends object>(o: T) => JSON.parse(JSON.stringify(o)) as T // undefined を除去
 const list = <T>(snap: { docs: { id: string; data: () => any }[] }) => snap.docs.map(d => ({ id: d.id, ...d.data() }) as T)
 const sub = (clubId: string, name: string) => collection(db, 'clubs', clubId, name)
+const longCode = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
+
+/** Cloud Functions の呼び出し。本人確認は IDトークンでサーバー側が行う */
+async function callFn(name: string, body: object): Promise<string> {
+  const token = await auth.currentUser?.getIdToken()
+  if (!token) throw new Error('ログインし直してください')
+  const r = await fetch(`${FUNCTIONS_BASE}/${name}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok || !j.url) throw new Error(j.error || '手続きを開始できませんでした。時間をおいてお試しください')
+  return j.url as string
+}
 
 export const fireBackend: Backend = {
   mode: 'firebase',
@@ -77,6 +89,41 @@ export const fireBackend: Backend = {
   listCoaches: async sport => {
     const s = await getDocs(query(collection(db, 'users'), where('role', '==', 'coach'), where('sports', 'array-contains', sport), limit(50)))
     return s.docs.map(d => ({ uid: d.id, clubIds: [], ...d.data() }) as any)
+  },
+  addCoach: async (clubId, uid) => { await updateDoc(doc(db, 'clubs', clubId), { coachUids: arrayUnion(uid), memberUids: arrayUnion(uid) }) },
+  createCoachInvite: async clubId => { const code = longCode(); await setDoc(doc(db, 'invites', code), { clubId, role: 'coach' }); return code },
+
+  watchOpenPosts: cb => onSnapshot(query(collection(db, 'club_posts'), where('status', '==', 'open'), limit(100)), s => cb(list<any>(s).sort((a, b) => b.at - a.at)), () => cb([])),
+  watchClubPosts: (clubId, cb) => onSnapshot(query(collection(db, 'club_posts'), where('clubId', '==', clubId)), s => cb(list<any>(s).sort((a, b) => b.at - a.at)), () => cb([])),
+  savePost: async p => { const { id, ...rest } = p; await setDoc(doc(db, 'club_posts', id), strip(rest)) },
+
+  submitVerification: async d => {
+    await setDoc(doc(db, 'verify_docs', d.uid), strip(d))
+    await setDoc(doc(db, 'users', d.uid), { verified: 'pending', verifyNote: '' }, { merge: true })
+  },
+  getVerifyDoc: async uid => { const s = await getDoc(doc(db, 'verify_docs', uid)); return s.exists() ? (s.data() as VerifyDoc) : null },
+  watchPendingVerifications: cb => onSnapshot(query(collection(db, 'users'), where('verified', '==', 'pending'), limit(100)), s => cb(s.docs.map(d => ({ uid: d.id, clubIds: [], ...d.data() }) as unknown as Profile)), () => cb([])),
+  decideVerification: async (uid, ok, note) => {
+    await updateDoc(doc(db, 'users', uid), { verified: ok ? 'approved' : 'none', verifyNote: ok ? '' : note.slice(0, 300) })
+    // 承認後は身分証の画像を残さない（必要最小限の保管）
+    if (ok) await deleteDoc(doc(db, 'verify_docs', uid)).catch(() => {})
+    await addDoc(collection(db, 'audit_logs'), { action: ok ? 'verify_approve' : 'verify_reject', target: uid, by: auth.currentUser?.uid || '', note: note.slice(0, 300), at: Date.now() })
+    await addDoc(collection(db, 'notifications'), { to: uid, type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}`.slice(0, 300) })
+  },
+
+  watchPayments: (uid, cb) => {
+    let a: Payment[] = [], b: Payment[] = []
+    const emit = () => cb([...a, ...b.filter(x => !a.find(y => y.id === x.id))].sort((x, y) => y.ts - x.ts))
+    const u1 = onSnapshot(query(collection(db, 'payments'), where('coach', '==', uid)), s => { a = list(s); emit() }, () => {})
+    const u2 = onSnapshot(query(collection(db, 'payments'), where('player', '==', uid)), s => { b = list(s); emit() }, () => {})
+    return () => { u1(); u2() }
+  },
+  payContract: async (contractId, returnUrl) => callFn('createCheckoutSession', { contractId, returnUrl }),
+  connectPayout: async returnUrl => callFn('createConnectLink', { returnUrl }),
+  addReview: async r => {
+    // 平均点の集計はサーバー（recalcRating）が行う
+    await setDoc(doc(db, 'reviews', `${r.contractId}_${r.from}`), strip({ ...r, ts: r.at }))
+    await updateDoc(doc(db, 'contracts', r.contractId), { reviewed: true })
   },
   watchContracts: (uid, cb) => {
     let a: Contract[] = [], b: Contract[] = []

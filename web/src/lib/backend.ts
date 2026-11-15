@@ -1,4 +1,4 @@
-import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Player, Profile } from './types'
+import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Review, VerifyDoc } from './types'
 
 export type Unsub = () => void
 export type Cb<T> = (v: T) => void
@@ -44,6 +44,26 @@ export interface Backend {
   addIncident(clubId: string, i: Omit<Incident, 'id'>): Promise<void>
 
   listCoaches(sport: string): Promise<Profile[]>
+  /** 運営者がクラブに指導者を加える（応募の採用時） */
+  addCoach(clubId: string, uid: string): Promise<void>
+  /** その指導者専用の招待コードを発行（依頼を引き受けたときの参加用） */
+  createCoachInvite(clubId: string): Promise<string>
+
+  watchOpenPosts(cb: Cb<Post[]>): Unsub
+  watchClubPosts(clubId: string, cb: Cb<Post[]>): Unsub
+  savePost(p: Post): Promise<void>
+
+  submitVerification(d: VerifyDoc): Promise<void>
+  getVerifyDoc(uid: string): Promise<VerifyDoc | null>
+  watchPendingVerifications(cb: Cb<Profile[]>): Unsub
+  decideVerification(uid: string, ok: boolean, note: string): Promise<void>
+
+  watchPayments(uid: string, cb: Cb<Payment[]>): Unsub
+  /** 謝金のカード払い（デモでは即時に支払い済みにする） */
+  payContract(contractId: string, returnUrl: string): Promise<string | null>
+  /** 指導者の受取口座（Stripe）の設定ページURL */
+  connectPayout(returnUrl: string): Promise<string | null>
+  addReview(r: Omit<Review, 'id'>): Promise<void>
   watchContracts(uid: string, cb: Cb<Contract[]>): Unsub
   createContract(c: Omit<Contract, 'id'>): Promise<string>
   setContractStatus(id: string, s: Contract['status']): Promise<void>

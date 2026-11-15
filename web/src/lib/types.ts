@@ -21,7 +21,45 @@ export interface Profile {
   ratingAvg?: number
   ratingCount?: number
   lessonCount?: number
+  rate?: number // 希望する1回あたりの謝金（円）
+  trainingAt?: number
+  verifyNote?: string // 事務局からの差し戻し理由
+  isAdmin?: boolean // 運営事務局（審査担当）。Firestoreのルール上、本人は変更できない
+  stripeAccountId?: string
+  stripeChargesEnabled?: boolean
 }
+
+/** クラブの指導者募集 */
+export interface Post {
+  id: string
+  clubId: string
+  clubName: string
+  ownerUid: string
+  ownerName: string
+  sport: string
+  areaLabel: string
+  lat: number
+  lon: number
+  title: string
+  days: number[]
+  start: string
+  fee: number
+  note: string
+  status: 'open' | 'closed'
+  at: number
+}
+
+/** 本人確認の提出書類（本人と事務局のみ閲覧可） */
+export interface VerifyDoc {
+  uid: string
+  name: string
+  docType: string
+  image: string // 縮小したJPEG（data URL）
+  at: number
+}
+
+export interface Payment { id: string; contractId: string; coach: string; player: string; amount: number; base: number; net: number; ts: number }
+export interface Review { id: string; from: string; to: string; contractId: string; rating: number; text: string; at: number }
 
 export interface Venue { name: string; indoor: boolean }
 
@@ -119,7 +157,10 @@ export interface Contract {
   message?: string
   title: string
   fee: number
-  status: 'proposed' | 'active' | 'declined' | 'done'
+  status: 'proposed' | 'active' | 'declined' | 'completed'
+  by?: string // 依頼・応募を出した人（返事ができるのは相手側だけ）
+  postId?: string
+  reviewed?: boolean
   at: number
 }
 

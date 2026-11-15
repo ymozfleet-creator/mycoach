@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Building2, ChevronRight, ClipboardList, Handshake, LogOut, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserRound, Users } from 'lucide-react'
+import { Bell, Building2, ChevronRight, ClipboardList, CreditCard, GraduationCap, Handshake, IdCard, LogOut, Megaphone, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserCheck, UserRound, Users } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Field, inputCls, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { InviteCard } from './Players'
@@ -18,18 +18,17 @@ function Item({ icon, label, onClick, badge }: { icon: React.ReactNode; label: s
 }
 
 export default function More() {
-  const { be, profile, club, isAdmin, isCoach, isSchool, notices, myPlayers, authUser, toast, switchMode, selectClub } = useApp()
+  const { be, profile, club, isAdmin, isCoach, isSchool, coachMode, isOps, notices, myPlayers, authUser, toast, switchMode, selectClub } = useApp()
   const nav = useNavigate()
   const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join'>('')
   const [code, setCode] = useState('')
   const [joinErr, setJoinErr] = useState('')
   const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true })
-  const [coachForm, setCoachForm] = useState({ bio: profile?.bio || '', license: profile?.license || '', days: profile?.days || [] })
   const [kid, setKid] = useState({ name: '', grade: '中学1年' })
   const [name, setName] = useState(profile?.name || '')
-  if (!profile || !club || !authUser) return null
+  if (!profile || !authUser || (!club && !coachMode)) return null
   const unread = notices.filter(n => !n.read).length
-  const roleLabel = isAdmin ? 'クラブの運営' : isCoach ? '指導者' : isSchool ? `学校・教育委員会${profile.org ? `（${profile.org}）` : ''}` : '保護者・生徒'
+  const roleLabel = isAdmin ? 'クラブの運営' : isCoach || coachMode ? '指導者' : isSchool ? `学校・教育委員会${profile.org ? `（${profile.org}）` : ''}` : '保護者・生徒'
   return (
     <>
       <PageHeader title={isAdmin ? 'その他' : 'マイページ'} />
@@ -37,10 +36,10 @@ export default function More() {
         <Avatar name={profile.name} size={56} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[18px] font-black">{profile.name}</div>
-          <div className="text-[13px] text-ink-2">{roleLabel}・{club.name}</div>
-          {isCoach && <div className="mt-1"><Badge tone={profile.verified === 'approved' ? 'ok' : profile.verified === 'pending' ? 'warn' : 'none'}>{profile.verified === 'approved' ? '審査済み' : profile.verified === 'pending' ? '審査中' : '審査未申請'}</Badge></div>}
+          <div className="text-[13px] text-ink-2">{roleLabel}{club ? `・${club.name}` : '（クラブ未所属）'}</div>
+          {coachMode && <div className="mt-1"><Badge tone={profile.verified === 'approved' ? 'ok' : profile.verified === 'pending' ? 'warn' : 'none'}>{profile.verified === 'approved' ? '審査済み' : profile.verified === 'pending' ? '審査中' : '審査未申請'}</Badge></div>}
         </div>
-        <button onClick={() => setSheet('name')} className="text-[13px] font-bold text-brand">編集</button>
+        <button onClick={() => (coachMode ? nav('/coach-profile') : setSheet('name'))} className="text-[13px] font-bold text-brand">編集</button>
       </Card>
 
       {isAdmin && <div className="mt-3"><InviteCard /></div>}
@@ -48,13 +47,18 @@ export default function More() {
       <Section title="メニュー">
         <Card className="divide-y divide-line !py-0">
           <Item icon={<Bell size={18} />} label="お知らせ・通知" onClick={() => nav('/news')} badge={unread ? <Badge tone="danger">{unread}</Badge> : undefined} />
-          {isAdmin && <Item icon={<Search size={18} />} label="指導者を探す" onClick={() => nav('/coaches')} />}
-          {isAdmin && <Item icon={<Handshake size={18} />} label="指導者への依頼・メッセージ" onClick={() => nav('/requests')} />}
+          {isOps && <Item icon={<UserCheck size={18} />} label="運営事務局：本人確認の審査" onClick={() => nav('/ops')} />}
+          {isAdmin && <Item icon={<Megaphone size={18} />} label="指導者の募集・応募" onClick={() => nav('/posts')} />}
+          {isAdmin && <Item icon={<Search size={18} />} label="指導者を探して依頼する" onClick={() => nav('/coaches')} />}
+          {(isAdmin || coachMode) && <Item icon={<Handshake size={18} />} label="依頼・応募のやりとり" onClick={() => nav('/requests')} />}
           {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
           {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
           {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
-          {isCoach && <Item icon={<UserRound size={18} />} label="指導者プロフィール・審査" onClick={() => setSheet('coach')} />}
-          {!isAdmin && !isCoach && !isSchool && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
+          {coachMode && <Item icon={<UserRound size={18} />} label="指導者プロフィール" onClick={() => nav('/coach-profile')} />}
+          {coachMode && <Item icon={<IdCard size={18} />} label="本人確認" onClick={() => nav('/verify')} badge={<Badge tone={profile.verified === 'approved' ? 'ok' : profile.verified === 'pending' ? 'warn' : 'none'}>{profile.verified === 'approved' ? '完了' : profile.verified === 'pending' ? '確認中' : '未提出'}</Badge>} />}
+          {coachMode && <Item icon={<GraduationCap size={18} />} label="安全研修" onClick={() => nav('/training')} badge={<Badge tone={profile.training ? 'ok' : 'none'}>{profile.training ? '修了' : '未受講'}</Badge>} />}
+          {coachMode && <Item icon={<CreditCard size={18} />} label="謝金の受取口座" onClick={() => nav('/coach-profile#payout')} badge={<Badge tone={profile.stripeChargesEnabled ? 'ok' : 'none'}>{profile.stripeChargesEnabled ? '設定済み' : '未設定'}</Badge>} />}
+          {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
           {isAdmin && <Item icon={<Building2 size={18} />} label="クラブの設定" onClick={() => setSheet('club')} />}
         </Card>
       </Section>
@@ -62,7 +66,7 @@ export default function More() {
       {profile.clubIds.length > 1 && (
         <Section title="クラブの切り替え">
           <Card className="divide-y divide-line !py-0">
-            {profile.clubIds.map(id => <button key={id} onClick={() => { selectClub(id); toast('クラブを切り替えました') }} className={cx('flex w-full items-center justify-between py-3.5 text-left text-[15px] font-bold', id === club.id && 'text-brand')}>{id === club.id ? club.name : `別のクラブ（${id.slice(0, 6)}）`}{id === club.id && <Badge tone="info">表示中</Badge>}</button>)}
+            {profile.clubIds.map(id => <button key={id} onClick={() => { selectClub(id); toast('クラブを切り替えました') }} className={cx('flex w-full items-center justify-between py-3.5 text-left text-[15px] font-bold', id === club?.id && 'text-brand')}>{id === club?.id ? club.name : `別のクラブ（${id.slice(0, 6)}）`}{id === club?.id && <Badge tone="info">表示中</Badge>}</button>)}
           </Card>
         </Section>
       )}
@@ -94,7 +98,7 @@ export default function More() {
         <Field label="お名前"><input className={inputCls} value={name} onChange={e => setName(e.target.value)} /></Field>
       </Sheet>
 
-      <Sheet open={sheet === 'kids'} onClose={() => setSheet('')} title="お子さまの登録" footer={<Button block size="lg" disabled={!kid.name.trim()} onClick={async () => { await be.savePlayer(club.id, { id: 'p' + uid6(), name: kid.name.trim(), grade: kid.grade, guardianUids: [authUser.uid], discount: 0 }); setKid({ name: '', grade: kid.grade }); toast('登録しました') }}>追加する</Button>}>
+      <Sheet open={sheet === 'kids'} onClose={() => setSheet('')} title="お子さまの登録" footer={<Button block size="lg" disabled={!kid.name.trim() || !club} onClick={async () => { if (!club) return; await be.savePlayer(club.id, { id: 'p' + uid6(), name: kid.name.trim(), grade: kid.grade, guardianUids: [authUser.uid], discount: 0 }); setKid({ name: '', grade: kid.grade }); toast('登録しました') }}>追加する</Button>}>
         {myPlayers.map(p => <div key={p.id} className="flex items-center gap-3 border-b border-line py-2.5"><Avatar name={p.name} size={34} /><div className="flex-1 font-bold">{p.name}</div><span className="text-[13px] text-ink-2">{p.grade}</span></div>)}
         <div className="mt-4 grid grid-cols-[1fr_8rem] gap-2">
           <input className={inputCls} placeholder="氏名" value={kid.name} onChange={e => setKid({ ...kid, name: e.target.value })} />
@@ -102,16 +106,7 @@ export default function More() {
         </div>
       </Sheet>
 
-      <Sheet open={sheet === 'coach'} onClose={() => setSheet('')} title="指導者プロフィール" footer={
-        <div className="space-y-2">
-          <Button block size="lg" onClick={async () => { await be.saveProfile({ uid: authUser.uid, ...coachForm }); setSheet(''); toast('保存しました') }}>保存する</Button>
-          {profile.verified !== 'approved' && profile.verified !== 'pending' && <Button block variant="soft" onClick={async () => { await be.saveProfile({ uid: authUser.uid, verified: 'pending' }); toast('審査を申請しました。運営事務局から本人確認のご案内をお送りします') }}>本人確認・審査を申請する</Button>}
-        </div>}>
-        <Field label="自己紹介"><textarea className={`${inputCls} min-h-[100px]`} value={coachForm.bio} onChange={e => setCoachForm({ ...coachForm, bio: e.target.value })} placeholder="指導歴、得意な指導、大切にしていること" /></Field>
-        <Field label="資格・経歴"><input className={inputCls} value={coachForm.license} onChange={e => setCoachForm({ ...coachForm, license: e.target.value })} /></Field>
-        <Field label="指導できる曜日"><div className="flex gap-1.5">{[1, 2, 3, 4, 5, 6, 0].map(d => <button key={d} onClick={() => setCoachForm({ ...coachForm, days: coachForm.days.includes(d) ? coachForm.days.filter(x => x !== d) : [...coachForm.days, d] })} className={cx('h-10 flex-1 rounded-xl border text-[14px] font-bold', coachForm.days.includes(d) ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2')}>{DOW[d]}</button>)}</div></Field>
-      </Sheet>
-
+      {club && (
       <Sheet open={sheet === 'club'} onClose={() => setSheet('')} title="クラブの設定" footer={<Button block size="lg" onClick={async () => {
         const venues = clubForm.venue.trim() ? [...club.venues, { name: clubForm.venue.trim(), indoor: clubForm.indoor }] : club.venues
         await be.updateClub(club.id, { name: clubForm.name.trim() || club.name, fee: Number(clubForm.fee), venues }); setSheet(''); toast('保存しました')
@@ -124,6 +119,7 @@ export default function More() {
           <select className={inputCls} value={clubForm.indoor ? '1' : '0'} onChange={e => setClubForm({ ...clubForm, indoor: e.target.value === '1' })}><option value="1">屋内</option><option value="0">屋外</option></select>
         </div>
       </Sheet>
+      )}
     </>
   )
 }

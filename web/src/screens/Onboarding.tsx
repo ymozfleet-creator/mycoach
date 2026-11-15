@@ -2,15 +2,10 @@ import { useState } from 'react'
 import { Building2, ChevronRight, GraduationCap, Plus, Trash2, UserRound, Users, Whistle } from './icons'
 import { Button, Field, inputCls, cx } from '../components/ui'
 import { useApp } from '../lib/store'
+import { AREAS, SPORTS } from '../lib/places'
 import type { Role } from '../lib/types'
 import { DOW, uid6 } from '../lib/util'
 
-const SPORTS = ['バスケットボール', 'サッカー', 'バレーボール', '野球', 'ソフトボール', '陸上', 'テニス', 'ソフトテニス', '卓球', 'バドミントン', 'ハンドボール', '水泳', '剣道', '柔道', 'ダンス', 'その他']
-const AREAS: Record<string, [number, number]> = {
-  '東京都中野区': [35.7074, 139.6638], '東京都杉並区': [35.6995, 139.6364], '東京都新宿区': [35.6938, 139.7034], '東京都練馬区': [35.7356, 139.6517],
-  '東京都世田谷区': [35.6466, 139.6532], '東京都板橋区': [35.7512, 139.7093], '東京都23区（その他）': [35.6895, 139.6917], '神奈川県横浜市': [35.4437, 139.638],
-  '埼玉県さいたま市': [35.8617, 139.6455], '千葉県千葉市': [35.6074, 140.1065], '大阪府大阪市': [34.6937, 135.5023], '愛知県名古屋市': [35.1815, 136.9066], '福岡県福岡市': [33.5902, 130.4017],
-}
 
 export default function Onboarding() {
   const { be, authUser, profile, toast } = useApp()
@@ -38,12 +33,14 @@ export default function Onboarding() {
         await be.createClub({ name: club.name.trim(), sport: club.sport, areaLabel: club.area, lat, lon, venues: [{ name: club.venue.trim(), indoor: club.indoor }], fee: Number(club.fee) || 0, ownerUid: uid })
         toast('クラブを作成しました')
       } else {
-        if (!code.trim()) throw new Error('招待コードを入力してください')
+        if (!code.trim() && role !== 'coach') throw new Error('招待コードを入力してください')
+        if (role === 'coach' && !coach.sports.length) throw new Error('指導できる種目を1つ以上選んでください')
         const [lat, lon] = AREAS[coach.area]
         await be.saveProfile(role === 'coach'
           ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], sports: coach.sports, days: coach.days, license: coach.license, areaLabel: coach.area, lat, lon, verified: 'none', training: false }
           : role === 'school' ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], org: org.trim() }
           : { uid, name: name.trim(), role, clubIds: profile?.clubIds || [] })
+        if (role === 'coach' && !code.trim()) { toast('登録しました。本人確認と安全研修を済ませると、クラブの募集に応募できます'); return }
         const clubId = await be.joinClub(code, uid)
         if (role === 'member') {
           // 運営が先に登録した同名の会員がいれば、その会員にご家庭をひも付ける
@@ -61,7 +58,7 @@ export default function Onboarding() {
 
   const roles: { r: Role; icon: React.ReactNode; t: string; d: string }[] = [
     { r: 'member', icon: <Users />, t: '保護者・生徒', d: '予定の確認、出欠、会費の支払い' },
-    { r: 'coach', icon: <Whistle />, t: '指導者', d: '指導の予定、選手の体調、練習メニュー' },
+    { r: 'coach', icon: <Whistle />, t: '指導者', d: 'クラブの募集に応募、指導の予定、謝金の受け取り' },
     { r: 'admin', icon: <Building2 />, t: 'クラブ・部活動の運営', d: '予定・会員・会費の管理、指導者探し（学校の顧問も）' },
     { r: 'school', icon: <GraduationCap />, t: '学校・教育委員会', d: '生徒の活動状況・安全・ガイドラインの確認' },
   ]
@@ -100,9 +97,9 @@ export default function Onboarding() {
             </>
           ) : (
             <>
-              <h1 className="text-[24px] font-black">クラブに参加</h1>
-              <p className="mt-1 mb-6 text-ink-2">運営の方から届いた招待コード（6文字）を入力してください。{role === 'coach' ? '指導者の方は「指導者用」のコードを入力してください。' : role === 'school' ? '学校・教育委員会の方は、クラブの運営から届いた「学校用」のコードを入力してください。' : ''}</p>
-              <Field label="招待コード"><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={6} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
+              <h1 className="text-[24px] font-black">{role === 'coach' ? '指導者として登録' : 'クラブに参加'}</h1>
+              <p className="mt-1 mb-6 text-ink-2">{role === 'coach' ? 'クラブに所属していなくても登録できます。登録後、地域のクラブの募集を探して応募できます。すでにクラブから「指導者用」の招待コードが届いている方は入力してください。' : role === 'school' ? '学校・教育委員会の方は、クラブの運営から届いた「学校用」のコードを入力してください。' : '運営の方から届いた招待コード（6文字）を入力してください。'}</p>
+              <Field label={role === 'coach' ? '招待コード（クラブから届いている場合のみ）' : '招待コード'}><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={6} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
               {role === 'school' && <Field label="学校名・所属"><input className={inputCls} value={org} onChange={e => setOrg(e.target.value)} placeholder="例：中野区立第五中学校／中野区教育委員会" /></Field>}
               {role === 'member' && (
                 <div className="mb-4">
@@ -130,7 +127,7 @@ export default function Onboarding() {
           {err && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-[13px] text-red-600">{err}</p>}
           <div className="flex gap-2">
             <Button variant="ghost" size="lg" onClick={() => setStep(0)}><UserRound size={18} />戻る</Button>
-            <Button size="lg" className="flex-1" loading={busy} onClick={finish}>{role === 'admin' ? 'クラブを作成' : '参加する'}</Button>
+            <Button size="lg" className="flex-1" loading={busy} onClick={finish}>{role === 'admin' ? 'クラブを作成' : role === 'coach' && !code.trim() ? '登録する' : '参加する'}</Button>
           </div>
         </div>
       )}
