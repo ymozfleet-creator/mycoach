@@ -79,16 +79,25 @@ async function fetchMetNo(lat: number, lon: number, ms: number): Promise<WxHour[
     const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, { signal: ctl.signal })
     if (!r.ok) throw new Error('metno')
     const j = await r.json()
-    return j.properties.timeseries.map((x: { time: string; data: { instant: { details: Record<string, number> } } }) => {
-      const d = new Date(x.time)
+    const pts = j.properties.timeseries.map((x: { time: string; data: { instant: { details: Record<string, number> } } }) => {
       const det = x.data.instant.details
-      const jst = new Date(d.getTime() + 9 * 3600e3)
-      const t = `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:00`
-      const se = sinElev(new Date(d.getTime() + 30 * 60e3), lat, lon)
-      const clear = se > 0.01 ? 1098 * se * Math.exp(-0.057 / se) : 0
-      const cloud = (det.cloud_area_fraction ?? 50) / 100
-      return { t, Ta: det.air_temperature, RH: det.relative_humidity, SR: (clear * (1 - 0.75 * Math.pow(cloud, 3.4))) / 1000, WS: det.wind_speed }
-    })
+      return { ms: new Date(x.time).getTime(), Ta: det.air_temperature, RH: det.relative_humidity, WS: det.wind_speed, C: (det.cloud_area_fraction ?? 50) / 100 }
+    }) as { ms: number; Ta: number; RH: number; WS: number; C: number }[]
+    // 3日目以降は6時間おきの予報になるため、1時間ごとに直線補間する
+    const out: WxHour[] = []
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1]
+      for (let ms = a.ms; ms < b.ms; ms += 3600e3) {
+        const k = (ms - a.ms) / (b.ms - a.ms)
+        const lerp = (x: number, y: number) => x + (y - x) * k
+        const jst = new Date(ms + 9 * 3600e3)
+        const t = `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:00`
+        const se = sinElev(new Date(ms + 30 * 60e3), lat, lon)
+        const clear = se > 0.01 ? 1098 * se * Math.exp(-0.057 / se) : 0
+        out.push({ t, Ta: lerp(a.Ta, b.Ta), RH: lerp(a.RH, b.RH), WS: lerp(a.WS, b.WS), SR: (clear * (1 - 0.75 * Math.pow(lerp(a.C, b.C), 3.4))) / 1000 })
+      }
+    }
+    return out
   } finally { clearTimeout(t) }
 }
 /** 気象予報を取得。Open-Meteo を優先し、つながらない環境では MET Norway を使う。直近（6時間以内）に取得した予報も再利用する */
