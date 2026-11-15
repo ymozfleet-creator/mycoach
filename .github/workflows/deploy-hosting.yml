@@ -1,6 +1,6 @@
 # main に push すると Firebase Hosting に自動で公開する
 # 事前に GitHub の Settings → Secrets and variables → Actions に
-# FIREBASE_SERVICE_ACCOUNT（Firebaseのサービスアカウントの鍵JSON）を登録しておく
+# FIREBASE_SERVICE_ACCOUNT_MYCOACH_C15AE を登録しておく（`firebase init hosting:github` を実行すると自動で登録される）
 name: Deploy to Firebase Hosting
 on:
   push:
@@ -15,6 +15,6 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYCOACH_C15AE }}
           projectId: mycoach-c15ae
           channelId: live
