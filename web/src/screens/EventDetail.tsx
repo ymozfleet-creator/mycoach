@@ -12,7 +12,7 @@ function HeatStrip({ date, indoor, start, minutes }: { date: string; indoor: boo
   const { weather } = useApp()
   if (!weather) return null
   const hrs = weather.filter(h => h.t.startsWith(date) && +h.t.slice(11, 13) >= 7 && +h.t.slice(11, 13) <= 19)
-  if (!hrs.length) return <p className="text-[13px] text-ink-2">暑さ指数の予報は3〜7日前から表示されます。</p>
+  if (!hrs.length) return <p className="text-[13px] text-ink-2">暑さ指数の予報は、およそ10日前から表示されます。</p>
   const h0 = parseInt(start), h1 = h0 + Math.ceil(minutes / 60)
   const vals = hrs.map(h => ({ H: +h.t.slice(11, 13), w: Math.round((indoor ? estWBGT(h.Ta, h.RH, 0, 0) : estWBGT(h.Ta, h.RH, h.SR, h.WS)) * 10) / 10, Ta: Math.round(h.Ta) }))
   const best = vals.filter(v => v.H >= 8 && v.H <= 17).sort((a, b) => a.w - b.w)[0]

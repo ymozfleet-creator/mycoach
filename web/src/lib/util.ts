@@ -53,7 +53,7 @@ async function fetchOnce(lat: number, lon: number, ms: number): Promise<WxHour[]
   const ctl = new AbortController()
   const t = setTimeout(() => ctl.abort(), ms)
   try {
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=7`
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=10`
     const r = await fetch(u, { signal: ctl.signal })
     if (!r.ok) throw new Error('weather')
     const h = (await r.json()).hourly

@@ -9,10 +9,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: false,
       workbox: {
-        navigateFallback: 'index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png}'],
+        // 画面（HTML）は常にネットワーク優先で最新を取得。ファイル名にハッシュが付くJS/CSSだけを事前保存する
+        navigateFallback: null,
+        globPatterns: ['**/*.{js,css,svg,png}'],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           { urlPattern: ({ request }) => request.mode === 'navigate', handler: 'NetworkFirst', options: { cacheName: 'pages', networkTimeoutSeconds: 3 } },
         ],
