@@ -9,7 +9,7 @@
      firebase deploy --only functions
    ===================================================================== */
 const { onRequest } = require('firebase-functions/v2/https');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
@@ -40,13 +40,42 @@ async function requireAuth(req, res) {
   const authz = req.headers.authorization || '';
   const idToken = authz.startsWith('Bearer ') ? authz.slice(7) : '';
   if (!idToken) { res.status(401).json({ error: '認証が必要です。再ログインしてお試しください' }); return null; }
-  try { return await admin.auth().verifyIdToken(idToken); }
+  let decoded;
+  // checkRevoked=true：パスワード変更・強制ログアウト後の古いトークンは使えない
+  try { decoded = await admin.auth().verifyIdToken(idToken, true); }
   catch (e) { res.status(401).json({ error: 'ログインの有効期限が切れています。再ログインしてください' }); return null; }
+  // 利用停止・退会済みのアカウントは何もできない
+  const u = await admin.firestore().collection('users').doc(decoded.uid).get();
+  if (u.exists && (u.data().suspended || u.data().deleted)) { res.status(403).json({ error: 'このアカウントは利用できません' }); return null; }
+  // 連打・自動化による悪用を防ぐ（1人あたり1分に20回まで）
+  if (!(await rateOk(decoded.uid, 20, 60e3))) { res.status(429).json({ error: '操作が多すぎます。少し時間をおいてお試しください' }); return null; }
+  return decoded;
+}
+
+/* 1人あたりの呼び出し回数の制限（サーバー専用コレクション rate_limits） */
+async function rateOk(uid, max, windowMs) {
+  const ref = admin.firestore().collection('rate_limits').doc(uid);
+  return admin.firestore().runTransaction(async t => {
+    const d = await t.get(ref); const now = Date.now();
+    const v = d.exists ? d.data() : { start: now, n: 0 };
+    const fresh = now - v.start > windowMs;
+    const n = fresh ? 1 : v.n + 1;
+    t.set(ref, { start: fresh ? now : v.start, n });
+    return n <= max;
+  });
+}
+
+/* ブラウザからの呼び出しを許可するサイト（それ以外のサイトからは呼べない） */
+const CORS_ORIGINS = ['https://ymozfleet-creator.github.io', 'https://mycoach-myteam.com', 'https://www.mycoach-myteam.com', 'https://mycoach-c15ae.web.app', 'https://mycoach-c15ae.firebaseapp.com'];
+
+/* メールアドレスはFirebase Authenticationから取る（公開プロフィールには置かない） */
+async function emailOf(uid) {
+  try { return (await admin.auth().getUser(uid)).email || ''; } catch (e) { return ''; }
 }
 
 /* ---------- 1. Checkoutセッション作成 ---------- */
 exports.createCheckoutSession = onRequest(
-  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: true },
+  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: CORS_ORIGINS },
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
@@ -118,7 +147,7 @@ exports.createCheckoutSession = onRequest(
       res.json({ url: session.url });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: 'エラーが発生しました。時間をおいてお試しください' });
     }
   }
 );
@@ -217,7 +246,7 @@ exports.stripeWebhook = onRequest(
 
 /* ---------- 2.5 Stripe Connect：コーチの口座設定リンク作成 ---------- */
 exports.createConnectLink = onRequest(
-  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: true },
+  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: CORS_ORIGINS },
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
@@ -237,7 +266,7 @@ exports.createConnectLink = onRequest(
         const account = await stripe.accounts.create({
           type: 'express',
           country: 'JP',
-          email: u.email,
+          email: (await emailOf(uid)) || undefined,
           capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
           business_type: 'individual',
         });
@@ -254,7 +283,7 @@ exports.createConnectLink = onRequest(
       res.json({ url: link.url });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: 'エラーが発生しました。時間をおいてお試しください' });
     }
   }
 );
@@ -297,19 +326,38 @@ exports.notifyMail = onDocumentCreated(
     const n = event.data && event.data.data();
     if (!n || !n.to) return;
     const u = await admin.firestore().collection('users').doc(n.to).get();
-    const email = u.exists && u.data().email;
-    if (!email || u.data().deleted) return;
-
+    if (!u.exists || u.data().deleted || u.data().suspended) return;
+    const email = await emailOf(n.to);
+    if (!email) return;
+    // 他の利用者が書いた文章をメールにそのまま載せない（なりすまし・フィッシングに悪用させない）。
+    // サーバーが作った通知（決済・審査など）だけ本文を載せ、それ以外は定型文にする
+    const trusted = !n.from || n.from === 'system';
+    const TITLES = { like: 'いいねが届きました', match: 'マッチが成立しました', msg: '新しいメッセージがあります', contract: '依頼・契約の更新があります', pay: '支払いのお知らせ', review: 'レビューが届きました', verify: '本人確認の結果', cert: '証明書のお知らせ', announce: 'お知らせがあります' };
+    const title = TITLES[n.type] || '新しいお知らせがあります';
+    const link = /^#[A-Za-z0-9_/-]{0,80}$/.test(String(n.link || '')) ? n.link : '';
     await admin.firestore().collection('mail').add({
       to: email,
       message: {
-        subject: `【MyCOACH】${n.text}`,
-        text: `${n.text}\n\nMyCOACHを開いて確認する：\n${APP_URL || 'アプリのURL'}${n.link || ''}\n\n※このメールに心当たりがない場合は破棄してください。`,
+        subject: `【MyCOACH】${title}`,
+        text: `${trusted ? String(n.text || '').slice(0, 300) : title + '。内容はアプリでご確認ください。'}\n\nMyCOACHを開いて確認する：\n${APP_URL}${link}\n\n※このメールに返信しても届きません。心当たりがない場合は破棄してください。\n※MyCOACHがメールでパスワードやカード番号をお聞きすることはありません。`,
       },
     });
   }
 );
 
+/* 公開プロフィール（users）にメールアドレスが書かれたら、非公開の users_private へ移して消す
+   （旧データの移行と、万一の書き込みへの安全策） */
+exports.protectEmail = onDocumentWritten(
+  { region: REGION, document: 'users/{uid}' },
+  async (event) => {
+    const after = event.data && event.data.after;
+    if (!after || !after.exists) return;
+    const d = after.data();
+    if (!('email' in d)) return;
+    if (d.email) await admin.firestore().collection('users_private').doc(event.params.uid).set({ email: d.email }, { merge: true });
+    await after.ref.update({ email: admin.firestore.FieldValue.delete() });
+  }
+);
 
 /* 毎朝9時(JST)：翌日にレッスン予定（予約確定済み）がある契約の両者へリマインド通知。
    通知ドキュメントは notifyMail がメール転送するため、Trigger Email 導入済みならメールも届く */
@@ -344,7 +392,7 @@ const AI_DAILY_LIMIT = 30;       // 1人1日あたりのAI利用回数の上限
 
 /* ---------- 会費のカード払い（Stripe Checkout） ---------- */
 exports.createFeeCheckout = onRequest(
-  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: true },
+  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: CORS_ORIGINS },
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
@@ -368,13 +416,13 @@ exports.createFeeCheckout = onRequest(
         cancel_url: back,
       });
       res.json({ url: session.url });
-    } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+    } catch (e) { console.error(e); res.status(500).json({ error: 'エラーが発生しました。時間をおいてお試しください' }); }
   }
 );
 
 /* ---------- AIアシスト（練習メニュー作成） ---------- */
 exports.aiAssist = onRequest(
-  { region: REGION, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 60 },
+  { region: REGION, secrets: [ANTHROPIC_API_KEY], cors: CORS_ORIGINS, timeoutSeconds: 60 },
   async (req, res) => {
     try {
       if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
@@ -412,6 +460,6 @@ exports.aiAssist = onRequest(
       const out = m ? JSON.parse(m[0]) : null;
       if (!out || !Array.isArray(out.blocks)) { res.status(502).json({ error: 'AIの応答を読み取れませんでした' }); return; }
       res.json({ blocks: out.blocks.slice(0, 20), points: (out.points || []).slice(0, 6) });
-    } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+    } catch (e) { console.error(e); res.status(500).json({ error: 'エラーが発生しました。時間をおいてお試しください' }); }
   }
 );

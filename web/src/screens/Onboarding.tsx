@@ -99,7 +99,7 @@ export default function Onboarding() {
             <>
               <h1 className="text-[24px] font-black">{role === 'coach' ? '指導者として登録' : 'クラブに参加'}</h1>
               <p className="mt-1 mb-6 text-ink-2">{role === 'coach' ? 'クラブに所属していなくても登録できます。登録後、地域のクラブの募集を探して応募できます。すでにクラブから「指導者用」の招待コードが届いている方は入力してください。' : role === 'school' ? '学校・教育委員会の方は、クラブの運営から届いた「学校用」のコードを入力してください。' : '運営の方から届いた招待コード（6文字）を入力してください。'}</p>
-              <Field label={role === 'coach' ? '招待コード（クラブから届いている場合のみ）' : '招待コード'}><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={6} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
+              <Field label={role === 'coach' ? '招待コード（クラブから届いている場合のみ）' : '招待コード'}><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={10} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
               {role === 'school' && <Field label="学校名・所属"><input className={inputCls} value={org} onChange={e => setOrg(e.target.value)} placeholder="例：中野区立第五中学校／中野区教育委員会" /></Field>}
               {role === 'member' && (
                 <div className="mb-4">

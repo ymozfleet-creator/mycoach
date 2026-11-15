@@ -1,3 +1,4 @@
+import { APP_CHECK_SITE_KEY } from './config'
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
@@ -15,4 +16,9 @@ export const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+// App Check：サイトキーが設定されていれば有効化（本物のアプリからの通信だけを受け付ける）
+if (APP_CHECK_SITE_KEY) {
+  import('firebase/app-check').then(({ initializeAppCheck, ReCaptchaEnterpriseProvider }) =>
+    initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }))
+}
 export const db = getFirestore(app)

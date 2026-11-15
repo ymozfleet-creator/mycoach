@@ -1,14 +1,4 @@
-import{h as $,u as z,i as N,t as k,c as H,a as L,r as u,J as M,j as e,P as T,Z as D,H as j,E as G,a8 as J,m as Q,v as R,B as C,s as V,z as Z,G as w,x as K,I as O}from"./index-DGshSAcG.js";import{C as W}from"./copy-DTaAitOE.js";/**
- * @license lucide-react v0.460.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */const y=$("Share2",[["circle",{cx:"18",cy:"5",r:"3",key:"gq8acd"}],["circle",{cx:"6",cy:"12",r:"3",key:"w7nqdw"}],["circle",{cx:"18",cy:"19",r:"3",key:"1xt0gg"}],["line",{x1:"8.59",x2:"15.42",y1:"13.51",y2:"17.49",key:"47mynk"}],["line",{x1:"15.41",x2:"8.59",y1:"6.51",y2:"10.49",key:"1n3mei"}]]);/**
- * @license lucide-react v0.460.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */const X=$("UserPlus",[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}],["line",{x1:"19",x2:"19",y1:"8",y2:"14",key:"1bvyxn"}],["line",{x1:"22",x2:"16",y1:"11",y2:"11",key:"1shjgl"}]]);function Y(){const{club:a,toast:c}=z();if(!a)return null;const i=`${location.origin}${location.pathname}`,l=async(d,s=!1)=>{const r=s?a.schoolCode:d?a.coachCode:a.inviteCode,x=s?`「${a.name}」の活動状況を確認できます。学校・教育委員会の方は、アプリで「学校・教育委員会」を選んで参加してください。
+import{h as $,u as z,i as N,t as k,c as H,a as L,r as u,J as M,j as e,P as T,Z as D,H as j,E as G,a8 as J,m as Q,v as R,B as C,s as V,z as Z,G as w,x as K,I as O}from"./index-Chsf2iLf.js";import{C as W}from"./copy-Aj4hsjx7.js";const y=$("Share2",[["circle",{cx:"18",cy:"5",r:"3",key:"gq8acd"}],["circle",{cx:"6",cy:"12",r:"3",key:"w7nqdw"}],["circle",{cx:"18",cy:"19",r:"3",key:"1xt0gg"}],["line",{x1:"8.59",x2:"15.42",y1:"13.51",y2:"17.49",key:"47mynk"}],["line",{x1:"15.41",x2:"8.59",y1:"6.51",y2:"10.49",key:"1n3mei"}]]);const X=$("UserPlus",[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}],["line",{x1:"19",x2:"19",y1:"8",y2:"14",key:"1bvyxn"}],["line",{x1:"22",x2:"16",y1:"11",y2:"11",key:"1shjgl"}]]);function Y(){const{club:a,toast:c}=z();if(!a)return null;const i=`${location.origin}${location.pathname}`,l=async(d,s=!1)=>{const r=s?a.schoolCode:d?a.coachCode:a.inviteCode,x=s?`「${a.name}」の活動状況を確認できます。学校・教育委員会の方は、アプリで「学校・教育委員会」を選んで参加してください。
 学校用の招待コード：${r}
 ${i}`:d?`「${a.name}」の指導者として、アプリに参加してください。
 指導者用の招待コード：${r}

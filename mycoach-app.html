@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net; frame-src https://mycoach-c15ae.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://buy.stripe.com; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script>/* 他のサイトの中に埋め込まれた場合は表示しない（クリック横取り攻撃の防止） */if(window.top!==window.self){document.documentElement.style.display='none';}</script>
 <title>MyCOACH | スポーツ指導者マッチング - 部活・クラブ・個人レッスンのコーチが見つかる</title>
 <meta name="description" content="スポーツの先生、見つかる。全国70競技のコーチと出会えるマッチングサービス。部活動の地域移行にも対応、チーム名義の契約・オンライン決済・実績証明書までアプリで完結。登録無料。">
 <meta name="theme-color" content="#2E7CE0">
@@ -792,6 +795,10 @@ const CT_STATUS = {proposed:'提案中', active:'契約中', declined:'辞退', 
 const CT_PILL = {proposed:'pill-gold', active:'pill-turf', declined:'pill-gray', completed:'pill-blue', cancelled:'pill-red'};
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// onclick などの属性に値を埋め込むときは必ずこれを使う（JSの文字列として安全にし、さらにHTMLとしてエスケープ）
+const jsq = v => esc(JSON.stringify(String(v ?? '')));
+// 画面内リンクは「#英数字/_-」だけを許可（通知などに不正なリンクを仕込まれても実行されない）
+const safeHash = h => /^#[A-Za-z0-9_\/-]*$/.test(String(h||'')) ? String(h) : '';
 const yen = n => '¥' + Number(n||0).toLocaleString('ja-JP');
 const fmtT = ts => { const d=new Date(ts); const now=new Date();
   const same = d.toDateString()===now.toDateString();
@@ -1101,8 +1108,11 @@ const FireDB = {
   },
   async signUp(email,pw,profile){
     const cred=await this._auth.createUserWithEmailAndPassword(email,pw);
-    const user={id:cred.user.uid,email,suspended:false,isAdmin:false,createdAt:Date.now(),...profile};
-    await this._fs.collection('users').doc(user.id).set(user); return user;
+    const user={id:cred.user.uid,suspended:false,isAdmin:false,createdAt:Date.now(),...profile};
+    delete user.email; // メールアドレスは公開プロフィールに置かない（本人と事務局だけが読める users_private に保存）
+    await this._fs.collection('users').doc(user.id).set(user);
+    await this._fs.collection('users_private').doc(user.id).set({email:cred.user.email||email});
+    return {...user,email};
   },
   async signIn(email,pw){
     const cred=await this._auth.signInWithEmailAndPassword(email,pw);
@@ -1119,11 +1129,16 @@ const FireDB = {
   _uc:{}, /* 30秒ユーザーキャッシュ（読取コスト削減） */
   async getUser(id){
     const c=this._uc[id]; if(c && Date.now()-c.t<30000) return c.u;
-    const d=await this._fs.collection('users').doc(id).get(); const u=d.exists?d.data():null;
+    const d=await this._fs.collection('users').doc(id).get(); let u=d.exists?d.data():null;
+    const cu=this._auth.currentUser; if(u && cu && cu.uid===id) u={...u,email:cu.email||''}; // 自分のメールは認証情報から
     this._uc[id]={u,t:Date.now()}; return u; },
-  async updateUser(id,patch){ await this._fs.collection('users').doc(id).update(patch); delete this._uc[id]; return this.getUser(id); },
+  async updateUser(id,patch){ const p={...patch}; delete p.email; await this._fs.collection('users').doc(id).update(p); delete this._uc[id]; return this.getUser(id); },
   async listUsers(role){ const q=await this._fs.collection('users').where('role','==',role).get(); return q.docs.map(d=>d.data()).filter(u=>!u.suspended&&!u.deleted); },
-  async allUsers(){ const q=await this._fs.collection('users').get(); return q.docs.map(d=>d.data()); },
+  async allUsers(){
+    const q=await this._fs.collection('users').get(); const list=q.docs.map(d=>d.data());
+    // 事務局だけがメールアドレスを参照できる（ルールで制限）
+    try{ const pv=await this._fs.collection('users_private').get(); const m={}; pv.docs.forEach(d=>m[d.id]=d.data().email||''); list.forEach(u=>{ if(m[u.id]!==undefined) u.email=m[u.id]; }); }catch(e){ /* 事務局以外は読めない */ }
+    return list; },
   async like(from,to){
     // 自分のいいねは未作成の場合のみ作成（既存docへのsetはルール上updateとなり拒否されるため）
     const mine=await this._fs.collection('likes').doc(`${from}_${to}`).get();
@@ -1216,7 +1231,7 @@ const FireDB = {
     try{
       if(dedupe){ const q=await this._fs.collection('notifications').where('to','==',to).where('read','==',false).get();
         if(q.docs.some(d=>{const n=d.data();return n.link===link&&n.type===type;})) return; }
-      const id=uid('n'); await this._fs.collection('notifications').doc(id).set({id,to,type,text,link,ts:Date.now(),read:false});
+      const id=uid('n'); await this._fs.collection('notifications').doc(id).set({id,to,from:(this._auth.currentUser&&this._auth.currentUser.uid)||'',type,text:String(text||'').slice(0,300),link:safeHash(link),ts:Date.now(),at:Date.now(),read:false});
     }catch(e){ console.warn('notify failed', e); } },
   async listNotifications(me){ const q=await this._fs.collection('notifications').where('to','==',me).get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts).slice(0,50); },
   async unreadNotifCount(me){ const q=await this._fs.collection('notifications').where('to','==',me).where('read','==',false).get(); return q.size; },
@@ -1236,7 +1251,7 @@ const FireDB = {
     a.docs.concat(b.docs).forEach(d=>{ const p=d.data(); if(!seen[p.id]){ seen[p.id]=1; out.push(p); } });
     return out.sort((x,y)=>y.ts-x.ts); },
   async allPayments(){ const q=await this._fs.collection('payments').get(); return q.docs.map(d=>d.data()).sort((a,b)=>b.ts-a.ts); },
-  async addReview(r){ const id=uid('rv'); const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
+  async addReview(r){ const id=`${r.contractId}_${r.from}`; /* 1契約につき1人1回（ルールで強制） */ const rv={id,ts:Date.now(),...r}; await this._fs.collection('reviews').doc(id).set(rv);
     const q=await this._fs.collection('reviews').where('to','==',r.to).get(); const list=q.docs.map(d=>d.data());
     const avg=list.reduce((s,x)=>s+x.rating,0)/list.length;
     // 評価の集計はサーバー（Cloud Functions recalcRating）が行う。改ざん防止のため、画面側からは書き込まない
@@ -1650,7 +1665,7 @@ const App = {
             <input type="checkbox" id="f-agree" style="margin-top:2px">
             <span><a href="javascript:void(0)" onclick="App.openLegal('terms')">利用規約</a>および<a href="javascript:void(0)" onclick="App.openLegal('privacy')">プライバシーポリシー</a>に同意します</span>
           </label>`}
-          <button class="btn btn-primary btn-block" onclick="App.submitAuth('${mode}')">${mode==='login'?'ログイン':'登録してはじめる'}</button>
+          <button class="btn btn-primary btn-block" onclick="App.submitAuth(${jsq(mode)})">${mode==='login'?'ログイン':'登録してはじめる'}</button>
           ${DB.mode==='demo'?`
           <div class="demo-box">
             <div class="t">${ic('ticket',14)} デモアカウント（パスワード: demo1234 / 管理者: admin1234）</div>
@@ -1730,7 +1745,7 @@ const App = {
             <p class="rc-d">${esc(r.detail||'')}</p>
             ${this.me.id!==r.teamId?(sentSet.has(r.teamId)||this._browse.matchedIds.has(r.teamId)
               ?`<span class="pill pill-gray">応募済み</span>`
-              :`<button class="btn btn-sm btn-turf" onclick="App.applyRecruit('${r.teamId}','${esc(r.title)}')">${ic('thumb',14)} 応募する</button>`):''}
+              :`<button class="btn btn-sm btn-turf" onclick="App.applyRecruit(${jsq(r.teamId)},${jsq(r.title)})">${ic('thumb',14)} 応募する</button>`):''}
           </div>`).join('')}
         </div>
       </div>`:'';
@@ -1818,7 +1833,7 @@ const App = {
       const matched=matchedIds.has(u.id), sent=sentTo.has(u.id), recv=recvFrom.has(u.id);
       return `<div class="ucard">
         ${recv&&!matched?`<span class="likedby pill pill-flag">${ic('heart',12)} あなたに興味あり</span>`:''}
-        <div class="hd" style="cursor:pointer" onclick="App.openProfile('${u.id}')">
+        <div class="hd" style="cursor:pointer" onclick="App.openProfile(${jsq(u.id)})">
           <div class="avatar">${avatarOf(u)}</div>
           <div><div class="nm">${esc(u.name)} ${u.verified==='approved'?`<span class="pill pill-turf vbadge">${ic('shield',11)}認証</span>`:''}</div>
           <div class="meta">${metaOf(u,[u.role==='coach'?CTARGET_S[u.coachTarget||'both']+'対応':null])}</div>
@@ -1834,10 +1849,10 @@ const App = {
         <div class="intro">${esc(u.intro)}</div>
         <div class="ft">
           ${u.role==='coach'?`<div class="fee">${u.fee>0?`${yen(u.fee)}<small> /回</small>`:'<small style="font-size:14px;font-weight:800">料金応相談</small>'}</div>`
-            :`<span class="pill pill-blue">${u.playerType==='team'?`チーム${u.teamSize?`・${u.teamSize}名`:''}`:'個人'}で受講希望</span>`}
+            :`<span class="pill pill-blue">${u.playerType==='team'?`チーム${u.teamSize?`・${esc(u.teamSize)}名`:''}`:'個人'}で受講希望</span>`}
           ${matched?`<span class="pill pill-turf">${ic('check',12)} マッチ済み</span>`
             : sent?`<button class="btn btn-sm btn-soft" disabled>いいね済み</button>`
-            : `<button class="btn btn-sm ${recv?'btn-flag':'btn-primary'}" onclick="App.sendLike('${u.id}')">${recv?ic('heart',15)+' いいねを返す':ic('thumb',15)+' いいね'}</button>`}
+            : `<button class="btn btn-sm ${recv?'btn-flag':'btn-primary'}" onclick="App.sendLike(${jsq(u.id)})">${recv?ic('heart',15)+' いいねを返す':ic('thumb',15)+' いいね'}</button>`}
         </div>
       </div>`;
     }).join('')+moreBtn;
@@ -1862,7 +1877,7 @@ const App = {
         <div class="hint">${esc(u.sport)}・${esc(u.area)}${u.exp?`・${esc(u.exp)}`:''}</div>
         <div class="hint" style="margin-top:2px">${u.role==='coach'
           ?`指導形態：${CTARGET[u.coachTarget||'both']}`
-          :`受講形態：${u.playerType==='team'?`チーム（${esc(u.teamName||u.name)}${u.teamSize?`・約${u.teamSize}名`:''}）`:'個人'}`}</div>
+          :`受講形態：${u.playerType==='team'?`チーム（${esc(u.teamName||u.name)}${u.teamSize?`・約${esc(u.teamSize)}名`:''}）`:'個人'}`}</div>
         ${u.ratingCount?`<div class="rate" style="justify-content:center;margin-top:4px">${stars(u.ratingAvg,13)} ${u.ratingAvg}（${u.ratingCount}件）</div>`:''}
         ${u.role==='coach'&&(u.lessonCount||u.certIssued)?`<div class="hint" style="margin-top:4px">MyCOACH実績：レッスン ${u.lessonCount||0}回（決済記録に基づく）${u.certIssued?`・${ic('doc',11)}事務局発行の実績証明書あり`:''}</div>`:''}
         ${u.role==='coach'&&u.avail?.length?`<div class="hint" style="margin-top:3px">対応時間帯：${u.avail.join('・')}</div>`:''}
@@ -1874,13 +1889,13 @@ const App = {
       ${rvs.length?`<div style="margin:0 0 14px"><div style="font-weight:800;font-size:13px">レビュー（${rvs.length}件）</div>${rvHtml}</div>`:''}
       <div style="display:flex;gap:8px;align-items:center">
         ${mt
-          ?`<a class="btn btn-turf btn-block" href="#chat/${mid}" onclick="App.closeModal()">${ic('chat')} メッセージを送る</a>`
+          ?`<a class="btn btn-turf btn-block" href="#chat/${esc(mid)}" onclick="App.closeModal()">${ic('chat')} メッセージを送る</a>`
           :recv
-            ?`<button class="btn btn-flag btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('heart')} いいねを返す</button>`
+            ?`<button class="btn btn-flag btn-block" onclick="App.closeModal();App.sendLike(${jsq(u.id)})">${ic('heart')} いいねを返す</button>`
             :sent
               ?`<button class="btn btn-soft btn-block" disabled style="opacity:.65;cursor:default">${ic('check')} いいね送信済み（相手の返事を待っています）</button>`
-              :`<button class="btn btn-primary btn-block" onclick="App.closeModal();App.sendLike('${u.id}')">${ic('thumb')} いいねを送る</button>`}
-        <button class="btn btn-danger-soft btn-sm" onclick="App.openReport('${u.id}')">通報</button>
+              :`<button class="btn btn-primary btn-block" onclick="App.closeModal();App.sendLike(${jsq(u.id)})">${ic('thumb')} いいねを送る</button>`}
+        <button class="btn btn-danger-soft btn-sm" onclick="App.openReport(${jsq(u.id)})">通報</button>
       </div>
       ${mt?`<div style="text-align:center;margin-top:10px"><span class="pill pill-turf">${ic('check',11)} マッチ済み</span></div>`:''}`);
   },
@@ -1918,7 +1933,7 @@ const App = {
       </div>
       <h2>MATCH!</h2>
       <p>${esc(other.name)} さんとマッチしました<br>メッセージで挨拶してみましょう。</p>
-      <button class="btn fx-main" onclick="this.closest('.match-fx').remove();location.hash='#chat/${matchId}'">${ic('chat')} メッセージを送る</button>
+      <button class="btn fx-main" onclick="this.closest('.match-fx').remove();location.hash=${jsq('#chat/'+(matchId))}">${ic('chat')} メッセージを送る</button>
       <div style="margin-top:14px"><button class="fx-sub" onclick="this.closest('.match-fx').remove();App.route()">あとでメッセージする</button></div>
     </div>`;
     document.body.appendChild(el);
@@ -1933,7 +1948,7 @@ const App = {
     let body='';
     if(tab==='match'){
       body = matches.length ? `<div class="list">${matches.map(m=>`
-        <div class="lrow" onclick="location.hash='#chat/${m.id}'">
+        <div class="lrow" onclick="location.hash=${jsq('#chat/'+(m.id))}">
           <div class="avatar">${avatarOf(m.other)}</div>
           <div class="bd"><div class="nm">${esc(m.other?.name||'退会ユーザー')}</div>
           <div class="sub">${esc(m.other?.sport||'')}・${esc(m.other?.area||'')}</div></div>
@@ -1944,12 +1959,12 @@ const App = {
     }else{
       const recvRows = await Promise.all(recv.map(async l=>{ const u=await DB.getUser(l.from); return u?`
         <div class="lrow">
-          <div class="avatar" onclick="App.openProfile('${u.id}')">${avatarOf(u)}</div>
-          <div class="bd" onclick="App.openProfile('${u.id}')"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.sport)}・${esc(u.area)}</div></div>
-          <button class="btn btn-sm btn-flag" onclick="App.sendLike('${u.id}')">${ic('heart',15)} いいねを返す</button>
+          <div class="avatar" onclick="App.openProfile(${jsq(u.id)})">${avatarOf(u)}</div>
+          <div class="bd" onclick="App.openProfile(${jsq(u.id)})"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.sport)}・${esc(u.area)}</div></div>
+          <button class="btn btn-sm btn-flag" onclick="App.sendLike(${jsq(u.id)})">${ic('heart',15)} いいねを返す</button>
         </div>`:''; }));
       const sentRows = await Promise.all(sent.map(async l=>{ const u=await DB.getUser(l.to); return u?`
-        <div class="lrow" onclick="App.openProfile('${u.id}')">
+        <div class="lrow" onclick="App.openProfile(${jsq(u.id)})">
           <div class="avatar">${avatarOf(u)}</div>
           <div class="bd"><div class="nm">${esc(u.name)}</div><div class="sub">${esc(u.sport)}・${esc(u.area)}</div></div>
           <span class="pill pill-gray">返事待ち</span>
@@ -1977,7 +1992,7 @@ const App = {
     const read=this.readMap();
     const body = matches.length ? `<div class="list">${matches.map(m=>{
       const unread = m.lastMsg && m.lastMsg.from!==this.me.id && m.lastMsg.ts>(read[m.id]||0);
-      return `<div class="lrow" onclick="location.hash='#chat/${m.id}'">
+      return `<div class="lrow" onclick="location.hash=${jsq('#chat/'+(m.id))}">
         <div class="avatar">${avatarOf(m.other)}</div>
         <div class="bd"><div class="nm">${esc(m.other?.name||'退会ユーザー')} ${unread?'<span class="pill pill-flag">新着</span>':''}</div>
         <div class="sub">${m.lastMsg?esc(m.lastMsg.text):'マッチしました！挨拶してみましょう'}</div></div>
@@ -2005,7 +2020,7 @@ const App = {
       }else if(ct.status==='active'){
         banner = `<div class="chat-ct-banner">${ic('check',14)} 契約中：${esc(ct.title)}
           ${this.me.id===ct.player
-            ?`<button class="btn btn-sm btn-turf" onclick="App.openPay('${ct.id}')">${ic('card',13)} 支払う</button>`
+            ?`<button class="btn btn-sm btn-turf" onclick="App.openPay(${jsq(ct.id)})">${ic('card',13)} 支払う</button>`
             :`<button class="btn btn-sm btn-soft" onclick="location.hash='#contracts'">詳細</button>`}</div>`;
       }
     }
@@ -2018,19 +2033,19 @@ const App = {
       <div class="chat">
         <div class="chat-hd">
           <button class="back" onclick="location.hash='#messages'">←</button>
-          <div class="avatar" style="width:42px;height:42px;font-size:20px" onclick="App.openProfile('${other?.id}')">${avatarOf(other)}</div>
-          <div class="who" onclick="App.openProfile('${other?.id}')"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${other?metaOf(other):''}</div></div>
-          <button class="btn btn-sm btn-danger-soft rep" onclick="App.openReport('${other?.id}')">通報</button>
+          <div class="avatar" style="width:42px;height:42px;font-size:20px" onclick="App.openProfile(${jsq(other?.id)})">${avatarOf(other)}</div>
+          <div class="who" onclick="App.openProfile(${jsq(other?.id)})"><div class="nm">${esc(other?.name||'退会ユーザー')}</div><div class="sub">${other?metaOf(other):''}</div></div>
+          <button class="btn btn-sm btn-danger-soft rep" onclick="App.openReport(${jsq(other?.id)})">通報</button>
         </div>
         ${canPropose?`<div class="chat-cta">
-          <button class="btn btn-sm btn-turf" onclick="App.openContractForm('${matchId}','${other?.id}')">${ic('doc',14)} 契約を${iAmCoach?'提案':'依頼'}する</button>
+          <button class="btn btn-sm btn-turf" onclick="App.openContractForm(${jsq(matchId)},${jsq(other?.id)})">${ic('doc',14)} 契約を${iAmCoach?'提案':'依頼'}する</button>
           <span class="hint">相談 → 契約 → 承諾 → お支払い</span>
         </div>`:''}
         ${banner}
         <div class="chat-body" id="chat-body"></div>
         <div class="chat-in">
           <textarea id="chat-text" placeholder="メッセージを入力" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();App.sendChat('${matchId}')}"></textarea>
-          <button class="send" onclick="App.sendChat('${matchId}')">${ic('send')}</button>
+          <button class="send" onclick="App.sendChat(${jsq(matchId)})">${ic('send')}</button>
         </div>
       </div>`;
     this.setRead(matchId);
@@ -2068,7 +2083,7 @@ const App = {
       <div class="field"><label>料金（税込）</label><input id="ct-fee" type="number" min="0" step="100" value="${iAmCoach?(this.me.fee||''):(other?.fee||'')}" oninput="App.updateCtFeeHint()"><div class="hint" id="ct-fee-hint" style="margin-top:4px"></div></div>
       <div class="field"><label>料金単位</label><select id="ct-unit"><option value="per">1回あたり</option><option value="monthly">月額</option></select></div>
       <div class="field"><label>期間</label><input id="ct-period" placeholder="例：3ヶ月 / 1回 / 継続"></div>
-      <button class="btn btn-turf btn-block" onclick="App.submitContract('${matchId}','${coach.id}','${player.id}')">この内容で送信する</button>`);
+      <button class="btn btn-turf btn-block" onclick="App.submitContract(${jsq(matchId)},${jsq(coach.id)},${jsq(player.id)})">この内容で送信する</button>`);
   },
 
   /* 完了契約から、月額の継続プランをプリセットして提案フォームを開く（体験→継続の転換） */
@@ -2171,18 +2186,18 @@ const App = {
       let actions='';
       if(c.status==='proposed'){
         actions = mine
-          ? `<button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','cancelled')">提案を取り下げる</button>`
-          : `<button class="btn btn-sm btn-turf" onclick="App.ctAction('${c.id}','active')">${ic('check',15)} 承諾して契約する</button>
-             <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','declined')">辞退する</button>`;
+          ? `<button class="btn btn-sm btn-danger-soft" onclick="App.ctAction(${jsq(c.id)},'cancelled')">提案を取り下げる</button>`
+          : `<button class="btn btn-sm btn-turf" onclick="App.ctAction(${jsq(c.id)},'active')">${ic('check',15)} 承諾して契約する</button>
+             <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction(${jsq(c.id)},'declined')">辞退する</button>`;
       }else if(c.status==='active'){
-        actions = `${this.me.id===c.player?`<button class="btn btn-sm btn-turf" onclick="App.openPay('${c.id}')">${ic('card',15)} 支払う</button>`:''}
-                   <button class="btn btn-sm btn-soft" onclick="App.ctAction('${c.id}','completed')">契約を完了にする</button>
-                   <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction('${c.id}','cancelled')">解約する</button>`;
+        actions = `${this.me.id===c.player?`<button class="btn btn-sm btn-turf" onclick="App.openPay(${jsq(c.id)})">${ic('card',15)} 支払う</button>`:''}
+                   <button class="btn btn-sm btn-soft" onclick="App.ctAction(${jsq(c.id)},'completed')">契約を完了にする</button>
+                   <button class="btn btn-sm btn-danger-soft" onclick="App.ctAction(${jsq(c.id)},'cancelled')">解約する</button>`;
       }else if(c.status==='completed'){
         const done=await DB.hasReview(c.id,this.me.id);
         actions = (done?`<span class="pill pill-gray">レビュー済み</span>`
-          :`<button class="btn btn-sm btn-primary" onclick="App.openReview('${c.id}','${c.coach===this.me.id?c.player:c.coach}')">${ic('star',14)} レビューを書く</button>`)
-          + (this.me.id===c.coach?` <button class="btn btn-sm btn-turf" onclick="App.openRenewCt('${c.matchId}','${c.player}',${Number(c.fee)||0})">${ic('refresh',13)} 継続プランを提案</button>`:'');
+          :`<button class="btn btn-sm btn-primary" onclick="App.openReview(${jsq(c.id)},${jsq(c.coach===this.me.id?c.player:c.coach)})">${ic('star',14)} レビューを書く</button>`)
+          + (this.me.id===c.coach?` <button class="btn btn-sm btn-turf" onclick="App.openRenewCt(${jsq(c.matchId)},${jsq(c.player)},${Number(c.fee)||0})">${ic('refresh',13)} 継続プランを提案</button>`:'');
       }
       return `<div class="ct-card">
         <div class="top"><h3>${esc(c.title)}</h3><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></div>
@@ -2193,13 +2208,13 @@ const App = {
          :c.status==='completed'&&this.me.id===c.coach?`<div class="hint ct-next">おつかれさまでした。手応えがあれば「継続プランを提案」で次につなげましょう</div>`:''}
         <div class="hint">相手：${esc(other?.name||'退会ユーザー')}（${c.coach===this.me.id?'受講者':'コーチ'}）</div>
         ${c.status==='active'?`<div class="next-lesson">${ic('bell',12)} 次回レッスン：${c.nextLesson?`<b>${esc(c.nextLesson)}</b>`:'未定'}
-          <button class="btn btn-sm btn-turf" style="min-height:28px;padding:3px 12px;font-size:11.5px" onclick="App.openBookingForm('${c.id}')">${ic('bell',11)} 予約する</button>
-          <button class="btn btn-sm btn-ghost" style="min-height:28px;padding:3px 10px;font-size:11.5px" onclick="App.setNextLesson('${c.id}')">直接入力</button></div>
+          <button class="btn btn-sm btn-turf" style="min-height:28px;padding:3px 12px;font-size:11.5px" onclick="App.openBookingForm(${jsq(c.id)})">${ic('bell',11)} 予約する</button>
+          <button class="btn btn-sm btn-ghost" style="min-height:28px;padding:3px 10px;font-size:11.5px" onclick="App.setNextLesson(${jsq(c.id)})">直接入力</button></div>
         ${pend?`<div class="ct-next" style="background:#FFF3CC;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${ic('bell',12)} 予約リクエスト：<b>${esc(App._bkLabel(pend))}</b>${pend.note?`<span class="hint">${esc(pend.note)}</span>`:''}
           ${pend.by===this.me.id
-            ?`<span class="hint">相手の承認待ちです</span><button class="btn btn-sm btn-ghost" style="min-height:28px;padding:3px 10px;font-size:11.5px" onclick="App.respondBooking('${pend.id}','cancelled')">取り下げる</button>`
-            :`<button class="btn btn-sm btn-turf" style="min-height:30px" onclick="App.respondBooking('${pend.id}','confirmed')">${ic('check',12)} 承認する</button>
-               <button class="btn btn-sm btn-danger-soft" style="min-height:30px" onclick="App.respondBooking('${pend.id}','declined')">辞退</button>`}</div>`:''}`:''}
+            ?`<span class="hint">相手の承認待ちです</span><button class="btn btn-sm btn-ghost" style="min-height:28px;padding:3px 10px;font-size:11.5px" onclick="App.respondBooking(${jsq(pend.id)},'cancelled')">取り下げる</button>`
+            :`<button class="btn btn-sm btn-turf" style="min-height:30px" onclick="App.respondBooking(${jsq(pend.id)},'confirmed')">${ic('check',12)} 承認する</button>
+               <button class="btn btn-sm btn-danger-soft" style="min-height:30px" onclick="App.respondBooking(${jsq(pend.id)},'declined')">辞退</button>`}</div>`:''}`:''}
         <div class="ct-meta">
           <div><div class="k">料金</div><div class="v fee" style="font-size:17px">${yen(c.fee)}<small> ${c.unit==='monthly'?'/月':'/回'}</small></div></div>
           <div><div class="k">期間</div><div class="v">${esc(c.period)}</div></div>
@@ -2210,7 +2225,7 @@ const App = {
         ${this.me.id===c.coach&&(c.status==='active'||c.status==='proposed')?`<div class="hint" style="margin-bottom:8px">あなたの受取額：${yen(feeCalc(c.fee).net)}${c.unit==='monthly'?' /月':' /回'}（事務手数料${Math.round(COACH_FEE_RATE*100)}%控除後）</div>`:''}
         ${pays.length?`<div class="hint" style="margin-bottom:8px">${ic('card',12)} 支払い ${pays.length}回・${this.me.id===c.coach?`受取合計 ${yen(pays.reduce((s,p)=>s+(p.net!=null?p.net:p.amount),0))}`:`支払合計 ${yen(pays.reduce((s,p)=>s+p.amount,0))}`}（最終 ${fmtD(pays[0].ts)}）</div>`:''}
         <div class="ct-actions">${actions}
-          <button class="btn btn-sm btn-ghost" onclick="location.hash='#chat/${c.matchId}'">${ic('chat',15)} トークへ</button></div>
+          <button class="btn btn-sm btn-ghost" onclick="location.hash=${jsq('#chat/'+(c.matchId))}">${ic('chat',15)} トークへ</button></div>
       </div>`;
     }));
     this.shell(`
@@ -2242,12 +2257,12 @@ const App = {
       <h2>${ic('bell',18)} レッスンを予約する</h2>
       <p class="hint" style="margin:6px 0 12px">相手：${esc(other?.name||'')}。承認されると「次回レッスン」に自動設定され、<b>前日にリマインド通知</b>が届きます。</p>
       ${cands.length?`<div class="hint" style="margin-bottom:6px">コーチの予約枠から選ぶ：</div>
-        <div class="slot-wrap" style="margin-bottom:12px">${cands.map(x=>`<button class="slot-chip" onclick="App._pickSlot('${x.date}','${x.time}')">${x.label}</button>`).join('')}</div>`
+        <div class="slot-wrap" style="margin-bottom:12px">${cands.map(x=>`<button class="slot-chip" onclick="App._pickSlot(${jsq(x.date)},${jsq(x.time)})">${esc(x.label)}</button>`).join('')}</div>`
         :`<p class="hint" style="margin-bottom:10px">${this.me.id===c.coach?'（マイページで予約枠を設定すると、受講者に候補として表示されます）':'コーチの予約枠は未設定です。希望日時を入力して送れます。'}</p>`}
       <div class="field"><label>日付</label><input id="bk-date" type="date" min="${today}"></div>
       <div class="field"><label>時間</label><input id="bk-time" type="time" value="10:00"></div>
       <div class="field"><label>メモ（場所など・任意）</label><input id="bk-note" placeholder="例：市民体育館に現地集合"></div>
-      <button class="btn btn-primary btn-block" onclick="App.sendBooking('${ctId}')">予約をリクエストする</button>
+      <button class="btn btn-primary btn-block" onclick="App.sendBooking(${jsq(ctId)})">予約をリクエストする</button>
     `);
   },
   _pickSlot(d,t){ const de=document.getElementById('bk-date'), te=document.getElementById('bk-time'); if(de) de.value=d; if(te) te.value=t; },
@@ -2336,7 +2351,7 @@ const App = {
       <div class="field"><label>理由</label><select id="rp-reason">
         <option>不適切なメッセージ</option><option>プロフィールの虚偽</option><option>直接取引の勧誘</option><option>返信がない</option><option>その他</option></select></div>
       <div class="field"><label>詳細（任意）</label><textarea id="rp-detail" placeholder="状況をできるだけ具体的にお書きください"></textarea></div>
-      <button class="btn btn-flag btn-block" onclick="App.submitReport('${targetId}')">通報を送信</button>`);
+      <button class="btn btn-flag btn-block" onclick="App.submitReport(${jsq(targetId)})">通報を送信</button>`);
   },
   async submitReport(targetId){
     await DB.report(this.me.id, targetId, document.getElementById('rp-reason').value, document.getElementById('rp-detail').value.trim());
@@ -2384,7 +2399,7 @@ const App = {
               <option value="team" ${u.playerType==='team'?'selected':''}>チーム</option></select></div>
             <div id="me-teamfields" style="display:${u.playerType==='team'?'block':'none'}">
               <div class="field"><label>チーム名</label><input id="me-teamname" value="${esc(u.teamName||'')}"></div>
-              <div class="field"><label>人数（目安）</label><input id="me-teamsize" type="number" min="2" value="${u.teamSize||''}"></div>
+              <div class="field"><label>人数（目安）</label><input id="me-teamsize" type="number" min="2" value="${esc(u.teamSize||'')}"></div>
             </div>`:''}
           ${isCoach?`
             <div class="coach-dash">
@@ -2444,7 +2459,7 @@ const App = {
             ${myRecs.map(r=>`
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;font-size:12.5px">
                 <span><b>${esc(r.title)}</b>（${yen(r.fee)}/回）${r.status==='open'?'<span class="pill pill-turf">掲載中</span>':'<span class="pill pill-gray">終了</span>'}</span>
-                ${r.status==='open'?`<button class="btn btn-sm btn-danger-soft" onclick="App.closeRecruit('${r.id}')">締め切る</button>`:''}
+                ${r.status==='open'?`<button class="btn btn-sm btn-danger-soft" onclick="App.closeRecruit(${jsq(r.id)})">締め切る</button>`:''}
               </div>`).join('')}
             <button class="btn btn-sm btn-primary" onclick="App.openRecruitForm()" style="margin-top:6px">募集を作成する</button>
           </div>`:''}
@@ -2455,8 +2470,8 @@ const App = {
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;font-size:12.5px">
                 <span style="font-family:Oswald">${c.id}<span class="hint">（${fmtD(c.issuedTs)}発行）</span></span>
                 <span style="display:flex;gap:6px">
-                <a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>
-                <button class="btn btn-sm btn-ghost" onclick="App.copyCertLink('${c.id}')">リンクをコピー</button></span>
+                <a class="btn btn-sm btn-soft" href="#cert/${esc(c.id)}">表示</a>
+                <button class="btn btn-sm btn-ghost" onclick="App.copyCertLink(${jsq(c.id)})">リンクをコピー</button></span>
               </div>`).join('')}
             ${myCerts.some(c=>c.status==='requested')
               ?`<span class="pill pill-gold">発行申請中（事務局が確認しています）</span>`
@@ -2494,7 +2509,7 @@ const App = {
     this.modal(`
       <h3 class="rounded" style="font-size:17px;font-weight:800;margin-bottom:10px">${ic('bell',16)} 通知</h3>
       ${ns.length?ns.map(n=>`
-        <div class="notif ${n.read?'':'unread'}" onclick="App.closeModal();${n.link?`location.hash='${n.link}';App.route&&App.route()`:''}">
+        <div class="notif ${n.read?'':'unread'}" onclick="App.closeModal();${safeHash(n.link)?`location.hash=${jsq(safeHash(n.link))};App.route&&App.route()`:''}">
           <div class="tx">${esc(n.text)}</div><div class="tm">${fmtT(n.ts)}</div>
         </div>`).join(''):'<p class="hint">通知はまだありません。いいねやマッチ、契約の更新があるとここに届きます。</p>'}`);
     await DB.markNotifsRead(this.me.id);
@@ -2564,15 +2579,15 @@ const App = {
           <div class="field" style="flex:1"><label>有効期限</label><input id="pay-exp" placeholder="12/28"></div>
           <div class="field" style="flex:1"><label>CVC</label><input id="pay-cvc" placeholder="123"></div>
         </div>
-        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">${yen(k.charge)} を支払う</button>`
+        <button class="btn btn-turf btn-block" onclick="App.submitPay(${jsq(c.id)})">${yen(k.charge)} を支払う</button>`
       :STRIPE_CHECKOUT_ENDPOINT?`
-        <button class="btn btn-turf btn-block" onclick="App.stripeCheckout('${c.id}')">Stripeで安全に支払う</button>
+        <button class="btn btn-turf btn-block" onclick="App.stripeCheckout(${jsq(c.id)})">Stripeで安全に支払う</button>
         <p class="hint" style="margin-top:8px">Stripeの決済ページに移動します。完了後、自動で支払いが記録されます。</p>`
       :STRIPE_PAYMENT_LINK?`
         <a class="btn btn-turf btn-block" href="${STRIPE_PAYMENT_LINK}" target="_blank" rel="noopener">Stripeで支払う（別タブ）</a>
-        <button class="btn btn-soft btn-block" style="margin-top:8px" onclick="App.submitPay('${c.id}')">支払い済みとして記録する</button>`
+        <button class="btn btn-soft btn-block" style="margin-top:8px" onclick="App.submitPay(${jsq(c.id)})">支払い済みとして記録する</button>`
       :`
-        <button class="btn btn-turf btn-block" onclick="App.submitPay('${c.id}')">支払いを記録する（銀行振込など）</button>
+        <button class="btn btn-turf btn-block" onclick="App.submitPay(${jsq(c.id)})">支払いを記録する（銀行振込など）</button>
         <p class="hint" style="margin-top:8px">オンライン決済は未設定です。支払いの記録のみ行われます。</p>`}
       <p class="hint" style="margin-top:10px">お支払いは契約履歴に記録され、コーチに通知されます。</p>
       <p class="hint" style="color:#0B7A57">${ic('doc',11)} この支払いは指導実績としてカウントされ、実績証明書・活動報告書に自動で反映されます（アプリ外での直接のやり取りは実績になりません）。</p>`);
@@ -2621,7 +2636,7 @@ const App = {
       <p class="hint">レッスンの感想を評価してください。相手のプロフィールに公開されます。</p>
       <div class="starpick" id="star-pick"></div>
       <div class="field"><label>コメント（任意）</label><textarea id="rv-comment" placeholder="指導内容・人柄・成果など"></textarea></div>
-      <button class="btn btn-primary btn-block" onclick="App.submitReview('${ctId}','${targetId}')">投稿する</button>`);
+      <button class="btn btn-primary btn-block" onclick="App.submitReview(${jsq(ctId)},${jsq(targetId)})">投稿する</button>`);
     this.renderStarPick();
   },
   renderStarPick(){
@@ -2690,7 +2705,7 @@ const App = {
           <div class="cert-brand"><span class="ball">M</span> MyCOACH</div>
           <h1 class="cert-title rounded" style="font-size:24px">${title}</h1>
           <table class="cert-tbl">
-            <tr><th>対象</th><td>${esc(u.name)}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}${u.teamSize?`・約${u.teamSize}名`:''}）`:''}</td></tr>
+            <tr><th>対象</th><td>${esc(u.name)}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}${u.teamSize?`・約${esc(u.teamSize)}名`:''}）`:''}</td></tr>
             <tr><th>競技 / エリア</th><td>${esc(u.sport)} / ${esc(u.area)}</td></tr>
             <tr><th>対象期間</th><td>${fmtD(u.createdAt||Date.now())} 〜 ${fmtD(Date.now())}</td></tr>
             <tr><th>契約</th><td>${cts.length} 件（契約中 ${cts.filter(c=>c.status==='active').length} / 完了 ${cts.filter(c=>c.status==='completed').length}）</td></tr>
@@ -2840,7 +2855,7 @@ const App = {
         <h1>${ic('gear',20)} MyCOACH 運営管理 <span class="pill pill-gold">ADMIN</span></h1>
         <div class="adm-tabs">
           ${[['dash','ダッシュボード'],['users','ユーザー管理'],['verify','コーチ審査'],['contracts','契約管理'],['payments','決済管理'],['certs','証明書'],['announce','お知らせ配信'],['reports','通報対応']].map(([k,l])=>
-            `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash='#admin/${k}'">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}${k==='certs'&&this._pendingCerts?` (${this._pendingCerts})`:''}</button>`).join('')}
+            `<button class="adm-tab ${tab===k?'active':''}" onclick="location.hash=${jsq('#admin/'+(k))}">${l}${k==='reports'&&this._openReports?` (${this._openReports})`:''}${k==='verify'&&this._pendingCoaches?` (${this._pendingCoaches})`:''}${k==='certs'&&this._pendingCerts?` (${this._pendingCerts})`:''}</button>`).join('')}
           <button class="adm-tab" onclick="App.logout()">ログアウト</button>
         </div>
       </div></div>`;
@@ -2897,7 +2912,7 @@ const App = {
       ${todos.length?`
       <h3 style="font-weight:800;margin:16px 0 8px">${ic('warn',15)} 要対応（クリックで移動）</h3>
       <div class="todo-row">
-        ${todos.map(t2=>`<button class="todo-card" onclick="location.hash='${t2.h}'"><span class="n" style="color:${t2.c}">${t2.n}</span><span class="l">${t2.l}</span></button>`).join('')}
+        ${todos.map(t2=>`<button class="todo-card" onclick="location.hash=${jsq(t2.h)}"><span class="n" style="color:${t2.c}">${t2.n}</span><span class="l">${t2.l}</span></button>`).join('')}
       </div>`:`<div class="notice" style="border-color:var(--turf);color:#0B7A57;margin-top:16px">${ic('check',14)} 現在、対応が必要なタスクはありません。</div>`}
       <div class="stats">
         <div class="stat"><div class="n">${s.coaches}</div><div class="l">コーチ数</div></div>
@@ -2970,11 +2985,11 @@ const App = {
         <td>${fmtD(u.createdAt||Date.now())}</td>
         <td>${u.deleted?'<span class="pill pill-gray">退会</span>':u.suspended?'<span class="pill pill-red">停止中</span>':'<span class="pill pill-turf">有効</span>'}</td>
         <td><div class="tbl-actions">
-          <button class="btn btn-sm btn-soft" onclick="App.admUserDetail('${u.id}')">詳細</button>
+          <button class="btn btn-sm btn-soft" onclick="App.admUserDetail(${jsq(u.id)})">詳細</button>
           ${u.isAdmin||u.deleted?'':
           u.suspended
-            ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser('${u.id}',false)">復帰</button>`
-            :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser('${u.id}',true)">停止</button>`}</div></td>
+            ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser(${jsq(u.id)},false)">復帰</button>`
+            :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser(${jsq(u.id)},true)">停止</button>`}</div></td>
       </tr>`).join('')||'<tr><td colspan="7">該当ユーザーなし</td></tr>'}`;
   },
   async admToggleUser(id,suspend){
@@ -2998,7 +3013,7 @@ const App = {
         <div class="hint">${esc(u.email)}</div></div>
       </div>
       <table class="legal-tbl" style="margin-bottom:14px">
-        <tr><th>区分</th><td>${u.role==='coach'?'コーチ':'受講者'}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}・${u.teamSize||'-'}名）`:''}</td></tr>
+        <tr><th>区分</th><td>${u.role==='coach'?'コーチ':'受講者'}${u.playerType==='team'?`（チーム：${esc(u.teamName||'')}・${esc(u.teamSize||'-')}名）`:''}</td></tr>
         <tr><th>競技 / エリア</th><td>${esc(u.sport)} / ${esc(u.area)}${u.role==='coach'?`・${CTARGET_S[u.coachTarget||'both']}対応`:''}</td></tr>
         <tr><th>登録日</th><td>${fmtD(u.createdAt||Date.now())}</td></tr>
         <tr><th>状態</th><td>${u.deleted?'退会':u.suspended?'停止中':'有効'}${u.role==='coach'?` ／ 認証：${u.verified==='approved'?'済':u.verified==='pending'?'審査中':'未'}`:''}</td></tr>
@@ -3009,8 +3024,8 @@ const App = {
       </table>
       ${u.isAdmin||u.deleted?'':`<div style="display:flex;gap:8px">
         ${u.suspended
-          ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser('${u.id}',false)">復帰させる</button>`
-          :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser('${u.id}',true)">停止する</button>`}
+          ?`<button class="btn btn-sm btn-turf" onclick="App.admToggleUser(${jsq(u.id)},false)">復帰させる</button>`
+          :`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUser(${jsq(u.id)},true)">停止する</button>`}
       </div>`}`);
   },
 
@@ -3023,7 +3038,7 @@ const App = {
         <td class="num">${yen(c.fee)}<span class="hint">${c.unit==='monthly'?'/月':'/回'}</span></td>
         <td><span class="pill ${CT_PILL[c.status]}">${CT_STATUS[c.status]}</span></td>
         <td>${fmtD(c.ts)}</td>
-        <td>${c.status==='active'?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelCt('${c.id}')">強制解約</button>`:'—'}</td></tr>`;}));
+        <td>${c.status==='active'?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelCt(${jsq(c.id)})">強制解約</button>`:'—'}</td></tr>`;}));
     this._admCts=cts;
     return `<div class="wrap">
       <div class="adm-toolbar">
@@ -3052,8 +3067,8 @@ const App = {
         <td>${esc(r.reason)}<div class="hint">${esc(r.detail||'')}</div></td>
         <td>${r.status==='open'?'<span class="pill pill-flag">未対応</span>':'<span class="pill pill-gray">対応済</span>'}</td>
         <td><div class="tbl-actions">
-          ${r.status==='open'?`<button class="btn btn-sm btn-soft" onclick="App.admResolve('${r.id}')">対応済にする</button>`:''}
-          ${tg&&!tg.suspended&&!tg.isAdmin?`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUserFromReport('${tg.id}','${r.id}')">対象を停止</button>`:''}
+          ${r.status==='open'?`<button class="btn btn-sm btn-soft" onclick="App.admResolve(${jsq(r.id)})">対応済にする</button>`:''}
+          ${tg&&!tg.suspended&&!tg.isAdmin?`<button class="btn btn-sm btn-danger-soft" onclick="App.admToggleUserFromReport(${jsq(tg.id)},${jsq(r.id)})">対象を停止</button>`:''}
         </div></td></tr>`;}));
     return `<div class="wrap">
       <p class="hint" style="margin:16px 0 10px">通報内容を確認し、必要に応じてユーザー停止などの対応を行ってください。</p>
@@ -3094,7 +3109,7 @@ const App = {
       <div class="tbl-wrap" style="margin-bottom:20px"><table>
         <tr><th>コーチ</th><th>未精算額（受取分）</th><th>件数</th><th>操作</th></tr>
         ${un.map(x=>`<tr><td><b>${esc(us[x.coach]||'-')}</b></td><td class="num">${yen(x.net)}</td><td>${x.count}</td>
-          <td><button class="btn btn-sm btn-turf" onclick="App.admSettle('${x.coach}')">精算済みにする</button></td></tr>`).join('')
+          <td><button class="btn btn-sm btn-turf" onclick="App.admSettle(${jsq(x.coach)})">精算済みにする</button></td></tr>`).join('')
           ||'<tr><td colspan="4">未精算の決済はありません</td></tr>'}
       </table></div>
       ${pos.length?`
@@ -3112,7 +3127,7 @@ const App = {
         ${ps.map(p=>`<tr><td>${fmtD(p.ts)}</td><td>${esc(us[p.coach]||'-')}</td><td>${esc(us[p.player]||'-')}</td>
           <td class="num">${yen(p.amount)}</td><td class="num">${yen(p.fee)}</td><td class="num">${yen(p.net)}</td>
           <td>${p.method==='demo'?'デモ決済':p.method==='manual'?'手動記録':'Stripe'}${p.payoutId==='stripe_connect'?'<div class="hint">自動分配済</div>':p.payoutId?'<div class="hint">精算済</div>':''}</td>
-          <td>${!p.payoutId?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelPayment('${p.id}')">取消</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8">決済データがありません</td></tr>'}
+          <td>${!p.payoutId?`<button class="btn btn-sm btn-danger-soft" onclick="App.admCancelPayment(${jsq(p.id)})">取消</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8">決済データがありません</td></tr>'}
       </table></div>
       <p class="hint" style="margin-top:8px">「取消」は誤って記録された支払いの削除です（未精算のもののみ）。コーチの指導実績カウントも1件分戻ります。実際のお金の返金は行われないため、Stripe決済の返金はStripeダッシュボードから実施してください。</p></div>`;
   },
@@ -3129,19 +3144,19 @@ const App = {
           <td>${esc(u.sport)} / ${esc(u.area)}</td>
           <td>${CTARGET_S[u.coachTarget||'both']}</td>
           <td>${u.verifiedAppliedTs?fmtD(u.verifiedAppliedTs):'-'}</td>
-          <td>${u.hasIdDoc?`<button class="btn btn-sm btn-soft" onclick="App.admViewDoc('${u.id}')">書類を見る</button>`:'<span class="hint">未提出</span>'}</td>
+          <td>${u.hasIdDoc?`<button class="btn btn-sm btn-soft" onclick="App.admViewDoc(${jsq(u.id)})">書類を見る</button>`:'<span class="hint">未提出</span>'}</td>
           <td>${u.verified==='approved'?'<span class="pill pill-turf">認証済</span>'
               :u.verified==='rejected'?'<span class="pill pill-red">見送り</span>'
               :u.verified==='pending'?'<span class="pill pill-gold">審査待ち</span>'
               :'<span class="pill pill-gray">未申請</span>'}</td>
           <td><div class="tbl-actions">${
             u.verified==='pending'
-              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet('${u.id}','approved')">承認</button>
-                <button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet('${u.id}','rejected')">見送り</button>`
+              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet(${jsq(u.id)},'approved')">承認</button>
+                <button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet(${jsq(u.id)},'rejected')">見送り</button>`
             :u.verified==='approved'
-              ?`<button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet('${u.id}','rejected')">認証を取消</button>`
+              ?`<button class="btn btn-sm btn-danger-soft" onclick="App.admVerifySet(${jsq(u.id)},'rejected')">認証を取消</button>`
             :u.verified==='rejected'
-              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet('${u.id}','approved')">承認する</button>`
+              ?`<button class="btn btn-sm btn-turf" onclick="App.admVerifySet(${jsq(u.id)},'approved')">承認する</button>`
             :'<span class="hint">申請待ち</span>'}</div></td></tr>`).join('')||'<tr><td colspan="7">コーチがいません</td></tr>'}
       </table></div></div>`;
   },
@@ -3160,10 +3175,10 @@ const App = {
           <td>${fmtD(c.requestTs)}</td>
           <td>${c.status==='issued'?'<span class="pill pill-turf">発行済</span>':c.status==='revoked'?'<span class="pill pill-red">失効</span>':'<span class="pill pill-gold">申請中</span>'}</td>
           <td><div class="tbl-actions">
-            ${c.status==='requested'&&u?`<button class="btn btn-sm btn-turf" onclick="App.admIssueCert('${c.id}')">発行する</button>`:''}
-            ${c.status==='issued'?`<a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>
-              <button class="btn btn-sm btn-danger-soft" onclick="App.admRevokeCert('${c.id}')">失効</button>`:''}
-            ${c.status==='revoked'?`<a class="btn btn-sm btn-soft" href="#cert/${c.id}">表示</a>`:''}
+            ${c.status==='requested'&&u?`<button class="btn btn-sm btn-turf" onclick="App.admIssueCert(${jsq(c.id)})">発行する</button>`:''}
+            ${c.status==='issued'?`<a class="btn btn-sm btn-soft" href="#cert/${esc(c.id)}">表示</a>
+              <button class="btn btn-sm btn-danger-soft" onclick="App.admRevokeCert(${jsq(c.id)})">失効</button>`:''}
+            ${c.status==='revoked'?`<a class="btn btn-sm btn-soft" href="#cert/${esc(c.id)}">表示</a>`:''}
           </div></td></tr>`; }).join('')||'<tr><td colspan="6">発行申請はありません</td></tr>'}
       </table></div></div>`;
   },

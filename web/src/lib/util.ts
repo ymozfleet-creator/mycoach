@@ -31,7 +31,8 @@ export function relTime(at: number) {
   return `${Math.floor(s / 86400)}日前`
 }
 export const uid6 = () => Math.random().toString(36).slice(2, 8)
-export const inviteCode = () => Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join('')
+/** 招待コード：暗号学的に安全な乱数で8文字（32種類^8 ≒ 1.1兆通り。総当たりで当てられない） */
+export const inviteCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 
 /* ---------- 暑さ指数（WBGT） ---------- */
 /** 環境省 熱中症予防情報サイトで用いられる推定式。Ta[℃] RH[%] SR[kW/m2] WS[m/s] */

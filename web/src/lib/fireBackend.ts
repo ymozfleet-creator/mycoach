@@ -69,7 +69,7 @@ export const fireBackend: Backend = {
 
   watchEvents: (c, from, cb) => onSnapshot(query(sub(c, 'events'), where('date', '>=', from), orderBy('date')), s => cb(list(s)), () => cb([])),
   saveEvent: async (c, e) => { const { id, ...rest } = e; await setDoc(doc(db, 'clubs', c, 'events', id), strip(rest)) },
-  setAttendance: async (c, eid, pid, a) => { await updateDoc(doc(db, 'clubs', c, 'events', eid), { [`att.${pid}`]: a }) },
+  setAttendance: async (c, eid, pid, a) => { await updateDoc(doc(db, 'clubs', c, 'events', eid), { [`att.${pid}`]: a, attBy: { p: pid, u: auth.currentUser?.uid || '' } }) },
 
   watchAnnouncements: (c, cb) => onSnapshot(query(sub(c, 'announcements'), orderBy('at', 'desc'), limit(30)), s => cb(list(s)), () => cb([])),
   postAnnouncement: async (c, a) => { await addDoc(sub(c, 'announcements'), strip(a)) },
@@ -108,7 +108,7 @@ export const fireBackend: Backend = {
     // 承認後は身分証の画像を残さない（必要最小限の保管）
     if (ok) await deleteDoc(doc(db, 'verify_docs', uid)).catch(() => {})
     await addDoc(collection(db, 'audit_logs'), { action: ok ? 'verify_approve' : 'verify_reject', target: uid, by: auth.currentUser?.uid || '', note: note.slice(0, 300), at: Date.now() })
-    await addDoc(collection(db, 'notifications'), { to: uid, type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}`.slice(0, 300) })
+    await addDoc(collection(db, 'notifications'), { to: uid, from: auth.currentUser?.uid || '', type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}`.slice(0, 300) })
   },
 
   watchPayments: (uid, cb) => {
@@ -138,6 +138,6 @@ export const fireBackend: Backend = {
   sendMessage: async (id, m) => { await addDoc(collection(db, 'contracts', id, 'messages'), strip(m)) },
 
   watchNotices: (uid, cb) => onSnapshot(query(collection(db, 'notifications'), where('to', '==', uid), orderBy('at', 'desc'), limit(30)), s => cb(list(s)), () => cb([])),
-  notify: async (to, text, type) => { await addDoc(collection(db, 'notifications'), { to, text: text.slice(0, 300), type, read: false, at: Date.now() }) },
+  notify: async (to, text, type) => { await addDoc(collection(db, 'notifications'), { to, from: auth.currentUser?.uid || '', text: text.slice(0, 300), type, read: false, at: Date.now() }) },
   markRead: async id => { await updateDoc(doc(db, 'notifications', id), { read: true }) },
 }

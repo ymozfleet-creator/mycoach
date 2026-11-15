@@ -90,7 +90,7 @@ export default function More() {
       <Sheet open={sheet === 'join'} onClose={() => setSheet('')} title="ほかのクラブに参加" footer={<Button block size="lg" disabled={code.length < 4} onClick={async () => {
         try { const id = await be.joinClub(code, authUser.uid); selectClub(id); setSheet(''); setCode(''); toast('参加しました') } catch (e) { setJoinErr((e as Error).message) }
       }}>参加する</Button>}>
-        <Field label="招待コード"><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={6} value={code} onChange={e => setCode(e.target.value.toUpperCase())} /></Field>
+        <Field label="招待コード"><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={10} value={code} onChange={e => setCode(e.target.value.toUpperCase())} /></Field>
         {joinErr && <p className="rounded-xl bg-red-50 px-3 py-2 text-[13px] text-red-600">{joinErr}</p>}
       </Sheet>
 
