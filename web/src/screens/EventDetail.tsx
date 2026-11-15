@@ -71,7 +71,7 @@ export default function EventDetail() {
               </div>
             )}
             <HeatStrip date={e.date} indoor={e.indoor} start={e.start} minutes={e.minutes} />
-            <p className="mt-2 text-[11px] text-ink-3">気象予報（Open-Meteo）から環境省の推定式で計算した参考値です。{e.indoor ? '屋内は日射・風を0として推定しています。' : ''}現地に暑さ指数計がある場合は実測値を優先してください。</p>
+            <p className="mt-2 text-[11px] text-ink-3">気象予報（Open-Meteo または MET Norway）から環境省の推定式で計算した参考値です。{e.indoor ? '屋内は日射・風を0として推定しています。' : ''}現地に暑さ指数計がある場合は実測値を優先してください。</p>
           </Card>
         </Section>
       )}

@@ -60,20 +60,51 @@ async function fetchOnce(lat: number, lon: number, ms: number): Promise<WxHour[]
     return h.time.map((t: string, i: number) => ({ t, Ta: h.temperature_2m[i], RH: h.relative_humidity_2m[i], SR: (h.shortwave_radiation[i] || 0) / 1000, WS: h.wind_speed_10m[i] }))
   } finally { clearTimeout(t) }
 }
-/** 気象予報を取得。応答が遅いときは打ち切って再試行し、直近（6時間以内）に取得した予報があればそれを使う */
+/** 太陽高度の正弦（UTC時刻・緯度経度から） */
+function sinElev(d: Date, lat: number, lon: number) {
+  const r = Math.PI / 180
+  const doy = Math.floor((d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 0)) / 864e5)
+  const g = (2 * Math.PI / 365) * (doy - 1 + (d.getUTCHours() - 12) / 24)
+  const decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g)
+  const eqt = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g))
+  const tst = d.getUTCHours() * 60 + d.getUTCMinutes() + eqt + 4 * lon
+  const ha = (tst / 4 - 180) * r
+  return Math.sin(lat * r) * Math.sin(decl) + Math.cos(lat * r) * Math.cos(decl) * Math.cos(ha)
+}
+/** MET Norway（ノルウェー気象機関）の予報。日射量は雲量と太陽高度から推定（Haurwitz式＋Kasten-Czeplak式） */
+async function fetchMetNo(lat: number, lon: number, ms: number): Promise<WxHour[]> {
+  const ctl = new AbortController()
+  const t = setTimeout(() => ctl.abort(), ms)
+  try {
+    const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, { signal: ctl.signal })
+    if (!r.ok) throw new Error('metno')
+    const j = await r.json()
+    return j.properties.timeseries.map((x: { time: string; data: { instant: { details: Record<string, number> } } }) => {
+      const d = new Date(x.time)
+      const det = x.data.instant.details
+      const jst = new Date(d.getTime() + 9 * 3600e3)
+      const t = `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:00`
+      const se = sinElev(new Date(d.getTime() + 30 * 60e3), lat, lon)
+      const clear = se > 0.01 ? 1098 * se * Math.exp(-0.057 / se) : 0
+      const cloud = (det.cloud_area_fraction ?? 50) / 100
+      return { t, Ta: det.air_temperature, RH: det.relative_humidity, SR: (clear * (1 - 0.75 * Math.pow(cloud, 3.4))) / 1000, WS: det.wind_speed }
+    })
+  } finally { clearTimeout(t) }
+}
+/** 気象予報を取得。Open-Meteo を優先し、つながらない環境では MET Norway を使う。直近（6時間以内）に取得した予報も再利用する */
 export async function fetchWeather(lat: number, lon: number): Promise<WxHour[]> {
   const key = `${lat.toFixed(2)},${lon.toFixed(2)}`
   const mem = wxCache[key]
   if (mem && Date.now() - mem.at < 30 * 60e3) return mem.hours
   let stored: { at: number; hours: WxHour[] } | null = null
   try { stored = JSON.parse(localStorage.getItem('mcmt_wx_' + key) || 'null') } catch { /* noop */ }
-  for (const ms of [8000, 12000]) {
-    try {
-      const hours = await fetchOnce(lat, lon, ms)
-      wxCache[key] = { at: Date.now(), hours }
-      try { localStorage.setItem('mcmt_wx_' + key, JSON.stringify(wxCache[key])) } catch { /* noop */ }
-      return hours
-    } catch { /* 再試行 */ }
+  const metno = fetchMetNo(lat, lon, 12000).catch(() => null)
+  let hours: WxHour[] | null = await fetchOnce(lat, lon, 6000).catch(() => null)
+  if (!hours) hours = await metno
+  if (hours?.length) {
+    wxCache[key] = { at: Date.now(), hours }
+    try { localStorage.setItem('mcmt_wx_' + key, JSON.stringify(wxCache[key])) } catch { /* noop */ }
+    return hours
   }
   if (stored && Date.now() - stored.at < 6 * 3600e3) return stored.hours
   throw new Error('weather')
