@@ -3,7 +3,8 @@
     "source": "setup/functions"
   },
   "firestore": {
-    "rules": "setup/firestore.rules"
+    "rules": "setup/firestore.rules",
+    "indexes": "setup/firestore.indexes.json"
   },
   "storage": {
     "rules": "storage.rules"

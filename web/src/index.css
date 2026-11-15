@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body { font-family: "Noto Sans JP", "Hiragino Sans", Meiryo, system-ui, sans-serif; color: #0F172A; overscroll-behavior-y: none; }
+.no-scrollbar { scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media print { nav, header button, .no-print { display: none !important; } body { background: #fff; } }

@@ -2,8 +2,8 @@
    - ページ(HTML)：ネットワーク優先で常に最新版を表示。3秒以内に返らない／オフライン時のみ保存版を表示
    - アイコン等の静的ファイル：保存版を即表示し、裏で更新
    - 版を上げると古いキャッシュはすべて削除される */
-const VERSION = 'mcmt-2026-11-13-4';
-const SHELL = ['./', './index.html', './app.html', './manifest.json', './icons/icon-192.png'];
+const VERSION = 'mcmt-2026-11-15-1';
+const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -31,7 +31,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin) return;            // 外部（フォント・気象API・決済）は触らない
+  if (url.origin !== location.origin) return;              // 外部（フォント・気象API・決済）は触らない
+  if (url.pathname.includes('/app/')) return;              // 新アプリ（app/）は専用のService Workerに任せる
   if (req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
     e.respondWith(networkFirst(req, 3000));
     return;

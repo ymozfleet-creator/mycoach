@@ -213,5 +213,99 @@ service cloud.firestore {
     match /mail/{id} {
       allow read, write: if false;
     }
+  
+    /* =================================================================
+       MyCOACH-MyTEAM（地域クラブ運営）
+       ================================================================= */
+    function club(c) { return get(/databases/$(database)/documents/clubs/$(c)).data; }
+    function isMember(c) { return authed() && request.auth.uid in club(c).memberUids; }
+    function isClubAdmin(c) { return authed() && request.auth.uid in club(c).adminUids; }
+    function isStaff(c) { return authed() && (request.auth.uid in club(c).adminUids || request.auth.uid in club(c).coachUids); }
+    // 自分自身だけを配列に追加する変更か
+    function onlyAddsMe(field) {
+      return request.resource.data.get(field, []).hasAll(resource.data.get(field, []))
+        && request.resource.data.get(field, []).removeAll(resource.data.get(field, [])).hasOnly([request.auth.uid]);
+    }
+
+    // 招待コード → クラブID。コードを知っている人だけが引ける（一覧は不可）
+    match /invites/{code} {
+      allow get: if authed();
+      allow list: if false;
+      allow create: if authed() && club(request.resource.data.clubId).ownerUid == request.auth.uid
+        && request.resource.data.role in ['member', 'coach'];
+      allow update, delete: if false;
+    }
+
+    function invite(code) { return get(/databases/$(database)/documents/invites/$(code)).data; }
+    match /clubs/{c} {
+      // 会員のみ閲覧可（招待コードを含むため）
+      allow get: if isMember(c);
+      allow list: if false;
+      allow create: if authed()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.adminUids == [request.auth.uid]
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.coachUids.size() == 0;
+      // 運営は自由に更新。それ以外は「正しい招待コードで、自分を会員に加える」だけ許可。
+      // 指導者（coachUids）への追加は、指導者用の招待コードの場合のみ
+      allow update: if isClubAdmin(c)
+        || (authed()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'joinCode'])
+            && exists(/databases/$(database)/documents/invites/$(request.resource.data.joinCode))
+            && invite(request.resource.data.joinCode).clubId == c
+            && onlyAddsMe('memberUids')
+            && (request.resource.data.get('coachUids', []) == resource.data.get('coachUids', [])
+                || (onlyAddsMe('coachUids') && invite(request.resource.data.joinCode).role == 'coach')));
+      allow delete: if false;
+
+      // 会員：運営・指導者は全員分、保護者は自分の家庭の分だけ
+      match /players/{p} {
+        allow read: if isStaff(c) || (isMember(c) && request.auth.uid in resource.data.guardianUids);
+        allow create: if isClubAdmin(c) || (isMember(c) && request.resource.data.guardianUids == [request.auth.uid] && request.resource.data.discount == 0);
+        allow update: if isClubAdmin(c)
+          || (isMember(c) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['guardianUids']) && onlyAddsMe('guardianUids'));
+        allow delete: if isClubAdmin(c);
+      }
+      // 予定：運営・指導者が作成。会員は出欠（att）だけ更新できる
+      match /events/{e} {
+        allow read: if isMember(c);
+        allow create, delete: if isStaff(c);
+        allow update: if isStaff(c) || (isMember(c) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['att']));
+      }
+      match /announcements/{a} {
+        allow read: if isMember(c);
+        allow create: if isStaff(c) && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+        allow update, delete: if isClubAdmin(c);
+      }
+      // 体調・練習記録：運営・指導者と、記録した本人だけが読める
+      match /conditions/{x} {
+        allow read: if isStaff(c) || (isMember(c) && resource.data.by == request.auth.uid);
+        allow create: if isMember(c) && request.resource.data.by == request.auth.uid
+          && request.resource.data.rpe is number && request.resource.data.rpe >= 1 && request.resource.data.rpe <= 10;
+        allow update, delete: if isClubAdmin(c);
+      }
+      // 会費：運営と、その会員の保護者だけ。書き込みは運営（カード決済の反映はCloud Functions）
+      match /fees/{f} {
+        allow read: if isClubAdmin(c) || (isMember(c) && request.auth.uid in resource.data.guardianUids);
+        allow write: if isClubAdmin(c);
+      }
+      match /incidents/{i} {
+        allow read, create: if isStaff(c);
+        allow update, delete: if isClubAdmin(c);
+      }
+    }
+
+    // 指導の依頼のメッセージ（依頼の当事者のみ）
+    match /contracts/{k}/messages/{m} {
+      function ct() { return get(/databases/$(database)/documents/contracts/$(k)).data; }
+      allow read: if authed() && (request.auth.uid == ct().coach || request.auth.uid == ct().player);
+      allow create: if authed() && (request.auth.uid == ct().coach || request.auth.uid == ct().player)
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+      allow update, delete: if false;
+    }
+
+    // AI利用回数の記録（サーバー専用）
+    match /ai_usage/{id} { allow read, write: if false; }
   }
 }

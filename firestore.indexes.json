@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    { "collectionGroup": "notifications", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "to", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] },
+    { "collectionGroup": "fees", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "guardianUids", "arrayConfig": "CONTAINS" }, { "fieldPath": "month", "order": "ASCENDING" } ] },
+    { "collectionGroup": "conditions", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "by", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" } ] },
+    { "collectionGroup": "users", "queryScope": "COLLECTION", "fields": [ { "fieldPath": "sports", "arrayConfig": "CONTAINS" }, { "fieldPath": "role", "order": "ASCENDING" } ] }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,125 @@
+export type Role = 'member' | 'coach' | 'admin'
+export type Att = 'yes' | 'no' | 'maybe'
+
+export interface Profile {
+  uid: string
+  name: string
+  role: Role
+  clubIds: string[]
+  // 指導者プロフィール
+  sports?: string[]
+  areaLabel?: string
+  lat?: number
+  lon?: number
+  days?: number[]
+  license?: string
+  verified?: 'none' | 'pending' | 'approved'
+  training?: boolean
+  teacher?: boolean
+  bio?: string
+  ratingAvg?: number
+  ratingCount?: number
+  lessonCount?: number
+}
+
+export interface Venue { name: string; indoor: boolean }
+
+export interface Club {
+  id: string
+  name: string
+  sport: string
+  areaLabel: string
+  lat: number
+  lon: number
+  venues: Venue[]
+  fee: number
+  inviteCode: string
+  coachCode?: string
+  ownerUid: string
+  adminUids: string[]
+  coachUids: string[]
+  memberUids: string[]
+}
+
+export interface Player {
+  id: string
+  name: string
+  grade: string
+  guardianUids: string[]
+  discount: number // 0 / 50 / 100（%）
+}
+
+export interface ClubEvent {
+  id: string
+  title: string
+  date: string // YYYY-MM-DD
+  start: string // HH:MM
+  minutes: number
+  venue: string
+  indoor: boolean
+  coachUid?: string
+  coachName?: string
+  status: 'scheduled' | 'canceled'
+  note?: string
+  att: Record<string, Att>
+}
+
+export interface Announcement {
+  id: string
+  text: string
+  kind: 'info' | 'urgent'
+  byName: string
+  at: number
+}
+
+export interface Condition {
+  id: string
+  playerId: string
+  date: string
+  rpe: number
+  minutes: number
+  sleep: number
+  at: number
+  by?: string
+}
+
+export interface Fee {
+  id: string // `${month}_${playerId}`
+  month: string // YYYY-MM
+  playerId: string
+  playerName: string
+  amount: number
+  status: 'unpaid' | 'paid' | 'exempt'
+  guardianUids: string[]
+  paidAt?: number
+}
+
+export interface Incident {
+  id: string
+  date: string
+  type: 'ヒヤリハット' | '事故'
+  who: string
+  desc: string
+  action: string
+}
+
+/** 指導の依頼（既存 contracts コレクションを流用：player=依頼したクラブ運営者） */
+export interface Contract {
+  id: string
+  coach: string
+  coachName: string
+  player: string
+  playerName: string
+  clubId: string
+  clubName: string
+  clubCode?: string
+  message?: string
+  title: string
+  fee: number
+  status: 'proposed' | 'active' | 'declined' | 'done'
+  at: number
+}
+
+export interface Message { id: string; from: string; fromName: string; text: string; at: number }
+
+export interface Notice { id: string; to: string; text: string; type: string; read: boolean; at: number }

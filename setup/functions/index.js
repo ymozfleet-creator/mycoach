@@ -132,6 +132,19 @@ exports.stripeWebhook = onRequest(
     if ((await evRef.get()).exists) { res.json({ received: true, duplicate: true }); return; }
     await evRef.set({ ts: Date.now(), type: event.type });
 
+    if (event.type === 'checkout.session.completed' && (event.data.object.metadata || {}).kind === 'fee') {
+      // MyCOACH-MyTEAM：クラブ会費のカード払い → 会費を「支払い済み」にする
+      const s = event.data.object;
+      const m = s.metadata;
+      const ref = admin.firestore().doc(`clubs/${m.clubId}/fees/${m.feeId}`);
+      await ref.update({ status: 'paid', paidAt: Date.now(), method: 'stripe', stripeSessionId: s.id });
+      const id = 'fee' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      await admin.firestore().collection('club_payments').doc(id).set({
+        id, clubId: m.clubId, feeId: m.feeId, payer: m.payer || '', amount: s.amount_total,
+        platformFee: Math.round(s.amount_total * CLUB_FEE_RATE), ts: Date.now(), stripeSessionId: s.id,
+      });
+      res.json({ received: true }); return;
+    }
     if (event.type === 'checkout.session.completed') {
       const s = event.data.object;
       const m = s.metadata || {};
@@ -307,3 +320,85 @@ exports.lessonReminder = onSchedule({ region: REGION, schedule: '0 9 * * *', tim
     }
   }
 });
+
+
+/* =====================================================================
+   MyCOACH-MyTEAM（地域クラブ運営）用
+   ===================================================================== */
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
+const CLUB_FEE_RATE = 0.05;      // 会費集金の手数料（5%）。サービス紹介ページの表記と揃える
+const AI_DAILY_LIMIT = 30;       // 1人1日あたりのAI利用回数の上限
+
+/* ---------- 会費のカード払い（Stripe Checkout） ---------- */
+exports.createFeeCheckout = onRequest(
+  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: true },
+  async (req, res) => {
+    try {
+      if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+      const decoded = await requireAuth(req, res); if (!decoded) return;
+      const { clubId, feeId, origin } = req.body || {};
+      if (!clubId || !feeId) { res.status(400).json({ error: 'clubId / feeId が必要です' }); return; }
+      const snap = await admin.firestore().doc(`clubs/${clubId}/fees/${feeId}`).get();
+      if (!snap.exists) { res.status(404).json({ error: '請求が見つかりません' }); return; }
+      const f = snap.data();
+      if (!(f.guardianUids || []).includes(decoded.uid)) { res.status(403).json({ error: 'この請求の支払い権限がありません' }); return; }
+      if (f.status !== 'unpaid') { res.status(400).json({ error: 'この請求はお支払い済みです' }); return; }
+      const clubSnap = await admin.firestore().doc(`clubs/${clubId}`).get();
+      const clubName = clubSnap.exists ? clubSnap.data().name : '';
+      const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
+      const back = origin || APP_URL;
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [{ price_data: { currency: 'jpy', product_data: { name: `${clubName} 会費（${f.playerName}さん・${f.month}）` }, unit_amount: Number(f.amount) }, quantity: 1 }],
+        metadata: { kind: 'fee', clubId, feeId, payer: decoded.uid },
+        success_url: `${back}${back.includes('?') ? '&' : '?'}paid=1`,
+        cancel_url: back,
+      });
+      res.json({ url: session.url });
+    } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  }
+);
+
+/* ---------- AIアシスト（練習メニュー作成） ---------- */
+exports.aiAssist = onRequest(
+  { region: REGION, secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 60 },
+  async (req, res) => {
+    try {
+      if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+      const decoded = await requireAuth(req, res); if (!decoded) return;
+      const day = new Date().toISOString().slice(0, 10);
+      const uref = admin.firestore().doc(`ai_usage/${decoded.uid}_${day}`);
+      const used = await admin.firestore().runTransaction(async t => {
+        const d = await t.get(uref); const n = (d.exists ? d.data().n : 0) + 1;
+        t.set(uref, { n, uid: decoded.uid, day }); return n;
+      });
+      if (used > AI_DAILY_LIMIT) { res.status(429).json({ error: '本日のAI利用回数の上限に達しました' }); return; }
+
+      const { type, input } = req.body || {};
+      if (type !== 'menu' || !input) { res.status(400).json({ error: '不正なリクエストです' }); return; }
+      const i = {
+        sport: String(input.sport || '').slice(0, 30), goal: String(input.goal || '').slice(0, 30),
+        minutes: Math.min(240, Math.max(30, Number(input.minutes) || 120)), players: Math.min(80, Math.max(1, Number(input.players) || 10)),
+        wbgt: input.wbgt == null ? null : Number(input.wbgt), level: String(input.level || '').slice(0, 10), note: String(input.note || '').slice(0, 200),
+      };
+      const prompt = `あなたは日本の中学生・高校生の部活動（地域クラブ）を指導する経験豊富なコーチです。次の条件で練習メニューを作ってください。
+種目：${i.sport}／ねらい：${i.goal}／練習時間：${i.minutes}分／参加人数：${i.players}人／レベル：${i.level}
+暑さ指数（WBGT）：${i.wbgt == null ? '不明' : i.wbgt}（日本スポーツ協会の熱中症予防運動指針に従い、25以上は30分おき、28以上は15〜20分おきに休憩を入れ、激しい運動を避ける。31以上は運動を原則中止とし、その旨をpointsに書く）
+指導者のメモ：${i.note || 'なし'}
+条件：ウォームアップとクールダウンを含め、合計がちょうど${i.minutes}分になるよう時間を割り振る。成長期の選手に無理のない内容にする。
+出力はJSONのみ。形式：{"blocks":[{"from":0,"to":15,"title":"短い名前","detail":"やり方を1文","caution":"注意点があれば1文（なければ省略）"}],"points":["指導のポイントを1文","..."]}`;
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY.value(), 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (!r.ok) { console.error('anthropic', r.status, await r.text()); res.status(502).json({ error: 'AIの呼び出しに失敗しました' }); return; }
+      const j = await r.json();
+      const text = (j.content || []).map(c => c.text || '').join('');
+      const m = text.match(/\{[\s\S]*\}/);
+      const out = m ? JSON.parse(m[0]) : null;
+      if (!out || !Array.isArray(out.blocks)) { res.status(502).json({ error: 'AIの応答を読み取れませんでした' }); return; }
+      res.json({ blocks: out.blocks.slice(0, 20), points: (out.points || []).slice(0, 6) });
+    } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  }
+);
