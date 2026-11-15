@@ -49,18 +49,34 @@ export function wbgtLevel(w: number): WbgtLevel {
 
 export interface WxHour { t: string; Ta: number; RH: number; SR: number; WS: number }
 const wxCache: Record<string, { at: number; hours: WxHour[] }> = {}
+async function fetchOnce(lat: number, lon: number, ms: number): Promise<WxHour[]> {
+  const ctl = new AbortController()
+  const t = setTimeout(() => ctl.abort(), ms)
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=7`
+    const r = await fetch(u, { signal: ctl.signal })
+    if (!r.ok) throw new Error('weather')
+    const h = (await r.json()).hourly
+    return h.time.map((t: string, i: number) => ({ t, Ta: h.temperature_2m[i], RH: h.relative_humidity_2m[i], SR: (h.shortwave_radiation[i] || 0) / 1000, WS: h.wind_speed_10m[i] }))
+  } finally { clearTimeout(t) }
+}
+/** 気象予報を取得。応答が遅いときは打ち切って再試行し、直近（6時間以内）に取得した予報があればそれを使う */
 export async function fetchWeather(lat: number, lon: number): Promise<WxHour[]> {
   const key = `${lat.toFixed(2)},${lon.toFixed(2)}`
-  const c = wxCache[key]
-  if (c && Date.now() - c.at < 30 * 60e3) return c.hours
-  const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,shortwave_radiation,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=7`
-  const r = await fetch(u)
-  if (!r.ok) throw new Error('weather')
-  const j = await r.json()
-  const h = j.hourly
-  const hours = h.time.map((t: string, i: number) => ({ t, Ta: h.temperature_2m[i], RH: h.relative_humidity_2m[i], SR: (h.shortwave_radiation[i] || 0) / 1000, WS: h.wind_speed_10m[i] }))
-  wxCache[key] = { at: Date.now(), hours }
-  return hours
+  const mem = wxCache[key]
+  if (mem && Date.now() - mem.at < 30 * 60e3) return mem.hours
+  let stored: { at: number; hours: WxHour[] } | null = null
+  try { stored = JSON.parse(localStorage.getItem('mcmt_wx_' + key) || 'null') } catch { /* noop */ }
+  for (const ms of [8000, 12000]) {
+    try {
+      const hours = await fetchOnce(lat, lon, ms)
+      wxCache[key] = { at: Date.now(), hours }
+      try { localStorage.setItem('mcmt_wx_' + key, JSON.stringify(wxCache[key])) } catch { /* noop */ }
+      return hours
+    } catch { /* 再試行 */ }
+  }
+  if (stored && Date.now() - stored.at < 6 * 3600e3) return stored.hours
+  throw new Error('weather')
 }
 /** 活動時間帯の最高WBGT（屋内は日射・風を0として推定） */
 export function wbgtFor(hours: WxHour[], date: string, start: string, minutes: number, indoor: boolean) {

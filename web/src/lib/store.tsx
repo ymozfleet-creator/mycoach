@@ -116,8 +116,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!club) return
     let alive = true
-    fetchWeather(club.lat, club.lon).then(h => alive && (setWeather(h), setWeatherError(false))).catch(() => alive && setWeatherError(true))
-    return () => { alive = false }
+    const load = () => fetchWeather(club.lat, club.lon).then(h => alive && (setWeather(h), setWeatherError(false))).catch(() => alive && setWeatherError(true))
+    load()
+    const t = setInterval(load, 10 * 60e3) // 10分ごとに更新（取得に失敗したときの再試行も兼ねる）
+    return () => { alive = false; clearInterval(t) }
   }, [club?.lat, club?.lon])
 
   const [msg, setMsg] = useState<string | null>(null)

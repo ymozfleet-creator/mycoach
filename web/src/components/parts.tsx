@@ -16,6 +16,7 @@ export function useEventWbgt(e: ClubEvent) {
 export function WbgtBadge({ e }: { e: ClubEvent }) {
   const w = useEventWbgt(e)
   if (w.state === 'loading') return <Skeleton className="h-6 w-24" />
+  if (w.state === 'error') return <Badge tone="none"><Thermometer size={13} />暑さ指数を取得できません</Badge>
   if (w.state !== 'ok') return null
   return (
     <Badge tone={w.level.tone}>
