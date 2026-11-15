@@ -19,8 +19,8 @@ interface DB {
   msgs: Record<string, Message[]>
   notices: Notice[]
 }
-const KEY = 'mcmt_demo_v4'
-export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member' } as const
+const KEY = 'mcmt_demo_v6'
+export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
 
@@ -31,6 +31,7 @@ function seed(): DB {
   const users: Record<string, Profile> = {
     'demo-admin': { uid: 'demo-admin', name: '田中 恵', role: 'admin', clubIds: [clubId] },
     'demo-member': { uid: 'demo-member', name: '加藤 由美', role: 'member', clubIds: [clubId] },
+    'demo-school': { uid: 'demo-school', name: '高橋 誠', role: 'school', clubIds: [clubId], org: '中野区立第五中学校' },
     'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。' },
     'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
     'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
@@ -39,8 +40,8 @@ function seed(): DB {
   }
   const club: Club = {
     id: clubId, name: '中野区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: 35.7074, lon: 139.6638,
-    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, inviteCode: 'NAKANO', coachCode: 'COACH1',
-    ownerUid: 'demo-admin', adminUids: ['demo-admin'], coachUids: ['demo-coach'], memberUids: ['demo-admin', 'demo-member', 'demo-coach'],
+    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, inviteCode: 'NAKANO', coachCode: 'COACH1', schoolCode: 'SCHOOL', schoolUids: ['demo-school'],
+    ownerUid: 'demo-admin', adminUids: ['demo-admin'], coachUids: ['demo-coach'], memberUids: ['demo-admin', 'demo-member', 'demo-coach', 'demo-school'],
   }
   const names = ['加藤 結衣', '加藤 陸', '田中 陽向', '吉田 蓮', '山口 葵', '松本 湊', '井上 凛', '木村 悠真', '林 心春', '清水 大和', '森 結菜', '池田 颯']
   const players: Player[] = names.map((n, i) => ({ id: 'p' + (i + 1), name: n, grade: `中学${1 + (i % 3)}年`, guardianUids: i < 2 ? ['demo-member'] : [], discount: i === 4 ? 50 : i === 8 ? 100 : 0 }))
@@ -49,6 +50,7 @@ function seed(): DB {
     const day = addDays(T, d)
     const dow = day.getDay()
     if (dow !== 6 && dow !== 0) continue
+    if (dow === 0 && d < 0 && Math.floor((d + 56) / 7) % 3 !== 0) continue // 日曜は3週に1回（土日のどちらかを休養日に）
     const outdoor = dow === 0 && d > 0
     const att: ClubEvent['att'] = {}
     players.forEach((p, i) => { if (d < 0) att[p.id] = r() > 0.15 ? 'yes' : 'no'; else if (d <= 7 && i > 1 && r() > 0.4) att[p.id] = r() > 0.2 ? 'yes' : 'no' })
@@ -82,7 +84,7 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 4, auth: null, users, clubs: { [clubId]: club }, invites: { NAKANO: clubId, COACH1: clubId + '#coach' },
+    v: 6, auth: null, users, clubs: { [clubId]: club }, invites: { NAKANO: clubId, COACH1: clubId + '#coach', SCHOOL: clubId + '#school' },
     players: { [clubId]: players }, events: { [clubId]: events }, ann: { [clubId]: ann }, conds: { [clubId]: conds },
     fees: { [clubId]: fees }, inc: { [clubId]: [{ id: 'i1', date: iso(addDays(T, -20)), type: 'ヒヤリハット', who: '松本 湊', desc: '着地時に足首をひねりかけた。アイシングし練習は見学。', action: '保護者へ連絡済み' }] },
     contracts, msgs, notices,
@@ -91,7 +93,7 @@ function seed(): DB {
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 4) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 6) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()
@@ -119,10 +121,11 @@ export const demoBackend: Backend = {
 
   createClub: async c => {
     await wait()
-    const id = 'club-' + uid6(), code = inviteCode(), coachCode = inviteCode()
-    DB_.clubs[id] = { ...c, id, inviteCode: code, coachCode, adminUids: [c.ownerUid], coachUids: [], memberUids: [c.ownerUid] }
+    const id = 'club-' + uid6(), code = inviteCode(), coachCode = inviteCode(), schoolCode = inviteCode()
+    DB_.clubs[id] = { ...c, id, inviteCode: code, coachCode, schoolCode, adminUids: [c.ownerUid], coachUids: [], schoolUids: [], memberUids: [c.ownerUid] }
     DB_.invites[code] = id
     DB_.invites[coachCode] = id + '#coach'
+    DB_.invites[schoolCode] = id + '#school'
     Object.assign(DB_, { players: { ...DB_.players, [id]: [] }, events: { ...DB_.events, [id]: [] } })
     const u = DB_.users[c.ownerUid]; if (u && !u.clubIds.includes(id)) u.clubIds.push(id)
     save(); return id
@@ -130,11 +133,12 @@ export const demoBackend: Backend = {
   joinClub: async (code, uid) => {
     await wait()
     const v = DB_.invites[code.trim().toUpperCase()]
-    if (!v) throw new Error('招待コードが見つかりません。デモのコードは「NAKANO」（会員）、「COACH1」（指導者）です。')
-    const [id, r] = v.split('#'); const role = r === 'coach' ? 'coach' : 'member'
+    if (!v) throw new Error('招待コードが見つかりません。デモのコードは「NAKANO」（会員）、「COACH1」（指導者）、「SCHOOL」（学校）です。')
+    const [id, role] = v.split('#')
     const c = DB_.clubs[id]
     if (!c.memberUids.includes(uid)) c.memberUids.push(uid)
     if (role === 'coach' && !c.coachUids.includes(uid)) c.coachUids.push(uid)
+    if (role === 'school' && !(c.schoolUids ||= []).includes(uid)) c.schoolUids.push(uid)
     const u = DB_.users[uid]; if (u && !u.clubIds.includes(id)) u.clubIds.push(id)
     save(); return id
   },

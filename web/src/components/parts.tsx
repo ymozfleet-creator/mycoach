@@ -44,9 +44,10 @@ export function AttButtons({ value, onChange, compact }: { value?: Att; onChange
   return (
     <div className="flex gap-1.5">
       {opts.map(o => (
-        <button key={o.v} onClick={ev => { ev.stopPropagation(); onChange(o.v) }}
-          className={cx('rounded-xl border font-bold transition active:scale-95', compact ? 'h-8 px-3 text-[12px]' : 'h-10 flex-1 text-[14px]', value === o.v ? o.on : 'border-line bg-white text-ink-2')}>
-          {o.label}
+        <button key={o.v + (value === o.v ? '-on' : '')} onClick={ev => { ev.stopPropagation(); if (navigator.vibrate) navigator.vibrate(8); onChange(o.v) }}
+          aria-pressed={value === o.v}
+          className={cx('rounded-xl border font-bold transition-colors duration-200 active:scale-95', compact ? 'h-8 px-3 text-[12px]' : 'h-10 flex-1 text-[14px]', value === o.v ? cx(o.on, 'animate-pop shadow-sm') : 'border-line bg-white text-ink-2')}>
+          {value === o.v ? '✓ ' : ''}{o.label}
         </button>
       ))}
     </div>

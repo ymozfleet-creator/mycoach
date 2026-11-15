@@ -28,12 +28,13 @@ export const fireBackend: Backend = {
   saveProfile: async p => { await setDoc(doc(db, 'users', p.uid), strip(p), { merge: true }) },
 
   createClub: async c => {
-    const code = inviteCode(), coachCode = inviteCode()
+    const code = inviteCode(), coachCode = inviteCode(), schoolCode = inviteCode()
     const ref = doc(collection(db, 'clubs'))
-    const club: Omit<Club, 'id'> = { ...c, inviteCode: code, coachCode, adminUids: [c.ownerUid], coachUids: [], memberUids: [c.ownerUid] }
+    const club: Omit<Club, 'id'> = { ...c, inviteCode: code, coachCode, schoolCode, adminUids: [c.ownerUid], coachUids: [], schoolUids: [], memberUids: [c.ownerUid] }
     await setDoc(ref, strip(club))
     await setDoc(doc(db, 'invites', code), { clubId: ref.id, role: 'member' })
     await setDoc(doc(db, 'invites', coachCode), { clubId: ref.id, role: 'coach' })
+    await setDoc(doc(db, 'invites', schoolCode), { clubId: ref.id, role: 'school' })
     await setDoc(doc(db, 'users', c.ownerUid), { clubIds: arrayUnion(ref.id) }, { merge: true })
     return ref.id
   },
@@ -42,7 +43,8 @@ export const fireBackend: Backend = {
     const inv = await getDoc(doc(db, 'invites', code))
     if (!inv.exists()) throw new Error('招待コードが見つかりません。運営の方にコードをご確認ください。')
     const { clubId, role } = inv.data() as { clubId: string; role?: string }
-    await updateDoc(doc(db, 'clubs', clubId), role === 'coach' ? { memberUids: arrayUnion(uid), coachUids: arrayUnion(uid), joinCode: code } : { memberUids: arrayUnion(uid), joinCode: code })
+    const extra = role === 'coach' ? { coachUids: arrayUnion(uid) } : role === 'school' ? { schoolUids: arrayUnion(uid) } : {}
+    await updateDoc(doc(db, 'clubs', clubId), { memberUids: arrayUnion(uid), ...extra, joinCode: code })
     await setDoc(doc(db, 'users', uid), { clubIds: arrayUnion(clubId) }, { merge: true })
     return clubId
   },

@@ -175,3 +175,29 @@ export function downloadCSV(name: string, rows: (string | number)[][]) {
   a.download = name
   a.click()
 }
+
+/* ---------- 部活動ガイドラインの確認 ----------
+   スポーツ庁「学校部活動及び新たな地域クラブ活動の在り方等に関する総合的なガイドライン」の目安：
+   ・週あたり2日以上の休養日（平日1日以上、土日1日以上）
+   ・1日の活動時間は平日2時間程度、休日3時間程度 */
+import type { ClubEvent as _Ev } from './types'
+export interface WeekCheck { label: string; from: string; days: number; restDays: number; weekdayRest: boolean; weekendRest: boolean; overDays: { date: string; minutes: number; limit: number }[]; hours: number; ok: boolean }
+export function guidelineWeeks(events: _Ev[], weeks = 4): WeekCheck[] {
+  const t = today()
+  const mon = addDays(t, -((t.getDay() + 6) % 7)) // 今週の月曜
+  const out: WeekCheck[] = []
+  for (let w = weeks - 1; w >= 0; w--) {
+    const start = addDays(mon, -7 * w)
+    const days = Array.from({ length: 7 }, (_, i) => iso(addDays(start, i)))
+    const act = events.filter(e => e.status !== 'canceled' && days.includes(e.date))
+    const minutesBy: Record<string, number> = {}
+    act.forEach(e => { minutesBy[e.date] = (minutesBy[e.date] || 0) + e.minutes })
+    const restDays = days.filter(d => !minutesBy[d]).length
+    const weekdayRest = days.slice(0, 5).some(d => !minutesBy[d])
+    const weekendRest = days.slice(5).some(d => !minutesBy[d])
+    const overDays = Object.entries(minutesBy).map(([date, minutes]) => { const dow = parseDate(date).getDay(); const limit = dow === 0 || dow === 6 ? 180 : 120; return { date, minutes, limit } }).filter(x => x.minutes > x.limit)
+    const hours = Object.values(minutesBy).reduce((s, m) => s + m, 0) / 60
+    out.push({ label: w === 0 ? '今週' : `${w}週前`, from: days[0], days: 7 - restDays, restDays, weekdayRest, weekendRest, overDays, hours, ok: restDays >= 2 && weekdayRest && weekendRest && !overDays.length })
+  }
+  return out
+}

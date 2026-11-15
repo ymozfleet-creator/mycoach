@@ -26,6 +26,7 @@ interface Ctx {
   weatherError: boolean
   isAdmin: boolean
   isCoach: boolean
+  isSchool: boolean
   myPlayers: Player[]
   month: string
   toast: (msg: string) => void
@@ -83,6 +84,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const selectClub = useCallback((id: string) => { try { localStorage.setItem('mcmt_club', id) } catch { /* noop */ } setPicked(id) }, [])
   const isAdmin = !!(club && authUser && club.adminUids.includes(authUser.uid))
   const isCoach = !!(club && authUser && club.coachUids.includes(authUser.uid))
+  const isSchool = !!(club && authUser && (club.schoolUids || []).includes(authUser.uid))
 
   useEffect(() => {
     if (!clubId) { setClub(null); return }
@@ -96,13 +98,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [be, clubId])
 
   // 運営・指導者は全員分、保護者は自分の家庭の分だけ読む
-  const staff = isAdmin || !!(club && authUser && club.coachUids.includes(authUser.uid))
+  const staff = isAdmin || isCoach || isSchool
   useEffect(() => {
     if (!clubId || !authUser || !club) return
     const me = staff ? null : authUser.uid
     const us = [
       be.watchPlayers(clubId, me, setPlayers),
-      be.watchConditions(clubId, iso(addDays(today(), -35)), me, setConds),
+      be.watchConditions(clubId, iso(addDays(today(), -35)), isSchool && !isAdmin && !isCoach ? '__none__' : me, setConds),
       ...(staff ? [be.watchIncidents(clubId, setInc)] : []),
     ]
     return () => us.forEach(u => u())
@@ -131,7 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: Ctx = {
     be, ready: beReady && authReady && profileReady, authUser, profile, club, players, events, announcements, conditions, fees, incidents,
-    contracts, notices, weather, weatherError, isAdmin, isCoach, myPlayers, month, toast, switchMode, selectClub,
+    contracts, notices, weather, weatherError, isAdmin, isCoach, isSchool, myPlayers, month, toast, switchMode, selectClub,
   }
   return (
     <C.Provider value={value}>

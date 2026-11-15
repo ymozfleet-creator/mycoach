@@ -9,7 +9,8 @@ import { dateLabel, loadStatus } from '../lib/util'
 export default function PlayerDetail() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { be, club, players, conditions, isAdmin, toast } = useApp()
+  const { be, club, players, conditions, events, isAdmin, isCoach, isSchool, toast } = useApp()
+  const schoolView = isSchool && !isAdmin && !isCoach
   const p = players.find(x => x.id === id)
   const [rec, setRec] = useState(false)
   const [del, setDel] = useState(false)
@@ -24,10 +25,21 @@ export default function PlayerDetail() {
       <Card className="flex items-center gap-4">
         <Avatar name={p.name} size={56} />
         <div className="flex-1">
-          <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>
-          <div className="mt-1 text-[13px] text-ink-2">負荷比 {s.chronic ? s.ratio.toFixed(2) : '—'}・睡眠 {s.sleep ? `${s.sleep.toFixed(1)}時間` : '—'}</div>
+          {!schoolView && <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>}
+          {!schoolView && <div className="mt-1 text-[13px] text-ink-2">負荷比 {s.chronic ? s.ratio.toFixed(2) : '—'}・睡眠 {s.sleep ? `${s.sleep.toFixed(1)}時間` : '—'}</div>}
+          {schoolView && <div className="text-[13px] text-ink-2">{p.grade}</div>}
         </div>
       </Card>
+      {schoolView ? (
+        <Section title="参加の記録（直近の活動）">
+          <Card className="divide-y divide-line !py-1">
+            {events.filter(e => e.status !== 'canceled' && e.date < new Date().toISOString().slice(0, 10)).slice(-10).reverse().map(e => (
+              <div key={e.id} className="flex items-center justify-between py-2.5 text-[14px]"><span className="font-bold">{dateLabel(e.date)}</span><Badge tone={e.att[p.id] === 'yes' ? 'ok' : e.att[p.id] === 'no' ? 'none' : 'warn'}>{e.att[p.id] === 'yes' ? '参加' : e.att[p.id] === 'no' ? '欠席' : '未回答'}</Badge></div>
+            ))}
+          </Card>
+          <p className="mt-2 px-1 text-[11px] text-ink-3">体調・練習量の記録は、指導者と保護者のみが閲覧できます。</p>
+        </Section>
+      ) : <>
       <Section title="練習量の推移（週ごと）">
         <Card>
           <div className="flex h-36 items-end gap-3">
@@ -53,6 +65,7 @@ export default function PlayerDetail() {
           )) : <p className="py-3 text-[14px] text-ink-2">記録はまだありません。</p>}
         </Card>
       </Section>
+      </>}
       {isAdmin && (
         <Section title="会費">
           <Card>

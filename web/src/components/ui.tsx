@@ -1,4 +1,4 @@
-import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -24,9 +24,9 @@ export function Button({ variant = 'primary', size = 'md', block, loading, class
   )
 }
 
-export function Card({ children, className, onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
+export function Card({ children, className, onClick, style }: { children: ReactNode; className?: string; onClick?: () => void; style?: React.CSSProperties }) {
   return (
-    <div onClick={onClick} className={cx('animate-up rounded-xl2 bg-white p-4 shadow-card', onClick && 'cursor-pointer transition active:scale-[.99]', className)}>
+    <div onClick={onClick} style={style} className={cx('animate-up rounded-xl2 bg-white p-4 shadow-card', onClick && 'cursor-pointer transition active:scale-[.99]', className)}>
       {children}
     </div>
   )
@@ -159,3 +159,46 @@ export function Row({ left, title, sub, right, onClick }: { left?: ReactNode; ti
     </div>
   )
 }
+
+/* ---------- 動き・視覚化 ---------- */
+const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/** 数字をなめらかに増やして表示する */
+export function CountUp({ value, format = (n: number) => Math.round(n).toLocaleString('ja-JP'), ms = 900 }: { value: number; format?: (n: number) => string; ms?: number }) {
+  const [v, setV] = useState(reduceMotion() ? value : 0)
+  const from = useRef(0)
+  useEffect(() => {
+    if (reduceMotion()) { setV(value); return }
+    const start = performance.now(), a = from.current
+    let raf = 0
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / ms)
+      const e = 1 - Math.pow(1 - p, 3)
+      setV(a + (value - a) * e)
+      if (p < 1) raf = requestAnimationFrame(step); else from.current = value
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+  return <>{format(v)}</>
+}
+
+/** 割合を円で表示する（0〜1） */
+export function Ring({ value, size = 64, stroke = 7, color, track = '#E5EAF1', children }: { value: number; size?: number; stroke?: number; color?: string; track?: string; children?: ReactNode }) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r
+  const [p, setP] = useState(reduceMotion() ? value : 0)
+  useEffect(() => { const t = setTimeout(() => setP(value), 60); return () => clearTimeout(t) }, [value])
+  const col = color || (value >= 0.8 ? '#10B981' : value >= 0.5 ? '#2563EB' : '#F59E0B')
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={col} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - Math.max(0, Math.min(1, p)))} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)' }} />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center leading-none">{children}</div>
+    </div>
+  )
+}
+
+/** 一覧を上から順にふわっと表示するための遅延 */
+export const stagger = (i: number) => ({ animationDelay: `${Math.min(i, 12) * 45}ms` })

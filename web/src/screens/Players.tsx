@@ -2,16 +2,16 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Copy, Search, Share2, UserPlus, Users } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet } from '../components/ui'
-import { loadStatus, uid6 } from '../lib/util'
+import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet, stagger } from '../components/ui'
+import { addDays, iso, loadStatus, today, uid6 } from '../lib/util'
 
 export function InviteCard() {
   const { club, toast } = useApp()
   if (!club) return null
   const url = `${location.origin}${location.pathname}`
-  const share = async (coach: boolean) => {
-    const code = coach ? club.coachCode : club.inviteCode
-    const text = coach ? `「${club.name}」の指導者として、アプリに参加してください。\n指導者用の招待コード：${code}\n${url}` : `「${club.name}」のアプリに参加してください。\n招待コード：${code}\n${url}`
+  const share = async (coach: boolean, school = false) => {
+    const code = school ? club.schoolCode : coach ? club.coachCode : club.inviteCode
+    const text = school ? `「${club.name}」の活動状況を確認できます。学校・教育委員会の方は、アプリで「学校・教育委員会」を選んで参加してください。\n学校用の招待コード：${code}\n${url}` : coach ? `「${club.name}」の指導者として、アプリに参加してください。\n指導者用の招待コード：${code}\n${url}` : `「${club.name}」のアプリに参加してください。\n招待コード：${code}\n${url}`
     if (navigator.share) { try { await navigator.share({ title: club.name, text }) } catch { /* cancel */ } }
     else { await navigator.clipboard.writeText(text); toast('招待文をコピーしました') }
   }
@@ -24,6 +24,12 @@ export function InviteCard() {
         <button onClick={() => share(false)} className="flex h-10 items-center gap-1.5 rounded-xl bg-lime px-3 text-[13px] font-bold text-navy"><Share2 size={16} />送る</button>
       </div>
       <p className="mt-1 text-[12px] opacity-70">LINEやメールで送ると、受け取った人がアプリで参加できます。</p>
+      {club.schoolCode && (
+        <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
+          <div className="flex-1"><div className="text-[12px] opacity-70">学校・教育委員会用（閲覧のみ）</div><div className="text-[18px] font-black tracking-[.2em]">{club.schoolCode}</div></div>
+          <button onClick={() => share(true, true)} className="flex h-9 items-center gap-1.5 rounded-xl bg-white/10 px-3 text-[13px] font-bold"><Share2 size={15} />送る</button>
+        </div>
+      )}
       {club.coachCode && (
         <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
           <div className="flex-1"><div className="text-[12px] opacity-70">指導者用（保護者には送らないでください）</div><div className="text-[18px] font-black tracking-[.2em]">{club.coachCode}</div></div>
@@ -35,7 +41,10 @@ export function InviteCard() {
 }
 
 export default function Players() {
-  const { be, club, players, conditions, isAdmin, toast } = useApp()
+  const { be, club, players, conditions, events, isAdmin, isCoach, isSchool, toast } = useApp()
+  const schoolView = isSchool && !isAdmin && !isCoach
+  const t0 = iso(today()), f0 = iso(addDays(today(), -28))
+  const past = events.filter(e => e.status !== 'canceled' && e.date < t0 && e.date >= f0)
   const nav = useNavigate()
   const [q, setQ] = useState('')
   const [add, setAdd] = useState(false)
@@ -48,7 +57,7 @@ export default function Players() {
   }
   return (
     <>
-      <PageHeader title={isAdmin ? '会員' : '選手'} sub={`${players.length}人`} right={isAdmin && <button onClick={() => setAdd(true)} aria-label="会員を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white"><UserPlus size={20} /></button>} />
+      <PageHeader title={isAdmin ? '会員' : schoolView ? '生徒' : '選手'} sub={`${players.length}人`} right={isAdmin && <button onClick={() => setAdd(true)} aria-label="会員を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white"><UserPlus size={20} /></button>} />
       {isAdmin && <InviteCard />}
       <div className="relative mt-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -56,14 +65,16 @@ export default function Players() {
       </div>
       {!rows.length ? <div className="mt-4"><Empty icon={<Users />} title="まだ会員がいません" text="招待コードを送ると、保護者がアプリから登録できます" /></div> : (
         <Card className="mt-3 divide-y divide-line !py-1">
-          {rows.map(({ p, s }) => (
-            <button key={p.id} onClick={() => nav(`/player/${p.id}`)} className="flex w-full items-center gap-3 py-3 text-left">
+          {rows.map(({ p, s }, i) => (
+            <button key={p.id} onClick={() => nav(`/player/${p.id}`)} style={stagger(i)} className="flex w-full animate-up items-center gap-3 py-3 text-left">
               <Avatar name={p.name} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-bold">{p.name}</div>
                 <div className="text-[12px] text-ink-2">{p.grade}{isAdmin && !p.guardianUids.length ? '・保護者未登録' : ''}{isAdmin && p.discount ? `・会費${p.discount === 100 ? '免除' : p.discount + '%減額'}` : ''}</div>
               </div>
-              <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>
+              {schoolView
+                ? (() => { const n = past.filter(e => e.att[p.id] === 'yes').length; return <Badge tone={past.length && n / past.length < 0.5 ? 'warn' : 'ok'}>参加 {n}／{past.length}回</Badge> })()
+                : <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>}
             </button>
           ))}
         </Card>

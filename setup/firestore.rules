@@ -221,6 +221,8 @@ service cloud.firestore {
     function isMember(c) { return authed() && request.auth.uid in club(c).memberUids; }
     function isClubAdmin(c) { return authed() && request.auth.uid in club(c).adminUids; }
     function isStaff(c) { return authed() && (request.auth.uid in club(c).adminUids || request.auth.uid in club(c).coachUids); }
+    // 学校・教育委員会：活動状況と安全記録の閲覧（会費・体調の記録は見られない）
+    function isSchool(c) { return authed() && request.auth.uid in club(c).get('schoolUids', []); }
     // 自分自身だけを配列に追加する変更か
     function onlyAddsMe(field) {
       return request.resource.data.get(field, []).hasAll(resource.data.get(field, []))
@@ -232,7 +234,7 @@ service cloud.firestore {
       allow get: if authed();
       allow list: if false;
       allow create: if authed() && club(request.resource.data.clubId).ownerUid == request.auth.uid
-        && request.resource.data.role in ['member', 'coach'];
+        && request.resource.data.role in ['member', 'coach', 'school'];
       allow update, delete: if false;
     }
 
@@ -250,17 +252,19 @@ service cloud.firestore {
       // 指導者（coachUids）への追加は、指導者用の招待コードの場合のみ
       allow update: if isClubAdmin(c)
         || (authed()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'joinCode'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'schoolUids', 'joinCode'])
             && exists(/databases/$(database)/documents/invites/$(request.resource.data.joinCode))
             && invite(request.resource.data.joinCode).clubId == c
             && onlyAddsMe('memberUids')
             && (request.resource.data.get('coachUids', []) == resource.data.get('coachUids', [])
-                || (onlyAddsMe('coachUids') && invite(request.resource.data.joinCode).role == 'coach')));
+                || (onlyAddsMe('coachUids') && invite(request.resource.data.joinCode).role == 'coach'))
+            && (request.resource.data.get('schoolUids', []) == resource.data.get('schoolUids', [])
+                || (onlyAddsMe('schoolUids') && invite(request.resource.data.joinCode).role == 'school')));
       allow delete: if false;
 
       // 会員：運営・指導者は全員分、保護者は自分の家庭の分だけ
       match /players/{p} {
-        allow read: if isStaff(c) || (isMember(c) && request.auth.uid in resource.data.guardianUids);
+        allow read: if isStaff(c) || isSchool(c) || (isMember(c) && request.auth.uid in resource.data.guardianUids);
         allow create: if isClubAdmin(c) || (isMember(c) && request.resource.data.guardianUids == [request.auth.uid] && request.resource.data.discount == 0);
         allow update: if isClubAdmin(c)
           || (isMember(c) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['guardianUids']) && onlyAddsMe('guardianUids'));
@@ -290,7 +294,7 @@ service cloud.firestore {
         allow write: if isClubAdmin(c);
       }
       match /incidents/{i} {
-        allow read, create: if isStaff(c);
+        allow read, create: if isStaff(c) || isSchool(c);
         allow update, delete: if isClubAdmin(c);
       }
     }

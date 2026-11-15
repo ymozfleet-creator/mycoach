@@ -34,7 +34,7 @@ function HeatStrip({ date, indoor, start, minutes }: { date: string; indoor: boo
 export default function EventDetail() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { be, club, events, players, myPlayers, isAdmin, isCoach, toast } = useApp()
+  const { be, club, events, players, myPlayers, isAdmin, isCoach, isSchool, toast } = useApp()
   const e = events.find(x => x.id === id)
   const w = useEventWbgt(e || ({ date: '', start: '0', minutes: 0, indoor: true } as any))
   const [edit, setEdit] = useState(false)
@@ -42,7 +42,8 @@ export default function EventDetail() {
   const [busy, setBusy] = useState(false)
   if (!e || !club) return <><PageHeader title="予定" back /><Card>予定が見つかりません。</Card></>
   const c = attCounts(e, players)
-  const staff = isAdmin || isCoach
+  const canEdit = isAdmin || isCoach
+  const staff = canEdit || isSchool
   const cycle = (a?: Att): Att => (a === 'yes' ? 'no' : a === 'no' ? 'maybe' : 'yes')
   const doCancel = async () => {
     setBusy(true)
@@ -93,14 +94,14 @@ export default function EventDetail() {
                 <div key={p.id} className="flex items-center gap-3 py-2.5">
                   <Avatar name={p.name} size={34} />
                   <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-bold">{p.name}</div><div className="text-[12px] text-ink-3">{p.grade}</div></div>
-                  <button onClick={() => be.setAttendance(club.id, e.id, p.id, cycle(a))} className={cx('h-8 w-16 rounded-xl text-[12px] font-bold', a === 'yes' ? 'bg-emerald-500 text-white' : a === 'no' ? 'bg-slate-500 text-white' : a === 'maybe' ? 'bg-amber-400 text-white' : 'border border-dashed border-slate-300 text-ink-3')}>
+                  <button disabled={!canEdit} onClick={() => be.setAttendance(club.id, e.id, p.id, cycle(a))} className={cx('h-8 w-16 rounded-xl text-[12px] font-bold', a === 'yes' ? 'bg-emerald-500 text-white' : a === 'no' ? 'bg-slate-500 text-white' : a === 'maybe' ? 'bg-amber-400 text-white' : 'border border-dashed border-slate-300 text-ink-3')}>
                     {a === 'yes' ? '参加' : a === 'no' ? '欠席' : a === 'maybe' ? '未定' : '未回答'}
                   </button>
                 </div>
               )
             })}
           </Card>
-          <p className="mt-1 px-1 text-[11px] text-ink-3">ボタンをタップすると、参加→欠席→未定の順に切り替わります（当日の出席確認に使えます）。</p>
+          {canEdit && <p className="mt-1 px-1 text-[11px] text-ink-3">ボタンをタップすると、参加→欠席→未定の順に切り替わります（当日の出席確認に使えます）。</p>}
         </Section>
       )}
 

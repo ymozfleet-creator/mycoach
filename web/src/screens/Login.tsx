@@ -86,8 +86,8 @@ export default function Login() {
           <div className="mt-8 rounded-xl2 border border-dashed border-slate-300 bg-white p-4">
             <p className="text-[14px] font-bold">登録せずに試す（デモ）</p>
             <p className="mt-0.5 text-[12px] text-ink-2">架空のクラブで、それぞれの立場の画面を体験できます。</p>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {[['保護者', DEMO_USERS.member], ['指導者', DEMO_USERS.coach], ['運営', DEMO_USERS.admin]].map(([l, u]) => (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[['保護者・生徒', DEMO_USERS.member], ['指導者', DEMO_USERS.coach], ['クラブ運営', DEMO_USERS.admin], ['学校・教育委員会', DEMO_USERS.school]].map(([l, u]) => (
                 <Button key={u} variant="soft" size="sm" onClick={() => demo(u)}>{l}</Button>
               ))}
             </div>

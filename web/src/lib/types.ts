@@ -1,4 +1,4 @@
-export type Role = 'member' | 'coach' | 'admin'
+export type Role = 'member' | 'coach' | 'admin' | 'school'
 export type Att = 'yes' | 'no' | 'maybe'
 
 export interface Profile {
@@ -17,6 +17,7 @@ export interface Profile {
   training?: boolean
   teacher?: boolean
   bio?: string
+  org?: string // 学校名・所属
   ratingAvg?: number
   ratingCount?: number
   lessonCount?: number
@@ -35,6 +36,8 @@ export interface Club {
   fee: number
   inviteCode: string
   coachCode?: string
+  schoolCode?: string
+  schoolUids?: string[]
   ownerUid: string
   adminUids: string[]
   coachUids: string[]

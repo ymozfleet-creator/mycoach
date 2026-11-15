@@ -18,7 +18,7 @@ function Item({ icon, label, onClick, badge }: { icon: React.ReactNode; label: s
 }
 
 export default function More() {
-  const { be, profile, club, isAdmin, isCoach, notices, myPlayers, authUser, toast, switchMode, selectClub } = useApp()
+  const { be, profile, club, isAdmin, isCoach, isSchool, notices, myPlayers, authUser, toast, switchMode, selectClub } = useApp()
   const nav = useNavigate()
   const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join'>('')
   const [code, setCode] = useState('')
@@ -29,7 +29,7 @@ export default function More() {
   const [name, setName] = useState(profile?.name || '')
   if (!profile || !club || !authUser) return null
   const unread = notices.filter(n => !n.read).length
-  const roleLabel = isAdmin ? 'クラブの運営' : isCoach ? '指導者' : '保護者・生徒'
+  const roleLabel = isAdmin ? 'クラブの運営' : isCoach ? '指導者' : isSchool ? `学校・教育委員会${profile.org ? `（${profile.org}）` : ''}` : '保護者・生徒'
   return (
     <>
       <PageHeader title={isAdmin ? 'その他' : 'マイページ'} />
@@ -50,11 +50,11 @@ export default function More() {
           <Item icon={<Bell size={18} />} label="お知らせ・通知" onClick={() => nav('/news')} badge={unread ? <Badge tone="danger">{unread}</Badge> : undefined} />
           {isAdmin && <Item icon={<Search size={18} />} label="指導者を探す" onClick={() => nav('/coaches')} />}
           {isAdmin && <Item icon={<Handshake size={18} />} label="指導者への依頼・メッセージ" onClick={() => nav('/requests')} />}
-          {isAdmin && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体向け）" onClick={() => nav('/report')} />}
+          {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
           {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
-          {(isAdmin || isCoach) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
+          {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
           {isCoach && <Item icon={<UserRound size={18} />} label="指導者プロフィール・審査" onClick={() => setSheet('coach')} />}
-          {!isAdmin && !isCoach && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
+          {!isAdmin && !isCoach && !isSchool && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
           {isAdmin && <Item icon={<Building2 size={18} />} label="クラブの設定" onClick={() => setSheet('club')} />}
         </Card>
       </Section>

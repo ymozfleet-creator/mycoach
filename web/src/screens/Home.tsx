@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CalendarPlus, ChevronRight, ClipboardList, HeartPulse, Megaphone, Search, ShieldAlert, Sparkles, Wallet, Handshake } from 'lucide-react'
+import { AlertTriangle, CalendarPlus, ChevronRight, ClipboardList, HeartPulse, Megaphone, Search, ShieldAlert, ShieldCheck, Sparkles, Thermometer, Wallet, Handshake } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { AttButtons, attCounts, EventCard, useEventWbgt } from '../components/parts'
-import { Avatar, Badge, Card, Empty, Section, cx } from '../components/ui'
+import { Avatar, Badge, Card, CountUp, Empty, Ring, Section, cx, stagger } from '../components/ui'
+import { GuidelineCard } from '../components/Guideline'
 import { ComposeSheet, ConditionSheet } from '../components/sheets'
 import type { ClubEvent } from '../lib/types'
-import { dateLabel, iso, loadStatus, relTime, today, yen } from '../lib/util'
+import { addDays, dateLabel, iso, loadStatus, relTime, today, wbgtFor, wbgtLevel, yen } from '../lib/util'
 
 const greet = () => { const h = new Date().getHours(); return h < 11 ? 'おはようございます' : h < 18 ? 'こんにちは' : 'おつかれさまです' }
 
@@ -14,7 +15,7 @@ function Hello() {
   const { profile, club } = useApp()
   return (
     <div className="pb-1 pt-[calc(env(safe-area-inset-top)+20px)]">
-      <p className="text-[13px] font-bold text-ink-2">{club?.name}</p>
+      <p className="text-[13px] font-bold text-ink-2">{profile?.org ? `${profile.org}／` : ''}{club?.name}</p>
       <h1 className="mt-0.5 text-[24px] font-black tracking-tight">{greet()}、{profile?.name.split(' ').slice(-1)[0]}さん</h1>
     </div>
   )
@@ -36,10 +37,10 @@ function HeatAdvice({ e }: { e: ClubEvent }) {
   )
 }
 
-function Alert({ icon, tone, title, text, onClick }: { icon: React.ReactNode; tone: 'danger' | 'warn' | 'info'; title: string; text?: string; onClick?: () => void }) {
+function Alert({ icon, tone, title, text, onClick, i = 0 }: { icon: React.ReactNode; tone: 'danger' | 'warn' | 'info'; title: string; text?: string; onClick?: () => void; i?: number }) {
   const t = { danger: 'bg-red-50 text-red-600', warn: 'bg-amber-50 text-amber-700', info: 'bg-brand-50 text-brand' }[tone]
   return (
-    <Card onClick={onClick} className="flex items-center gap-3 !p-3.5">
+    <Card onClick={onClick} style={stagger(i)} className="flex items-center gap-3 !p-3.5">
       <div className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-xl', t)}>{icon}</div>
       <div className="min-w-0 flex-1"><div className="text-[15px] font-bold">{title}</div>{text && <div className="truncate text-[13px] text-ink-2">{text}</div>}</div>
       {onClick && <ChevronRight size={18} className="text-ink-3" />}
@@ -143,9 +144,9 @@ function CoachHome() {
             <EventCard e={next} onClick={() => nav(`/event/${next.id}`)}>
               <HeatAdvice e={next} />
               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
-                <div><div className="text-[22px] font-black text-emerald-600">{c.yes}</div><div className="text-[11px] text-ink-2">参加</div></div>
-                <div><div className="text-[22px] font-black text-ink-2">{c.no}</div><div className="text-[11px] text-ink-2">欠席</div></div>
-                <div><div className="text-[22px] font-black text-amber-600">{c.none + c.maybe}</div><div className="text-[11px] text-ink-2">未定・未回答</div></div>
+                <div><div className="text-[22px] font-black text-emerald-600"><CountUp value={c.yes} /></div><div className="text-[11px] text-ink-2">参加</div></div>
+                <div><div className="text-[22px] font-black text-ink-2"><CountUp value={c.no} /></div><div className="text-[11px] text-ink-2">欠席</div></div>
+                <div><div className="text-[22px] font-black text-amber-600"><CountUp value={c.none + c.maybe} /></div><div className="text-[11px] text-ink-2">未定・未回答</div></div>
               </div>
               <button onClick={ev => { ev.stopPropagation(); nav(`/menu?event=${next.id}`) }} className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-lime font-bold text-navy active:scale-[.98]"><Sparkles size={18} />この日の練習メニューをAIで作る</button>
             </EventCard>
@@ -183,10 +184,10 @@ function AdminHome() {
   const risky = players.filter(p => loadStatus(conditions, p.id).tone === 'danger').length
   const todo: React.ReactNode[] = []
   if (noFees) todo.push(<Alert key="nf" icon={<Wallet size={20} />} tone="warn" title="今月の会費をまだ請求していません" text="ワンタップで全員分を請求できます" onClick={() => nav('/fees')} />)
-  if (unpaid.length) todo.push(<Alert key="up" icon={<Wallet size={20} />} tone="warn" title={`会費の未納 ${unpaid.length}件`} text={yen(unpaid.reduce((s, f) => s + f.amount, 0))} onClick={() => nav('/fees')} />)
-  if (next && noAnswer) todo.push(<Alert key="na" icon={<ClipboardList size={20} />} tone="info" title={`出欠の未回答 ${noAnswer}人`} text={`${dateLabel(next.date)} ${next.title}`} onClick={() => nav(`/event/${next.id}`)} />)
-  if (risky) todo.push(<Alert key="rk" icon={<HeartPulse size={20} />} tone="danger" title={`練習負荷が急増している選手 ${risky}人`} text="指導者と状況を確認しましょう" onClick={() => nav('/players')} />)
-  if (replies.length) todo.push(<Alert key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
+  if (unpaid.length) todo.push(<Alert i={todo.length} key="up" icon={<Wallet size={20} />} tone="warn" title={`会費の未納 ${unpaid.length}件`} text={yen(unpaid.reduce((s, f) => s + f.amount, 0))} onClick={() => nav('/fees')} />)
+  if (next && noAnswer) todo.push(<Alert i={todo.length} key="na" icon={<ClipboardList size={20} />} tone="info" title={`出欠の未回答 ${noAnswer}人`} text={`${dateLabel(next.date)} ${next.title}`} onClick={() => nav(`/event/${next.id}`)} />)
+  if (risky) todo.push(<Alert i={todo.length} key="rk" icon={<HeartPulse size={20} />} tone="danger" title={`練習負荷が急増している選手 ${risky}人`} text="指導者と状況を確認しましょう" onClick={() => nav('/players')} />)
+  if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
   const thisMonth = events.filter(e => e.status !== 'canceled' && e.date.startsWith(iso(today()).slice(0, 7)) && e.date < iso(today()))
   return (
     <>
@@ -211,22 +212,89 @@ function AdminHome() {
       </Section>
       <Section title="今月のようす">
         <div className="grid grid-cols-3 gap-2">
-          {[
-            ['活動', `${thisMonth.length}回`],
-            ['会員', `${players.length}人`],
-            ['会費回収', `${fees.length ? Math.round((fees.filter(f => f.status !== 'unpaid').length / fees.length) * 100) : 0}%`],
-          ].map(([l, v]) => <Card key={l} className="!p-3 text-center"><div className="text-[20px] font-black">{v}</div><div className="text-[11px] text-ink-2">{l}</div></Card>)}
+          <Card className="!p-3 text-center"><div className="text-[24px] font-black"><CountUp value={thisMonth.length} /><span className="text-[13px]">回</span></div><div className="text-[11px] text-ink-2">活動</div></Card>
+          <Card className="!p-3 text-center" style={stagger(1)}><div className="text-[24px] font-black"><CountUp value={players.length} /><span className="text-[13px]">人</span></div><div className="text-[11px] text-ink-2">会員</div></Card>
+          <Card className="flex flex-col items-center !p-3" style={stagger(2)}>
+            <Ring value={fees.length ? fees.filter(f => f.status !== 'unpaid').length / fees.length : 0} size={48} stroke={6}><span className="text-[12px] font-black"><CountUp value={fees.length ? (fees.filter(f => f.status !== 'unpaid').length / fees.length) * 100 : 0} />%</span></Ring>
+            <div className="mt-1 text-[11px] text-ink-2">会費回収</div>
+          </Card>
         </div>
       </Section>
+      <GuidelineCard />
       <ComposeSheet open={compose} onClose={() => setCompose(false)} />
       {club && null}
     </>
   )
 }
 
+/* ---------- 学校・教育委員会 ---------- */
+function SchoolHome() {
+  const { events, players, incidents, weather } = useApp()
+  const nav = useNavigate()
+  const t = iso(today())
+  const from = iso(addDays(today(), -28))
+  const past = events.filter(e => e.status !== 'canceled' && e.date < t && e.date >= from)
+  const part = past.reduce((s, e) => s + Object.values(e.att).filter(a => a === 'yes').length, 0)
+  const rate = past.length && players.length ? part / (past.length * players.length) : 0
+  const low = players.map(p => ({ p, n: past.filter(e => e.att[p.id] === 'yes').length })).filter(x => past.length && x.n / past.length < 0.5).sort((a, b) => a.n - b.n)
+  const week = events.filter(e => e.status !== 'canceled' && e.date >= t && e.date <= iso(addDays(today(), 7)))
+  const hot = weather ? week.map(e => ({ e, w: wbgtFor(weather, e.date, e.start, e.minutes, e.indoor) })).filter(x => x.w && wbgtLevel(x.w.max).lv >= 2) : []
+  return (
+    <>
+      <Hello />
+      <p className="mt-1 text-[13px] text-ink-2">地域クラブでの生徒の活動状況を確認できます（閲覧のみ）。</p>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Card className="flex items-center gap-3 !p-3">
+          <Ring value={rate} size={56}><span className="text-[13px] font-black"><CountUp value={rate * 100} />%</span></Ring>
+          <div><div className="text-[12px] text-ink-2">4週の参加率</div><div className="text-[13px] font-bold">生徒 {players.length}人</div></div>
+        </Card>
+        <Card className="!p-3" style={stagger(1)}>
+          <div className="text-[12px] text-ink-2">4週の活動</div>
+          <div className="text-[26px] font-black leading-tight"><CountUp value={past.length} /><span className="text-[13px]">回</span></div>
+          <div className="text-[12px] text-ink-2">延べ <CountUp value={part} />人が参加</div>
+        </Card>
+      </div>
+      <Section title="今後1週間の暑さ">
+        {!weather ? <Card className="text-[14px] text-ink-2">気象データを取得しています…</Card> : hot.length ? (
+          <div className="space-y-2">{hot.map(({ e, w }, i) => { const L = wbgtLevel(w!.max); return <Alert key={e.id} i={i} icon={<Thermometer size={20} />} tone={L.lv >= 3 ? 'danger' : 'warn'} title={`${dateLabel(e.date)} ${L.label}（${w!.max}）`} text={`${e.start}〜 ${e.venue}`} onClick={() => nav(`/event/${e.id}`)} /> })}</div>
+        ) : <Card className="flex items-center gap-3 text-[14px]"><span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><ShieldCheck size={20} /></span>今後1週間、熱中症の警戒が必要な活動はありません。</Card>}
+      </Section>
+      <GuidelineCard />
+      <Section title="参加が少ない生徒" action={<button onClick={() => nav('/players')} className="text-[13px] font-bold text-brand">生徒一覧</button>}>
+        {low.length ? (
+          <Card className="divide-y divide-line !py-1">
+            {low.slice(0, 5).map(({ p, n }, i) => (
+              <div key={p.id} style={stagger(i)} className="flex animate-up items-center gap-3 py-2.5">
+                <Avatar name={p.name} size={34} />
+                <div className="min-w-0 flex-1"><div className="font-bold">{p.name}</div><div className="text-[12px] text-ink-2">{p.grade}</div></div>
+                <Badge tone="warn">{n}／{past.length}回</Badge>
+              </div>
+            ))}
+          </Card>
+        ) : <Card className="text-[14px] text-ink-2">参加が半分未満の生徒はいません。</Card>}
+      </Section>
+      <Section title="安全の記録" action={<button onClick={() => nav('/safety')} className="text-[13px] font-bold text-brand">すべて見る</button>}>
+        {incidents.length ? (
+          <Card className="divide-y divide-line !py-1">
+            {incidents.slice(0, 3).map(x => (
+              <div key={x.id} className="py-2.5"><div className="flex items-center gap-2"><Badge tone={x.type === '事故' ? 'danger' : 'warn'}>{x.type}</Badge><span className="text-[12px] text-ink-3">{dateLabel(x.date)}</span></div><div className="mt-1 text-[14px]">{x.who}：{x.desc}</div></div>
+            ))}
+          </Card>
+        ) : <Card className="text-[14px] text-ink-2">記録はありません。</Card>}
+      </Section>
+      <button onClick={() => nav('/report')} className="mt-6 flex w-full items-center gap-3 rounded-xl2 bg-white p-4 text-left shadow-card active:scale-[.99]">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand"><ClipboardList size={20} /></span>
+        <span className="flex-1"><b className="block">月ごとの実績報告</b><span className="text-[12px] text-ink-2">活動回数・参加人数・安全記録をCSV・印刷で</span></span>
+        <ChevronRight size={18} className="text-ink-3" />
+      </button>
+    </>
+  )
+}
+
 export default function Home() {
-  const { isAdmin, isCoach } = useApp()
+  const { isAdmin, isCoach, isSchool } = useApp()
   if (isAdmin) return <AdminHome />
   if (isCoach) return <CoachHome />
+  if (isSchool) return <SchoolHome />
   return <MemberHome />
 }

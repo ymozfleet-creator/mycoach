@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { HashRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { Bell, CalendarDays, Ellipsis, Handshake, House, UserRound, Users, Wallet } from 'lucide-react'
+import { Bell, CalendarDays, Ellipsis, Handshake, House, ShieldCheck, UserRound, Users, Wallet } from 'lucide-react'
 import { useApp } from './lib/store'
 import { cx, Skeleton } from './components/ui'
 import Login from './screens/Login'
@@ -22,7 +22,8 @@ const Safety = lazy(() => import('./screens/Safety'))
 const More = lazy(() => import('./screens/More'))
 
 function Tabs() {
-  const { isAdmin, isCoach, notices, contracts, authUser } = useApp()
+  const { isAdmin, isCoach, isSchool, notices, contracts, authUser } = useApp()
+  const loc = useLocation()
   const unread = notices.filter(n => !n.read).length
   const pending = contracts.filter(k => k.status === 'proposed' && k.coach === authUser?.uid).length
   const tabs: { to: string; label: string; icon: ReactNode; badge?: number }[] = isAdmin
@@ -41,6 +42,14 @@ function Tabs() {
           { to: '/requests', label: '依頼', icon: <Handshake size={22} />, badge: pending },
           { to: '/more', label: 'マイページ', icon: <UserRound size={22} />, badge: unread },
         ]
+      : isSchool
+        ? [
+            { to: '/', label: 'ホーム', icon: <House size={22} /> },
+            { to: '/schedule', label: '予定', icon: <CalendarDays size={22} /> },
+            { to: '/players', label: '生徒', icon: <Users size={22} /> },
+            { to: '/safety', label: '安全', icon: <ShieldCheck size={22} /> },
+            { to: '/more', label: 'その他', icon: <Ellipsis size={22} />, badge: unread },
+          ]
       : [
           { to: '/', label: 'ホーム', icon: <House size={22} /> },
           { to: '/schedule', label: '予定', icon: <CalendarDays size={22} /> },
@@ -50,7 +59,11 @@ function Tabs() {
         ]
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
-      <div className="mx-auto grid max-w-lg grid-cols-5">
+      <div className="relative mx-auto grid max-w-lg grid-cols-5">
+        {(() => {
+          const i = tabs.findIndex(t => (t.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(t.to)))
+          return i < 0 ? null : <span aria-hidden className="absolute top-1.5 h-[48px] rounded-2xl bg-brand-50 transition-transform duration-300 ease-[cubic-bezier(.2,.7,.2,1)]" style={{ width: '20%', transform: `translateX(${i * 100}%)` }} />
+        })()}
         {tabs.map(t => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'} className={({ isActive }) => cx('relative flex h-[60px] flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition', isActive ? 'text-brand' : 'text-ink-3')}>
             {({ isActive }) => (

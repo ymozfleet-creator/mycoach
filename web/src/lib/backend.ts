@@ -16,8 +16,8 @@ export interface Backend {
   watchProfile(uid: string, cb: Cb<Profile | null>): Unsub
   saveProfile(p: Partial<Profile> & { uid: string }): Promise<void>
 
-  createClub(c: Omit<Club, 'id' | 'inviteCode' | 'coachCode' | 'adminUids' | 'coachUids' | 'memberUids'>): Promise<string>
-  /** 招待コードで参加。会員用コードなら会員、指導者用コードなら指導者として参加する */
+  createClub(c: Omit<Club, 'id' | 'inviteCode' | 'coachCode' | 'schoolCode' | 'schoolUids' | 'adminUids' | 'coachUids' | 'memberUids'>): Promise<string>
+  /** 招待コードで参加。会員用・指導者用・学校用のコードで、それぞれの立場として参加する */
   joinClub(code: string, uid: string): Promise<string>
   watchClub(id: string, cb: Cb<Club | null>): Unsub
   updateClub(id: string, patch: Partial<Club>): Promise<void>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building2, ChevronRight, Plus, Trash2, UserRound, Users, Whistle } from './icons'
+import { Building2, ChevronRight, GraduationCap, Plus, Trash2, UserRound, Users, Whistle } from './icons'
 import { Button, Field, inputCls, cx } from '../components/ui'
 import { useApp } from '../lib/store'
 import type { Role } from '../lib/types'
@@ -23,6 +23,7 @@ export default function Onboarding() {
   const [coach, setCoach] = useState({ sports: ['バスケットボール'], days: [6, 0], license: '', area: '東京都中野区' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [org, setOrg] = useState(profile?.org || '')
   if (!authUser) return null
   const uid = authUser.uid
 
@@ -41,6 +42,7 @@ export default function Onboarding() {
         const [lat, lon] = AREAS[coach.area]
         await be.saveProfile(role === 'coach'
           ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], sports: coach.sports, days: coach.days, license: coach.license, areaLabel: coach.area, lat, lon, verified: 'none', training: false }
+          : role === 'school' ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], org: org.trim() }
           : { uid, name: name.trim(), role, clubIds: profile?.clubIds || [] })
         const clubId = await be.joinClub(code, uid)
         if (role === 'member') {
@@ -60,7 +62,8 @@ export default function Onboarding() {
   const roles: { r: Role; icon: React.ReactNode; t: string; d: string }[] = [
     { r: 'member', icon: <Users />, t: '保護者・生徒', d: '予定の確認、出欠、会費の支払い' },
     { r: 'coach', icon: <Whistle />, t: '指導者', d: '指導の予定、選手の体調、練習メニュー' },
-    { r: 'admin', icon: <Building2 />, t: 'クラブの運営', d: '予定・会員・会費の管理、指導者探し' },
+    { r: 'admin', icon: <Building2 />, t: 'クラブ・部活動の運営', d: '予定・会員・会費の管理、指導者探し（学校の顧問も）' },
+    { r: 'school', icon: <GraduationCap />, t: '学校・教育委員会', d: '生徒の活動状況・安全・ガイドラインの確認' },
   ]
 
   return (
@@ -98,8 +101,9 @@ export default function Onboarding() {
           ) : (
             <>
               <h1 className="text-[24px] font-black">クラブに参加</h1>
-              <p className="mt-1 mb-6 text-ink-2">運営の方から届いた招待コード（6文字）を入力してください。{role === 'coach' ? '指導者の方は「指導者用」のコードを入力してください。' : ''}</p>
+              <p className="mt-1 mb-6 text-ink-2">運営の方から届いた招待コード（6文字）を入力してください。{role === 'coach' ? '指導者の方は「指導者用」のコードを入力してください。' : role === 'school' ? '学校・教育委員会の方は、クラブの運営から届いた「学校用」のコードを入力してください。' : ''}</p>
               <Field label="招待コード"><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={6} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
+              {role === 'school' && <Field label="学校名・所属"><input className={inputCls} value={org} onChange={e => setOrg(e.target.value)} placeholder="例：中野区立第五中学校／中野区教育委員会" /></Field>}
               {role === 'member' && (
                 <div className="mb-4">
                   <span className="mb-1.5 block text-[13px] font-bold text-ink-2">お子さま（生徒ご本人の場合はご自身）</span>
