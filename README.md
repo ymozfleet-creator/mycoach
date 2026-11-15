@@ -7,6 +7,8 @@
 
 ## 構成
 
+コサポの資料は非公開リポジトリ `ymozfleet-creator/cosapo-private` に移しました。
+
 ```
 index.html          サービス紹介ページ
 app/                アプリ本体（web/ のビルド成果物。直接編集しない）
@@ -17,7 +19,8 @@ setup/              Firebase設定（firebase.json が参照する本番用）
   firestore.rules        セキュリティルール
   firestore.indexes.json 複合インデックス
   functions/             Cloud Functions（Stripe決済・AI・通知）
-cosapo/             コサポ一式（退避・温存）
+  scripts/               一度だけ実行する移行スクリプト
+.github/workflows/  main への push で Firebase Hosting に自動公開
 ```
 
 ## アプリの機能（立場ごとに画面が切り替わる）
