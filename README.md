@@ -2,7 +2,7 @@
 
 保護者・生徒／指導者／クラブ運営の全員が、スマホひとつで使える地域クラブ運営アプリ。運営：RELIGHT
 
-- 公開URL：https://ymozfleet-creator.github.io/mycoach/ （紹介ページ）／ `app/`（アプリ）
+- 公開URL：https://mycoach-c15ae.web.app/ （紹介ページ）／ `app/`（アプリ）。Firebase Hosting で公開（GitHubのmainにpushすると自動で反映）
 - 本番データ：Firebase プロジェクト `mycoach-c15ae`（Auth・Firestore・Cloud Functions）／決済：Stripe
 
 ## 構成
@@ -76,7 +76,7 @@ firebase functions:secrets:set ANTHROPIC_API_KEY            # AI練習メニュ�
 firebase deploy --only functions                            # createFeeCheckout / aiAssist / Webhook更新
 ```
 
-- Firebase Authentication で「メール/パスワード」と「Google」を有効化し、承認済みドメインに `ymozfleet-creator.github.io` を追加
+- Firebase Authentication で「メール/パスワード」と「Google」を有効化し、承認済みドメインに `mycoach-c15ae.web.app`（初期設定で登録済み）と独自ドメインを登録
 - Stripe の Webhook（`stripeWebhook`）は既存のものをそのまま使う（会費の支払いも自動で反映）
 - 運営事務局の担当者は、Firebaseコンソールで `users/{担当者のuid}` に `isAdmin: true` を設定（画面からは設定できない）
 - Stripe の Connect（Express）を有効にし、Webhook で `checkout.session.completed` と `account.updated` を購読する（シークレット `STRIPE_SECRET_KEY` `STRIPE_WEBHOOK_SECRET` `STRIPE_WEBHOOK_SECRET_CONNECT`）

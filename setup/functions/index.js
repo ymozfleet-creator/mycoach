@@ -22,10 +22,11 @@ const STRIPE_WEBHOOK_SECRET_CONNECT = defineSecret('STRIPE_WEBHOOK_SECRET_CONNEC
 const REGION = 'asia-northeast1';       // 東京リージョン
 const PLAYER_FEE_RATE = 0.10;           // 受講者システム利用料（上乗せ・HTML側と揃える）
 const COACH_FEE_RATE = 0.20;            // コーチ事務手数料（控除・HTML側と揃える）
-const APP_URL = 'https://ymozfleet-creator.github.io/mycoach/index.html'; // メール内リンク・決済後の戻り先の既定URL
+const APP_URL = 'https://mycoach-c15ae.web.app/mycoach-app.html';
+const MAIL_APP_URL = 'https://mycoach-c15ae.web.app/app/'; // 通知メールのリンク先（新アプリ） // メール内リンク・決済後の戻り先の既定URL
 
 /* 決済・口座設定の戻り先URLは、許可したサイトだけに限定する（外部サイトへの誘導を防ぐ） */
-const ALLOWED_RETURN = ['https://ymozfleet-creator.github.io/mycoach/', 'https://mycoach-myteam.com/', 'https://www.mycoach-myteam.com/'];
+const ALLOWED_RETURN = ['https://mycoach-c15ae.web.app/', 'https://mycoach-c15ae.firebaseapp.com/', 'https://ymozfleet-creator.github.io/mycoach/', 'https://mycoach-myteam.com/', 'https://www.mycoach-myteam.com/'];
 function safeReturn(url, fallback) {
   try {
     const u = new URL(String(url || ''));
@@ -334,12 +335,11 @@ exports.notifyMail = onDocumentCreated(
     const trusted = !n.from || n.from === 'system';
     const TITLES = { like: 'いいねが届きました', match: 'マッチが成立しました', msg: '新しいメッセージがあります', contract: '依頼・契約の更新があります', pay: '支払いのお知らせ', review: 'レビューが届きました', verify: '本人確認の結果', cert: '証明書のお知らせ', announce: 'お知らせがあります' };
     const title = TITLES[n.type] || '新しいお知らせがあります';
-    const link = /^#[A-Za-z0-9_/-]{0,80}$/.test(String(n.link || '')) ? n.link : '';
     await admin.firestore().collection('mail').add({
       to: email,
       message: {
         subject: `【MyCOACH】${title}`,
-        text: `${trusted ? String(n.text || '').slice(0, 300) : title + '。内容はアプリでご確認ください。'}\n\nMyCOACHを開いて確認する：\n${APP_URL}${link}\n\n※このメールに返信しても届きません。心当たりがない場合は破棄してください。\n※MyCOACHがメールでパスワードやカード番号をお聞きすることはありません。`,
+        text: `${trusted ? String(n.text || '').slice(0, 300) : title + '。内容はアプリでご確認ください。'}\n\nアプリを開いて確認する：\n${MAIL_APP_URL}\n\n※このメールに返信しても届きません。心当たりがない場合は破棄してください。\n※MyCOACHがメールでパスワードやカード番号をお聞きすることはありません。`,
       },
     });
   }

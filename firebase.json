@@ -17,12 +17,12 @@
       "**/.*",
       "**/node_modules/**",
       "README.md",
-      "cosapo/**",
-      "functions/**",
-      "db/**",
-      "docs/**",
       "web/**",
-      "*.md"
+      "*.md",
+      "storage.rules",
+      "firestore.rules",
+      "firestore.indexes.json",
+      "app/**/*.map"
     ],
     "headers": [
       {
