@@ -4,8 +4,8 @@ import { CalendarDays, Clock, MapPin, Megaphone, Wallet } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Badge, Button, Card, Empty, Field, inputCls, PageHeader, Ring, Sheet, Skeleton, cx, stagger } from '../components/ui'
 import { coachReady } from '../components/CoachSetup'
-import type { Club, Post } from '../lib/types'
-import { DOW, matchScore, relTime, yen } from '../lib/util'
+import type { Post } from '../lib/types'
+import { DOW, matchFit, relTime, yen } from '../lib/util'
 
 /** 指導者向け：クラブの募集を探して応募する */
 export function JobList() {
@@ -22,7 +22,7 @@ export function JobList() {
     return posts
       .filter(p => p.ownerUid !== authUser?.uid && !profile.clubIds.includes(p.clubId))
       .filter(p => !mine || (profile.sports || []).includes(p.sport))
-      .map(p => ({ p, m: matchScore(profile, { lat: p.lat, lon: p.lon } as Club, p.days) }))
+      .map(p => ({ p, m: matchFit(profile, { lat: p.lat, lon: p.lon, days: p.days, sport: p.sport, skills: p.skills, ages: p.ages, level: p.level, fee: p.fee }) }))
       .sort((a, b) => b.m.score - a.m.score)
   }, [posts, profile, mine, authUser?.uid])
   if (!profile || !authUser) return null

@@ -22,6 +22,10 @@ export interface Profile {
   ratingCount?: number
   lessonCount?: number
   rate?: number // 希望する1回あたりの謝金（円）
+  skills?: string[] // 得意な指導（SKILLS から選択）
+  ages?: string[] // 指導したい年代（AGES）
+  levels?: string[] // 指導スタイル（LEVELS）
+  years?: number // 指導歴（年）
   trainingAt?: number
   verifyNote?: string // 事務局からの差し戻し理由
   isAdmin?: boolean // 運営事務局（審査担当）。Firestoreのルール上、本人は変更できない
@@ -45,6 +49,9 @@ export interface Post {
   start: string
   fee: number
   note: string
+  skills?: string[] // 求める指導内容
+  ages?: string[] // 対象の年代
+  level?: string // クラブの方針（LEVELS のどれか）
   status: 'open' | 'closed'
   at: number
 }

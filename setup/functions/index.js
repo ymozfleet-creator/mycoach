@@ -383,6 +383,29 @@ exports.submitInquiry = onRequest(
   }
 );
 
+/* 新しい募集が出たら、条件の合う近くの指導者（本人確認・安全研修済み）にお知らせする。
+   指導者の一覧をサーバー側で照合するので、利用者の画面に他人の情報を配らずに済む */
+const kmBetween = (a, b, c, d) => { const R = 6371, r = x => x * Math.PI / 180, dLat = r(c - a), dLon = r(d - b); const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+exports.notifyNewPost = onDocumentCreated(
+  { region: REGION, document: 'club_posts/{id}' },
+  async (event) => {
+    const p = event.data && event.data.data();
+    if (!p || p.status !== 'open' || !p.sport) return;
+    const q = await admin.firestore().collection('users').where('sports', 'array-contains', p.sport).where('role', '==', 'coach').limit(300).get();
+    const batch = admin.firestore().batch(); let n = 0;
+    for (const d of q.docs) {
+      const u = d.data();
+      if (d.id === p.ownerUid || u.deleted || u.suspended || u.verified !== 'approved' || !u.training || (u.clubIds || []).includes(p.clubId)) continue;
+      if (u.lat == null || u.lon == null || kmBetween(p.lat, p.lon, u.lat, u.lon) > 15) continue;
+      const dayOk = !(p.days || []).length || (p.days || []).some(x => (u.days || []).includes(x));
+      if (!dayOk) continue;
+      batch.set(admin.firestore().collection('notifications').doc(), { to: d.id, type: 'match', read: false, at: Date.now(), ts: Date.now(), link: '#/match', text: `【新着の募集】${String(p.clubName || '').slice(0, 40)}「${String(p.title || '').slice(0, 40)}」があなたの条件に合います` });
+      if (++n >= 50) break;
+    }
+    if (n) await batch.commit();
+  }
+);
+
 /* 毎朝9時(JST)：翌日にレッスン予定（予約確定済み）がある契約の両者へリマインド通知。
    通知ドキュメントは notifyMail がメール転送するため、Trigger Email 導入済みならメールも届く */
 exports.lessonReminder = onSchedule({ region: REGION, schedule: '0 9 * * *', timeZone: 'Asia/Tokyo' }, async () => {

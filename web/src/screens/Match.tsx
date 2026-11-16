@@ -1,12 +1,13 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BadgeCheck, CalendarDays, ChevronDown, GraduationCap, Handshake, Heart, MapPin, Megaphone, MessageCircle, PartyPopper, Search, Sparkles, Star, Wallet } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Check, ChevronDown, GraduationCap, Handshake, Heart, MapPin, Megaphone, MessageCircle, PartyPopper, Search, SlidersHorizontal, Sparkles, Star, TriangleAlert, Wallet } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, PageHeader, Ring, Segmented, Sheet, Skeleton, cx, stagger } from '../components/ui'
 import { SwipeDeck } from '../components/SwipeDeck'
 import { CoachSetup, coachReady } from '../components/CoachSetup'
-import type { Club, Contract, Post, Profile } from '../lib/types'
-import { DOW, km, matchScore, parseDate, relTime, yen } from '../lib/util'
+import type { Contract, Post, Profile } from '../lib/types'
+import { DOW, km, matchFit, parseDate, relTime, yen, type MatchResult } from '../lib/util'
+import { SKILLS } from '../lib/places'
 import { contractBadge, initiator } from './Requests'
 
 /* ---------- 見送った候補の記憶（この端末・この人だけ。見た目の好みなので端末内に保存） ---------- */
@@ -40,6 +41,10 @@ function HowItWorks({ coach }: { coach: boolean }) {
               <span><b className="block text-[14px]">{t}</b><span className="text-[12px] text-ink-2">{d}</span></span>
             </div>
           ))}
+          <div className="mt-1 rounded-xl bg-canvas p-3 text-[12px] leading-relaxed text-ink-2">
+            <b className="text-ink">相性（100点）の決め方</b><br />
+            距離 25点・曜日 25点・得意分野 20点・年代 10点・方針 5点・指導歴 5点・審査 5点・評価 5点。登録外の種目は大きく下がります。カードには「合う点」と「気をつける点」を表示します。
+          </div>
         </div>
       )}
     </Card>
@@ -106,6 +111,52 @@ export function ContractBoard() {
   )
 }
 
+/* ---------- 絞り込み（この端末に保存） ---------- */
+interface Filter { maxKm: number; days: number[]; minFee: number; skill: string }
+const NOF: Filter = { maxKm: 0, days: [], minFee: 0, skill: '' }
+function useFilter(uid?: string) {
+  const key = `mcmt_filter_${uid || ''}`
+  const [f, setF] = useState<Filter>(() => { try { return { ...NOF, ...JSON.parse(localStorage.getItem(key) || '{}') } } catch { return NOF } })
+  const save = (v: Filter) => { setF(v); try { localStorage.setItem(key, JSON.stringify(v)) } catch { /* noop */ } }
+  const count = (f.maxKm ? 1 : 0) + (f.days.length ? 1 : 0) + (f.minFee ? 1 : 0) + (f.skill ? 1 : 0)
+  return { f, save, count }
+}
+function FilterSheet({ open, onClose, f, save, coach }: { open: boolean; onClose: () => void; f: Filter; save: (v: Filter) => void; coach: boolean }) {
+  const pill = (on: boolean) => cx('rounded-full border px-3 py-1.5 text-[13px] font-bold transition active:scale-95', on ? 'border-navy bg-navy text-white' : 'border-line bg-white text-ink-2')
+  return (
+    <Sheet open={open} onClose={onClose} title="絞り込み" footer={<div className="flex gap-2"><Button variant="ghost" className="flex-1" onClick={() => save(NOF)}>条件をクリア</Button><Button className="flex-1" onClick={onClose}>この条件で探す</Button></div>}>
+      <div className="mb-1.5 text-[13px] font-bold text-ink-2">距離</div>
+      <div className="mb-4 flex flex-wrap gap-2">{[[0, '指定なし'], [5, '5km以内'], [10, '10km以内'], [20, '20km以内']].map(([v, l]) => <button key={v} onClick={() => save({ ...f, maxKm: v as number })} className={pill(f.maxKm === v)}>{l}</button>)}</div>
+      <div className="mb-1.5 text-[13px] font-bold text-ink-2">{coach ? '活動する曜日（どれかを含む）' : '指導できる曜日（どれかに対応）'}</div>
+      <div className="mb-4 flex gap-1.5">{[1, 2, 3, 4, 5, 6, 0].map(d => <button key={d} onClick={() => save({ ...f, days: f.days.includes(d) ? f.days.filter(x => x !== d) : [...f.days, d] })} className={cx('h-10 flex-1 rounded-xl border text-[14px] font-bold', f.days.includes(d) ? 'border-navy bg-navy text-white' : 'border-line bg-white text-ink-2')}>{DOW[d]}</button>)}</div>
+      {coach ? (<>
+        <div className="mb-1.5 text-[13px] font-bold text-ink-2">謝金（1回あたり）</div>
+        <div className="flex flex-wrap gap-2">{[[0, '指定なし'], [5000, '5,000円以上'], [7000, '7,000円以上'], [10000, '10,000円以上']].map(([v, l]) => <button key={v} onClick={() => save({ ...f, minFee: v as number })} className={pill(f.minFee === v)}>{l}</button>)}</div>
+      </>) : (<>
+        <div className="mb-1.5 text-[13px] font-bold text-ink-2">得意な指導</div>
+        <div className="flex flex-wrap gap-2"><button onClick={() => save({ ...f, skill: '' })} className={pill(!f.skill)}>指定なし</button>{SKILLS.map(s => <button key={s} onClick={() => save({ ...f, skill: s })} className={pill(f.skill === s)}>{s}</button>)}</div>
+      </>)}
+    </Sheet>
+  )
+}
+function FilterBar({ count, total, onOpen }: { count: number; total: number; onOpen: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[12px] text-ink-2">{total}件の候補・相性の高い順</span>
+      <button onClick={onOpen} className={cx('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-bold shadow-card active:scale-95', count ? 'bg-navy text-white' : 'bg-white text-ink')}><SlidersHorizontal size={15} />絞り込み{count ? `（${count}）` : ''}</button>
+    </div>
+  )
+}
+/** 相性の理由（合う点は緑、気をつける点は黄色） */
+function Reasons({ m }: { m: MatchResult }) {
+  return (
+    <div className="space-y-1">
+      {m.good.slice(0, 4).map(g => <div key={g} className="flex items-start gap-1.5 text-[13px]"><Check size={15} className="mt-0.5 shrink-0 text-emerald-500" strokeWidth={3} />{g}</div>)}
+      {m.warn.slice(0, 2).map(w => <div key={w} className="flex items-start gap-1.5 text-[13px] text-amber-700"><TriangleAlert size={14} className="mt-0.5 shrink-0" />{w}</div>)}
+    </div>
+  )
+}
+
 const Chip = ({ icon, children }: { icon: ReactNode; children: ReactNode }) => <span className="flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1 text-[12px] font-bold text-ink-2">{icon}{children}</span>
 
 /* ================= 指導者：クラブの募集をスワイプ ================= */
@@ -119,6 +170,8 @@ function CoachMatch() {
   const [last, setLast] = useState<{ kind: 'pass' | 'like'; id: string; contractId?: string } | null>(null)
   const [info, setInfo] = useState<Post | null>(null)
   const [matched, setMatched] = useState<{ club: string; id: string } | null>(null)
+  const flt = useFilter(authUser?.uid)
+  const [fOpen, setFOpen] = useState(false)
   useEffect(() => be.watchOpenPosts(setPosts), [be])
   const me = authUser?.uid || ''
   const ready = coachReady(profile)
@@ -129,13 +182,13 @@ function CoachMatch() {
     return posts
       .filter(p => p.ownerUid !== me && !profile.clubIds.includes(p.clubId) && !passed.ids.includes(p.id) && !taken.has(p.id))
       .map(p => {
-        const m = matchScore(profile, { lat: p.lat, lon: p.lon } as Club, p.days)
+        const m = matchFit(profile, { lat: p.lat, lon: p.lon, days: p.days, sport: p.sport, skills: p.skills, ages: p.ages, level: p.level, fee: p.fee })
         const offer = contracts.find(k => k.coach === me && k.clubId === p.clubId && k.status === 'proposed' && initiator(k) !== me)
-        const dayHit = p.days.filter(d => (profile.days || []).includes(d)).length
-        return { ...p, score: m.score + (offer ? 100 : 0), m, offer, dayHit, sportOk: (profile.sports || []).includes(p.sport) }
+        return { ...p, score: m.score + (offer ? 100 : 0), m, offer, isNew: Date.now() - p.at < 3 * 864e5 }
       })
-      .sort((a, b) => Number(b.sportOk) - Number(a.sportOk) || b.score - a.score)
-  }, [posts, profile, contracts, passed.ids, me])
+      .filter(p => p.offer || ((!flt.f.maxKm || p.m.dist <= flt.f.maxKm) && (!flt.f.days.length || p.days.some(d => flt.f.days.includes(d))) && (!flt.f.minFee || p.fee >= flt.f.minFee)))
+      .sort((a, b) => b.score - a.score)
+  }, [posts, profile, contracts, passed.ids, me, flt.f])
   if (!profile || !authUser) return null
   const waiting = contracts.filter(k => k.status === 'proposed' && initiator(k) !== me).length
 
@@ -174,21 +227,23 @@ function CoachMatch() {
         {tab === 'list' ? <ContractBoard /> : (
           <>
             {!ready && <CoachSetup compact />}
+            <FilterBar count={flt.count} total={deck.length} onOpen={() => setFOpen(true)} />
             {posts === null ? <Skeleton className="h-[440px]" /> : (
               <SwipeDeck
                 items={deck}
                 likeLabel="応募"
+                reserve={370}
                 passLabel="見送る"
                 onLike={like}
                 onPass={pass}
                 onInfo={setInfo}
                 canUndo={!!last}
                 onUndo={undo}
-                empty={<Empty icon={<Megaphone />} title="新しい募集はすべて見ました" text="新しい募集が出たらお知らせします" action={passed.ids.length ? <Button variant="soft" onClick={passed.clear}>見送った募集をもう一度見る</Button> : undefined} />}
+                empty={<Empty icon={<Megaphone />} title={flt.count ? '条件に合う募集はありません' : '新しい募集はすべて見ました'} text="あなたの種目・地域に新しい募集が出たらお知らせします" action={<div className="flex flex-col gap-2">{flt.count > 0 && <Button variant="soft" onClick={() => flt.save(NOF)}>絞り込みをクリア</Button>}{passed.ids.length > 0 && <Button variant="soft" onClick={passed.clear}>見送った募集をもう一度見る</Button>}</div>} />}
                 render={p => (
                   <div className="flex h-full flex-col">
                     <div className="relative bg-gradient-to-br from-navy to-brand px-5 pb-5 pt-6 text-white">
-                      {p.offer && <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />このクラブから依頼が届いています</div>}
+                      {p.offer ? <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />このクラブから依頼が届いています</div> : p.isNew ? <div className="mb-2 inline-flex rounded-full bg-white/20 px-3 py-1 text-[12px] font-black">NEW 新着の募集</div> : null}
                       <div className="text-[13px] font-bold opacity-80">{p.clubName}</div>
                       <div className="mt-1 pr-16 text-[22px] font-black leading-snug">{p.title}</div>
                       <div className="absolute right-4 top-6 rounded-full bg-white p-1"><Ring value={p.m.score} size={60} stroke={6}><div className="text-center leading-none text-ink"><div className="text-[17px] font-black">{p.m.score}</div><div className="text-[9px] text-ink-3">相性</div></div></Ring></div>
@@ -199,12 +254,9 @@ function CoachMatch() {
                         <Chip icon={<MapPin size={13} />}>{p.m.dist.toFixed(1)}km</Chip>
                         <Chip icon={<Wallet size={13} />}>1回 {yen(p.fee)}</Chip>
                       </div>
-                      <div className="space-y-1.5 text-[13px]">
-                        <div className="flex items-center gap-2"><span className={cx('h-2 w-2 rounded-full', p.dayHit === p.days.length ? 'bg-emerald-500' : p.dayHit ? 'bg-amber-400' : 'bg-slate-300')} />{p.dayHit === p.days.length ? 'あなたの指導できる曜日と合っています' : p.dayHit ? '曜日が一部合っています' : '曜日が合っていません'}</div>
-                        <div className="flex items-center gap-2"><span className={cx('h-2 w-2 rounded-full', p.sportOk ? 'bg-emerald-500' : 'bg-slate-300')} />{p.sportOk ? `${p.sport}（あなたの種目）` : `${p.sport}（登録外の種目）`}</div>
-                        {profile.rate ? <div className="flex items-center gap-2"><span className={cx('h-2 w-2 rounded-full', p.fee >= profile.rate ? 'bg-emerald-500' : 'bg-amber-400')} />{p.fee >= profile.rate ? '希望の謝金以上です' : `希望の謝金（${yen(profile.rate)}）より低めです`}</div> : null}
-                      </div>
-                      {p.note && <p className="line-clamp-4 text-[14px] leading-relaxed text-ink-2">{p.note}</p>}
+                      <Reasons m={{ ...p.m, warn: profile.rate && p.fee < profile.rate ? [...p.m.warn, `希望の謝金（${yen(profile.rate)}）より低め`] : p.m.warn }} />
+                      {(p.skills?.length || p.ages?.length || p.level) ? <div className="flex flex-wrap gap-1">{[...(p.ages || []), ...(p.level ? [p.level] : []), ...(p.skills || [])].slice(0, 6).map(t => <span key={t} className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand">{t}</span>)}</div> : null}
+                      {p.note && <p className="line-clamp-3 text-[13px] leading-relaxed text-ink-2">{p.note}</p>}
                       <div className="text-[11px] text-ink-3">{p.areaLabel}・{relTime(p.at)}に募集</div>
                     </div>
                   </div>
@@ -218,13 +270,14 @@ function CoachMatch() {
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.title}>
         {info && <><div className="text-[13px] font-bold text-ink-2">{info.clubName}（{info.areaLabel}）</div><p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.note || '詳しい内容はまだ書かれていません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると応募できます。</p></>}
       </Sheet>
+      <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach />
       {matched && <MatchModal a={profile.name} b={matched.club} sub={`${matched.club}の指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
     </>
   )
 }
 
 /* ================= クラブ運営：指導者をスワイプ ================= */
-type Cand = Profile & { id: string; m: ReturnType<typeof matchScore>; app?: Contract }
+type Cand = Profile & { id: string; m: MatchResult; app?: Contract }
 function ClubMatch() {
   const { be, club, profile, authUser, contracts, events, toast } = useApp()
   const nav = useNavigate()
@@ -236,6 +289,8 @@ function ClubMatch() {
   const [last, setLast] = useState<{ kind: 'pass' | 'like'; id: string; contractId?: string } | null>(null)
   const [info, setInfo] = useState<Cand | null>(null)
   const [matched, setMatched] = useState<{ name: string; id: string } | null>(null)
+  const flt = useFilter(authUser?.uid)
+  const [fOpen, setFOpen] = useState(false)
   useEffect(() => { if (club) be.listCoaches(club.sport).then(setList).catch(() => setList([])) }, [be, club?.sport, club?.coachUids.length])
   useEffect(() => (club ? be.watchClubPosts(club.id, setPosts) : undefined), [be, club?.id])
   const me = authUser?.uid || ''
@@ -245,14 +300,20 @@ function ClubMatch() {
     return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => +d)
   }, [events])
   const mine = contracts.filter(k => club && k.clubId === club.id)
+  // 求める条件：募集が出ていればその条件、なければクラブの活動日から
+  const need = useMemo(() => {
+    const op = posts.find(p => p.status === 'open')
+    return club ? { lat: club.lat, lon: club.lon, sport: club.sport, days: op?.days || clubDays, skills: op?.skills, ages: op?.ages, level: op?.level, fee: op?.fee } : { lat: 0, lon: 0, sport: '', days: [] }
+  }, [club, posts, clubDays])
   const deck: Cand[] = useMemo(() => {
     if (!list || !club) return []
     return list
       .filter(p => p.uid !== me && !club.coachUids.includes(p.uid) && coachReady(p) && !passed.ids.includes(p.uid))
       .filter(p => !mine.some(k => k.coach === p.uid && (k.status === 'active' || (k.status === 'proposed' && initiator(k) === me))))
-      .map(p => ({ ...p, id: p.uid, m: matchScore(p, club, clubDays), app: mine.find(k => k.coach === p.uid && k.status === 'proposed' && initiator(k) === p.uid) }))
+      .map(p => ({ ...p, id: p.uid, m: matchFit(p, need), app: mine.find(k => k.coach === p.uid && k.status === 'proposed' && initiator(k) === p.uid) }))
+      .filter(c => c.app || ((!flt.f.maxKm || c.m.dist <= flt.f.maxKm) && (!flt.f.days.length || (c.days || []).some(d => flt.f.days.includes(d))) && (!flt.f.skill || (c.skills || []).includes(flt.f.skill))))
       .sort((a, b) => Number(!!b.app) - Number(!!a.app) || b.m.score - a.m.score)
-  }, [list, club, mine, passed.ids, clubDays, me])
+  }, [list, club, mine, passed.ids, need, me, flt.f])
   if (!club || !profile || !authUser) return null
   const openPost = posts.find(p => p.status === 'open')
   const counts = {
@@ -307,31 +368,31 @@ function ClubMatch() {
       <div className="mt-3 space-y-3">
         {tab === 'list' ? <ContractBoard /> : (
           <>
+            <FilterBar count={flt.count} total={deck.length} onOpen={() => setFOpen(true)} />
             {list === null ? <Skeleton className="h-[440px]" /> : (
               <SwipeDeck
                 items={deck}
                 likeLabel={'依頼'}
-                reserve={390}
+                reserve={430}
                 passLabel="見送る"
                 onLike={like}
                 onPass={pass}
                 onInfo={setInfo}
                 canUndo={!!last}
                 onUndo={undo}
-                empty={<Empty icon={<Search />} title="条件に合う指導者はすべて見ました" text="募集を出しておくと、新しい指導者から応募が届きます" action={<div className="flex flex-col gap-2">{passed.ids.length > 0 && <Button variant="soft" onClick={passed.clear}>見送った指導者をもう一度見る</Button>}<Button onClick={() => nav('/posts')}><Megaphone size={16} />募集を出す</Button></div>} />}
+                empty={<Empty icon={<Search />} title="条件に合う指導者はすべて見ました" text="募集を出しておくと、条件の合う近くの指導者にお知らせが届き、応募を待てます" action={<div className="flex flex-col gap-2">{flt.count > 0 && <Button variant="soft" onClick={() => flt.save(NOF)}>絞り込みをクリア</Button>}{passed.ids.length > 0 && <Button variant="soft" onClick={passed.clear}>見送った指導者をもう一度見る</Button>}<Button onClick={() => nav('/posts')}><Megaphone size={16} />募集を出す</Button></div>} />}
                 render={c => (
                   <div className="flex h-full flex-col">
-                    <div className="relative flex flex-col items-center bg-gradient-to-br from-navy to-brand px-5 pb-5 pt-7 text-white">
-                      <div className="rounded-full ring-4 ring-white/30"><Avatar name={c.name} size={76} /></div>
-                      <div className="mt-2 text-[22px] font-black">{c.name}</div>
+                    <div className="relative flex flex-col items-center bg-gradient-to-br from-navy to-brand px-5 pb-4 pt-5 text-white">
+                      <div className="rounded-full ring-4 ring-white/30"><Avatar name={c.name} size={60} /></div>
+                      <div className="mt-1.5 text-[21px] font-black">{c.name}</div>
                       <div className="text-[13px] opacity-80">{(c.sports || []).join('・')}・{c.areaLabel}</div>
                       {c.app && <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />あなたのクラブに応募しています</div>}
                       <div className="absolute right-4 top-5 rounded-full bg-white p-1"><Ring value={c.m.score} size={56} stroke={6}><div className="text-center leading-none text-ink"><div className="text-[16px] font-black">{c.m.score}</div><div className="text-[9px] text-ink-3">相性</div></div></Ring></div>
                     </div>
-                    <div className="flex-1 space-y-3 overflow-hidden p-5">
+                    <div className="flex-1 space-y-2.5 overflow-hidden px-5 py-4">
                       <div className="flex flex-wrap gap-1.5">
-                        <Badge tone="ok"><BadgeCheck size={12} />本人確認済み</Badge>
-                        <Badge tone="ok"><GraduationCap size={12} />安全研修修了</Badge>
+                        <Badge tone="ok"><BadgeCheck size={12} />本人確認・<GraduationCap size={12} />安全研修 済み</Badge>
                         {c.teacher && <Badge tone="info">現職の教員</Badge>}
                         {c.ratingCount ? <Badge tone="warn"><Star size={12} />{c.ratingAvg}（{c.ratingCount}件）</Badge> : null}
                       </div>
@@ -340,9 +401,9 @@ function ClubMatch() {
                         <Chip icon={<CalendarDays size={13} />}>{(c.days || []).map(d => DOW[d]).join('・') || '曜日未設定'}</Chip>
                         {c.rate ? <Chip icon={<Wallet size={13} />}>希望 {yen(c.rate)}</Chip> : null}
                       </div>
-                      {c.license && <div className="text-[13px] font-bold">{c.license}</div>}
-                      <div className="text-[13px] text-ink-2">{clubDays.length ? (clubDays.every(d => (c.days || []).includes(d)) ? '✓ クラブの活動日すべてに対応できます' : clubDays.some(d => (c.days || []).includes(d)) ? '△ 活動日の一部に対応できます' : '× 活動日と曜日が合いません') : ''}</div>
-                      {c.bio && <p className="line-clamp-4 text-[14px] leading-relaxed text-ink-2">{c.bio}</p>}
+                      <Reasons m={c.m} />
+                      {(c.skills?.length || c.license) ? <div className="flex flex-wrap gap-1">{c.license && <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">{c.license}</span>}{(c.skills || []).slice(0, 4).map(t => <span key={t} className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand">{t}</span>)}</div> : null}
+                      {c.bio && <p className="line-clamp-3 text-[13px] leading-relaxed text-ink-2">{c.bio}</p>}
                     </div>
                   </div>
                 )}
@@ -355,6 +416,7 @@ function ClubMatch() {
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.name}>
         {info && <><div className="text-[13px] text-ink-2">{(info.sports || []).join('・')}／{info.areaLabel}／{km(club.lat, club.lon, info.lat ?? club.lat, info.lon ?? club.lon).toFixed(1)}km</div>{info.license && <p className="mt-2 text-[14px] font-bold">{info.license}</p>}<p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.bio || '自己紹介はまだありません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると、{openPost ? `募集「${openPost.title}」の条件で` : ''}依頼を送れます。送ったあとはメッセージで条件を相談できます。</p></>}
       </Sheet>
+      <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach={false} />
       {matched && <MatchModal a={club.name} b={matched.name} sub={`${matched.name}さんがクラブの指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
     </>
   )

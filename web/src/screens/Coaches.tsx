@@ -4,7 +4,8 @@ import { BadgeCheck, GraduationCap, MapPin, Search, Star } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet, Skeleton, cx } from '../components/ui'
 import type { Profile } from '../lib/types'
-import { DOW, matchScore, parseDate } from '../lib/util'
+import { DOW, matchFit, parseDate } from '../lib/util'
+import { coachReady } from '../components/CoachSetup'
 
 function Ring({ v }: { v: number }) {
   const r = 22, c = 2 * Math.PI * r
@@ -30,7 +31,7 @@ export default function Coaches() {
     events.forEach(e => { const d = parseDate(e.date).getDay(); cnt[d] = (cnt[d] || 0) + 1 })
     return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => +d)
   }, [events])
-  const rows = useMemo(() => (list || []).filter(p => !club?.coachUids.includes(p.uid)).map(p => ({ p, m: club ? matchScore(p, club, clubDays) : null! })).filter(x => !onlyReady || x.m.ready).sort((a, b) => b.m.score - a.m.score), [list, onlyReady, clubDays, club])
+  const rows = useMemo(() => (list || []).filter(p => !club?.coachUids.includes(p.uid)).map(p => ({ p, m: club ? { ...matchFit(p, { lat: club.lat, lon: club.lon, days: clubDays, sport: club.sport }), ready: coachReady(p) } : null! })).filter(x => !onlyReady || x.m.ready).sort((a, b) => b.m.score - a.m.score), [list, onlyReady, clubDays, club])
   if (!club || !profile || !authUser) return null
   const open = (p: Profile) => { setSel(p); setReq({ title: `${clubDays.map(d => DOW[d] + '曜').join('・') || '週末'}の指導`, fee: 6000, message: `はじめまして。${club.name}の${profile.name}です。${club.areaLabel}で${club.sport}の指導をお願いできる方を探しています。ご検討いただけますでしょうか。` }) }
   const send = async () => {
@@ -67,13 +68,13 @@ export default function Coaches() {
                 {p.ratingAvg && <span className="flex items-center gap-0.5"><Star size={12} className="fill-amber-400 text-amber-400" />{p.ratingAvg.toFixed(1)}（{p.ratingCount}）</span>}
                 {p.teacher && <span className="flex items-center gap-0.5"><GraduationCap size={12} />教員</span>}
               </div>
-              <div className="mt-1.5 flex flex-wrap gap-1">{m.reasons.slice(1).map(r => <Badge key={r} tone="info">{r}</Badge>)}{!m.ready && <Badge tone="warn">審査中</Badge>}</div>
+              <div className="mt-1.5 flex flex-wrap gap-1">{m.good.slice(0, 3).map(r => <Badge key={r} tone="info">{r}</Badge>)}{!m.ready && <Badge tone="warn">審査中</Badge>}</div>
             </div>
             <Ring v={m.score} />
           </Card>
         ))}
       </div>
-      <Sheet open={!!sel} onClose={() => setSel(null)} title={sel?.name} footer={sel && (matchScore(sel, club, clubDays).ready ? <Button block size="lg" loading={busy} onClick={send} disabled={!req.title}>この内容で依頼する</Button> : <p className="text-center text-[13px] text-ink-2">審査（本人確認・安全研修）が終わると依頼できます</p>)}>
+      <Sheet open={!!sel} onClose={() => setSel(null)} title={sel?.name} footer={sel && (coachReady(sel) ? <Button block size="lg" loading={busy} onClick={send} disabled={!req.title}>この内容で依頼する</Button> : <p className="text-center text-[13px] text-ink-2">審査（本人確認・安全研修）が終わると依頼できます</p>)}>
         {sel && (
           <>
             <div className="flex flex-wrap gap-1.5">
@@ -83,7 +84,7 @@ export default function Coaches() {
             </div>
             {sel.bio && <p className="mt-3 text-[14px] leading-relaxed">{sel.bio}</p>}
             <p className="mt-2 text-[13px] text-ink-2">指導できる曜日：{(sel.days || []).sort().map(d => DOW[d]).join('・') || '未設定'}／地域：{sel.areaLabel || '未設定'}</p>
-            {matchScore(sel, club, clubDays).ready && (
+            {coachReady(sel) && (
               <div className="mt-5 border-t border-line pt-4">
                 <Field label="依頼の内容"><input className={inputCls} value={req.title} onChange={e => setReq({ ...req, title: e.target.value })} /></Field>
                 <Field label="1回あたりの謝金（円）" hint="アプリからカードで支払えます（別途システム利用料10%）"><input type="number" inputMode="numeric" min={0} max={100000} className={inputCls} value={req.fee} onChange={e => setReq({ ...req, fee: Number(e.target.value) })} /></Field>

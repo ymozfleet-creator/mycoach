@@ -40,7 +40,10 @@ service cloud.firestore {
       function profileSizeOk() {
         return request.resource.data.get('name', '').size() <= 40
           && request.resource.data.get('bio', '').size() <= 1000
-          && request.resource.data.get('license', '').size() <= 100;
+          && request.resource.data.get('license', '').size() <= 100
+          && request.resource.data.get('skills', []).size() <= 10
+          && request.resource.data.get('ages', []).size() <= 5
+          && request.resource.data.get('levels', []).size() <= 5;
       }
       allow update: if isAdmin()
         || (authed() && request.auth.uid == uid
@@ -455,7 +458,10 @@ service cloud.firestore {
           && d.note is string && d.note.size() <= 1000
           && d.fee is int && d.fee >= 0 && d.fee <= 100000
           && d.status in ['open', 'closed']
-          && d.days is list && d.days.size() <= 7;
+          && d.days is list && d.days.size() <= 7
+          && d.get('skills', []).size() <= 10
+          && d.get('ages', []).size() <= 5
+          && d.get('level', '').size() <= 30;
       }
       allow read: if authed();
       allow create: if isClubAdmin(request.resource.data.clubId)

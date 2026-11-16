@@ -208,3 +208,40 @@ export function guidelineWeeks(events: _Ev[], weeks = 4): WeekCheck[] {
   }
   return out
 }
+
+/* ---------- 指導者と募集（クラブ）の相性 ----------
+   距離・曜日・得意分野・年代・指導スタイル・指導歴・審査・評価から100点満点で計算し、
+   「なぜ合うのか」を人が読める言葉で返す。重みは画面の「相性のしくみ」と合わせている */
+export interface MatchNeed { lat: number; lon: number; days: number[]; sport: string; skills?: string[]; ages?: string[]; level?: string; fee?: number }
+export interface MatchResult { score: number; dist: number; good: string[]; warn: string[] }
+export function matchFit(c: Profile, n: MatchNeed): MatchResult {
+  const good: string[] = [], warn: string[] = []
+  const dist = c.lat != null && c.lon != null ? km(n.lat, n.lon, c.lat, c.lon) : 10
+  let s = 0
+  // 距離（25点）：3km以内は満点、20kmで0点
+  s += dist <= 3 ? 25 : Math.max(0, 25 * (1 - (dist - 3) / 17))
+  if (dist <= 5) good.push(`近い（${dist.toFixed(1)}km）`); else if (dist > 12) warn.push(`遠め（${dist.toFixed(1)}km）`)
+  // 曜日（25点）
+  const hit = n.days.filter(d => (c.days || []).includes(d)).length
+  s += n.days.length ? (hit / n.days.length) * 25 : 12
+  if (n.days.length && hit === n.days.length) good.push('活動日がすべて合う'); else if (hit) warn.push('活動日の一部だけ合う'); else if (n.days.length) warn.push('活動日が合わない')
+  // 得意分野（20点）
+  const need = n.skills || [], have = c.skills || []
+  const sk = need.filter(x => have.includes(x))
+  s += need.length ? (sk.length / need.length) * 20 : have.length ? 10 : 6
+  if (sk.length) good.push(`得意分野が一致：${sk.slice(0, 2).join('・')}`)
+  // 年代（10点）・指導スタイル（5点）
+  const ag = (n.ages || []).filter(x => (c.ages || []).includes(x))
+  s += n.ages?.length ? (ag.length ? 10 : 0) : 5
+  if (ag.length) good.push(`${ag.join('・')}の指導を希望`); else if (n.ages?.length && c.ages?.length) warn.push('希望の年代が違う')
+  if (n.level && (c.levels || []).includes(n.level)) { s += 5; good.push(`方針が合う（${n.level}）`) } else if (!n.level) s += 2
+  // 指導歴（5点）・審査（5点）・評価（5点）
+  s += Math.min(c.years || 0, 10) / 10 * 5
+  if ((c.years || 0) >= 5) good.push(`指導歴${c.years}年`)
+  if (c.verified === 'approved' && c.training) s += 5
+  if (c.ratingCount) { s += Math.max(0, ((c.ratingAvg || 0) - 3.5) / 1.5) * 5; if ((c.ratingAvg || 0) >= 4.7 && c.ratingCount >= 10) good.push(`高評価（★${c.ratingAvg}）`) }
+  // 謝金（加点なし。差が大きいときは注意として出す）
+  if (n.fee && c.rate && c.rate > n.fee * 1.2) warn.push(`希望の謝金（${c.rate.toLocaleString()}円）が募集より高め`)
+  if (!(c.sports || []).includes(n.sport)) { s *= 0.4; warn.unshift(`${n.sport}は登録外の種目`) }
+  return { score: Math.max(0, Math.min(100, Math.round(s))), dist, good, warn }
+}

@@ -5,6 +5,7 @@ import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet, Skeleton, cx, stagger } from '../components/ui'
 import type { Post } from '../lib/types'
 import { DOW, relTime, uid6, yen } from '../lib/util'
+import { AGES, LEVELS, SKILLS } from '../lib/places'
 import { contractBadge } from './Requests'
 
 /** クラブ運営：指導者の募集を出し、応募を確認する */
@@ -13,7 +14,7 @@ export default function Posts() {
   const nav = useNavigate()
   const [posts, setPosts] = useState<Post[] | null>(null)
   const [open, setOpen] = useState(false)
-  const [f, setF] = useState({ title: '', days: [6] as number[], start: '09:00', fee: 6000, note: '' })
+  const [f, setF] = useState({ title: '', days: [6] as number[], start: '09:00', fee: 6000, note: '', skills: [] as string[], ages: ['中学生'] as string[], level: '' })
   const [busy, setBusy] = useState(false)
   useEffect(() => (club ? be.watchClubPosts(club.id, setPosts) : undefined), [be, club?.id])
   if (!club || !profile || !authUser) return null
@@ -21,7 +22,7 @@ export default function Posts() {
   const create = async () => {
     setBusy(true)
     try {
-      await be.savePost({ id: 'post' + Date.now().toString(36) + uid6(), clubId: club.id, clubName: club.name, ownerUid: authUser.uid, ownerName: profile.name, sport: club.sport, areaLabel: club.areaLabel, lat: club.lat, lon: club.lon, title: f.title.trim().slice(0, 60), days: f.days, start: f.start, fee: Math.max(0, Math.round(f.fee)), note: f.note.trim().slice(0, 1000), status: 'open', at: Date.now() })
+      await be.savePost({ id: 'post' + Date.now().toString(36) + uid6(), clubId: club.id, clubName: club.name, ownerUid: authUser.uid, ownerName: profile.name, sport: club.sport, areaLabel: club.areaLabel, lat: club.lat, lon: club.lon, title: f.title.trim().slice(0, 60), days: f.days, start: f.start, fee: Math.max(0, Math.round(f.fee)), note: f.note.trim().slice(0, 1000), skills: f.skills.slice(0, 8), ages: f.ages, level: f.level || undefined, status: 'open', at: Date.now() })
       setOpen(false); setF({ ...f, title: '', note: '' }); toast('募集を公開しました。条件の合う指導者に表示されます')
     } catch { toast('公開できませんでした') }
     setBusy(false)
@@ -68,6 +69,11 @@ export default function Posts() {
         <div className="grid grid-cols-2 gap-2">
           <Field label="開始時刻"><input type="time" className={inputCls} value={f.start} onChange={e => setF({ ...f, start: e.target.value })} /></Field>
           <Field label="謝金（1回・円）"><input type="number" inputMode="numeric" min={0} max={100000} className={inputCls} value={f.fee} onChange={e => setF({ ...f, fee: Number(e.target.value) })} /></Field>
+        </div>
+        <Field label="求める指導内容" hint="指導者の得意分野と照らし合わせ、相性の高い人から表示します"><div className="flex flex-wrap gap-2">{SKILLS.map(s => <button key={s} onClick={() => setF({ ...f, skills: f.skills.includes(s) ? f.skills.filter(x => x !== s) : [...f.skills, s] })} className={cx('rounded-full border px-3 py-1.5 text-[13px] font-bold transition active:scale-95', f.skills.includes(s) ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2')}>{s}</button>)}</div></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="対象の年代"><div className="flex flex-wrap gap-1.5">{AGES.map(s => <button key={s} onClick={() => setF({ ...f, ages: f.ages.includes(s) ? f.ages.filter(x => x !== s) : [...f.ages, s] })} className={cx('rounded-full border px-3 py-1.5 text-[13px] font-bold', f.ages.includes(s) ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2')}>{s}</button>)}</div></Field>
+          <Field label="クラブの方針"><select className={inputCls} value={f.level} onChange={e => setF({ ...f, level: e.target.value })}><option value="">指定しない</option>{LEVELS.map(l => <option key={l}>{l}</option>)}</select></Field>
         </div>
         <Field label="詳しい内容"><textarea className={cx(inputCls, 'min-h-[110px]')} maxLength={1000} value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="参加する子どもの学年・人数、指導してほしい内容、活動場所など" /></Field>
         <p className="text-[12px] text-ink-3">募集は、本人確認と安全研修を終えた指導者だけが応募できます。</p>
