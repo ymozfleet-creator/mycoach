@@ -27,6 +27,10 @@ const CoachProfile = lazy(() => import('./screens/CoachProfile'))
 const Verify = lazy(() => import('./screens/Verify'))
 const Training = lazy(() => import('./screens/Training'))
 const Ops = lazy(() => import('./screens/Ops'))
+const FeeRequests = lazy(() => import('./screens/FeeRequests'))
+const Facilities = lazy(() => import('./screens/Facilities'))
+const Safeguard = lazy(() => import('./screens/Safeguard'))
+const Consult = lazy(() => import('./screens/Safeguard').then(m => ({ default: m.ConsultForm })))
 
 function Tabs() {
   const { isAdmin, isCoach, isSchool, coachMode, club, notices, contracts, authUser } = useApp()
@@ -131,6 +135,10 @@ function Shell() {
             <Route path="/verify" element={<Verify />} />
             <Route path="/training" element={<Training />} />
             <Route path="/ops" element={<Ops />} />
+            <Route path="/fee-requests" element={<FeeRequests />} />
+            <Route path="/facilities" element={<Facilities />} />
+            <Route path="/safeguard" element={<Safeguard />} />
+            <Route path="/consult" element={<Consult />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </Suspense>

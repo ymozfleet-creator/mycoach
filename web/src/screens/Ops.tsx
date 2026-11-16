@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { IdCard, Inbox, ShieldX } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet, Skeleton, cx, stagger } from '../components/ui'
-import type { Profile, VerifyDoc } from '../lib/types'
+import type { Profile, Report, VerifyDoc } from '../lib/types'
 import { DOW, relTime } from '../lib/util'
 
 const REASONS = ['写真が不鮮明で文字が読めません', '書類の一部が写っていません', '登録のお名前と書類のお名前が一致しません', '有効期限が切れています']
@@ -28,7 +28,8 @@ export default function Ops() {
   }
   return (
     <>
-      <PageHeader title="本人確認の審査" back sub="運営事務局" />
+      <PageHeader title="運営事務局" back sub="通報の確認・本人確認の審査" />
+      <Reports />
       {list === null ? <Skeleton className="h-24" /> : !list.length ? <Empty icon={<Inbox />} title="審査待ちはありません" /> : (
         <div className="space-y-2">
           {list.map((p, i) => (
@@ -79,5 +80,33 @@ export default function Ops() {
         )}
       </Sheet>
     </>
+  )
+}
+
+/** 通報の確認：写真・募集を非表示にする／問題なしとして閉じる */
+function Reports() {
+  const { be, toast } = useApp()
+  const [list, setList] = useState<Report[]>([])
+  const [busy, setBusy] = useState('')
+  useEffect(() => be.watchReports(setList), [be])
+  if (!list.length) return null
+  const act = async (r: Report, hide: boolean) => {
+    setBusy(r.id)
+    try { if (hide) await be.moderate(r.targetType, r.targetId); await be.resolveReport(r.id); toast(hide ? (r.targetType === 'post' ? '写真を外し、募集を締め切りました' : '写真を非表示にしました') : '対応済みにしました') }
+    catch { toast('処理できませんでした。権限をご確認ください') }
+    setBusy('')
+  }
+  return (
+    <div className="mb-5">
+      <div className="mb-2 flex items-center gap-2 text-[15px] font-black">通報<Badge tone="danger">{list.length}</Badge></div>
+      {list.map(r => (
+        <Card key={r.id} className="mb-2">
+          <div className="flex items-center justify-between"><b className="text-[14px]">{r.targetName}</b><Badge tone="none">{r.targetType === 'post' ? '募集' : r.targetType === 'club' ? 'クラブ' : 'ユーザー'}</Badge></div>
+          <div className="mt-1 text-[13px] font-bold text-ink-2">{r.reason}・{relTime(r.at)}</div>
+          {r.detail && <p className="mt-1 whitespace-pre-wrap text-[13px]">{r.detail}</p>}
+          <div className="mt-2 flex gap-2"><Button size="sm" variant="ghost" loading={busy === r.id} onClick={() => act(r, false)}>問題なし</Button><Button size="sm" loading={busy === r.id} onClick={() => act(r, true)}>写真を非表示にする</Button></div>
+        </Card>
+      ))}
+    </div>
   )
 }

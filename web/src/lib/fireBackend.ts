@@ -125,6 +125,24 @@ export const fireBackend: Backend = {
     await setDoc(doc(db, 'reviews', `${r.contractId}_${r.from}`), strip({ ...r, ts: r.at }))
     await updateDoc(doc(db, 'contracts', r.contractId), { reviewed: true })
   },
+  releasePayment: async paymentId => {
+    const token = await auth.currentUser?.getIdToken()
+    const r = await fetch(`${FUNCTIONS_BASE}/releasePayout`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ paymentId }) })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || '送金できませんでした')
+  },
+  watchSub: (c, name, cb, onlyBy) => onSnapshot(onlyBy ? query(sub(c, name), where('by', '==', onlyBy)) : query(sub(c, name), limit(200)), s => cb(list<any>(s).sort((a, b) => (b.at || 0) - (a.at || 0))), () => cb([])),
+  addSub: async (c, name, data, id) => { id ? await setDoc(doc(db, 'clubs', c, name, id), strip(data)) : await addDoc(sub(c, name), strip(data)) },
+  updateSub: async (c, name, id, patch) => { await updateDoc(doc(db, 'clubs', c, name, id), strip(patch) as any) },
+  addReport: async r => { await addDoc(collection(db, 'reports'), strip(r)) },
+  watchReports: cb => onSnapshot(query(collection(db, 'reports'), where('status', '==', 'new'), limit(100)), s => cb(list<any>(s).sort((a, b) => b.at - a.at)), () => cb([])),
+  resolveReport: async id => { await updateDoc(doc(db, 'reports', id), { status: 'done' }) },
+  moderate: async (type, id) => {
+    if (type === 'user') await updateDoc(doc(db, 'users', id), { photo: '' })
+    if (type === 'club') await updateDoc(doc(db, 'clubs', id), { photo: '' })
+    if (type === 'post') await updateDoc(doc(db, 'club_posts', id), { photo: '', status: 'closed' })
+    await addDoc(collection(db, 'audit_logs'), { action: 'moderate_' + type, target: id, by: auth.currentUser?.uid || '', note: '', at: Date.now() })
+  },
   watchContracts: (uid, cb) => {
     let a: Contract[] = [], b: Contract[] = []
     const emit = () => cb([...a, ...b.filter(x => !a.find(y => y.id === x.id))].sort((x, y) => (y.at || 0) - (x.at || 0)))

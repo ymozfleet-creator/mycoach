@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, CreditCard, Receipt, Send } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Badge, Button, Card, Empty, PageHeader, Section, Sheet } from '../components/ui'
@@ -10,6 +11,7 @@ const statusBadge = (f: Fee) => f.status === 'paid' ? <Badge tone="ok">支払い
 
 function MemberFees() {
   const { be, club, fees, month, toast } = useApp()
+  const nav = useNavigate()
   const [pay, setPay] = useState<Fee | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -51,6 +53,7 @@ function MemberFees() {
         ) : <Empty icon={<Receipt />} title="今月の請求はまだありません" text="運営から請求されるとここに表示されます" />}
       </Section>
       <p className="mt-4 px-1 text-[12px] text-ink-3">カード情報は決済会社（Stripe）が管理し、このアプリやクラブには保存されません。</p>
+      <button onClick={() => nav('/fee-requests')} className="mt-3 w-full rounded-2xl border border-line bg-white px-4 py-3 text-left text-[14px] font-bold text-brand active:opacity-60">会費の負担が大きい場合は、減免を申請できます →</button>
       <Sheet open={!!pay} onClose={() => setPay(null)} title="会費のお支払い" footer={<Button block size="lg" loading={busy} onClick={() => pay && startPay(pay)}><CreditCard size={18} />{pay ? `${yen(pay.amount)} を支払う` : ''}</Button>}>
         {pay && <div className="rounded-2xl bg-canvas p-4"><div className="text-[13px] text-ink-2">{club.name}</div><div className="mt-1 font-bold">{pay.playerName}さん　{month.slice(0, 4)}年{+month.slice(5)}月分</div><div className="mt-2 text-[28px] font-black">{yen(pay.amount)}</div></div>}
         <p className="mt-3 text-[13px] text-ink-2">次の画面（Stripe）でカード情報を入力します。</p>

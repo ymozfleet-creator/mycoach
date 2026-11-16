@@ -1,4 +1,4 @@
-import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Review, VerifyDoc } from './types'
+import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Report, Review, VerifyDoc, ClubSub } from './types'
 
 export type Unsub = () => void
 export type Cb<T> = (v: T) => void
@@ -64,6 +64,19 @@ export interface Backend {
   /** 指導者の受取口座（Stripe）の設定ページURL */
   connectPayout(returnUrl: string): Promise<string | null>
   addReview(r: Omit<Review, 'id'>): Promise<void>
+  /** 預かっている謝金を指導者へ送金する（指導の実施を確認したあと） */
+  releasePayment(paymentId: string): Promise<void>
+
+  /** クラブ内の申請・記録（減免申請・施設の利用申請・確認期限・相談） */
+  watchSub<T>(clubId: string, name: ClubSub, cb: Cb<T[]>, onlyBy?: string): Unsub
+  addSub(clubId: string, name: ClubSub, data: object, id?: string): Promise<void>
+  updateSub(clubId: string, name: ClubSub, id: string, patch: object): Promise<void>
+
+  addReport(r: Omit<Report, 'id'>): Promise<void>
+  watchReports(cb: Cb<Report[]>): Unsub
+  resolveReport(id: string): Promise<void>
+  /** 事務局が不適切な写真・募集を非表示にする */
+  moderate(targetType: Report['targetType'], targetId: string): Promise<void>
   watchContracts(uid: string, cb: Cb<Contract[]>): Unsub
   createContract(c: Omit<Contract, 'id'>): Promise<string>
   setContractStatus(id: string, s: Contract['status']): Promise<void>

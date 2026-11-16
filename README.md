@@ -53,6 +53,11 @@ setup/              Firebase設定（firebase.json が参照する本番用）
 - 決済・口座設定の戻り先URLは許可したドメインのみ。カード情報・口座情報はStripeが管理し、このシステムには保存しない
 - 画面：Content-Security-Policy、他サイトへの埋め込み防止、招待コードは暗号学的乱数で8文字。旧アプリのXSS（属性への値の埋め込み）を修正
 
+- 謝金はいったん事務局が預かり、クラブの運営の確認（または支払いから7日後に自動）で指導者へ送金（`releasePayout` / `autoReleasePayouts`、二重送金防止の排他処理と冪等キー付き）
+- 日本版DBS：犯罪事実確認は「確認した日・次回期限」だけを記録でき、結果は保存できない（ルールで項目を限定）。相談窓口は匿名の場合送り主を記録しない
+- 通報：事務局が確認して写真を非表示・募集を締め切り（事務局ができる変更はルールで写真と募集の状態だけに限定）
+- 利用規約・プライバシーポリシー・特定商取引法に基づく表記：`legal.html`（登録時に同意を取得し `agreedAt` に記録）
+
 ### 運用側で行うセキュリティ設定（コードでは設定できないもの）
 1. ルールと関数を反映：`firebase deploy --only firestore:rules,firestore:indexes,functions`
 2. 旧データのメールアドレス移行（1回だけ）：`cd setup/functions && node ../scripts/migrate-emails.js mycoach-c15ae`

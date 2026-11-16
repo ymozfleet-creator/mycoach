@@ -1,5 +1,5 @@
 import type { Backend } from './backend'
-import type { Announcement, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Review, VerifyDoc } from './types'
+import type { Announcement, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Report, Review, VerifyDoc } from './types'
 import { addDays, inviteCode, iso, monthOf, today, uid6 } from './util'
 
 /** デモ：ブラウザ内（localStorage）に保存。営業時のデモや、本番ルール反映前の確認に使う */
@@ -19,11 +19,13 @@ interface DB {
   msgs: Record<string, Message[]>
   notices: Notice[]
   posts: Post[]
+  subs: Record<string, any[]>
+  reports: Report[]
   verify: Record<string, VerifyDoc>
   payments: Payment[]
   reviews: Review[]
 }
-const KEY = 'mcmt_demo_v11'
+const KEY = 'mcmt_demo_v12'
 export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
@@ -113,7 +115,7 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 11, auth: null, users,
+    v: 12, auth: null, users,
     clubs: {
       [clubId]: club,
       // 他地域のクラブ（募集・依頼のデモ用）
@@ -131,12 +133,19 @@ function seed(): DB {
     ],
     verify: { c5: { uid: 'c5', name: '高橋 翔', docType: '運転免許証', image: '', at: now - 3600e3 } },
     payments: [], reviews: [],
+    subs: {
+      [clubId + '/feeRequests']: [{ id: 'fr1', playerId: 'p2', playerName: '加藤 陸', by: 'demo-member', byName: '加藤 由美', discount: 50, reason: 'きょうだい2人が在籍しているため', status: 'pending', at: now - 864e5 }],
+      [clubId + '/facilityRequests']: [{ id: 'fa1', venue: '江原小学校 体育館', date: iso(addDays(today(), 12)), start: '09:00', minutes: 150, purpose: '通常練習（中学生12人）', by: 'demo-admin', byName: '田中 恵', status: 'pending', at: now - 2 * 864e5 }],
+      [clubId + '/staffChecks']: [{ id: 'demo-coach', name: '佐藤 健太', lastAt: '2026-04-01', nextDue: '2031-04-01' }],
+      [clubId + '/consults']: [],
+    },
+    reports: [{ id: 'rp1', from: 'demo-member', targetType: 'user', targetId: 'c3', targetName: '鈴木 大輔', reason: 'プロフィールの写真が不適切', detail: '本人以外の人が写っているようです', status: 'new', at: now - 3600e3 }],
   }
 }
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 11) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 12) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()
@@ -234,8 +243,8 @@ export const demoBackend: Backend = {
   payContract: async contractId => {
     await wait(); const k = DB_.contracts.find(x => x.id === contractId); if (!k) return null
     const base = k.fee, amount = base + Math.round(base * 0.1), net = base - Math.round(base * 0.2)
-    DB_.payments.push({ id: uid6(), contractId, coach: k.coach, player: k.player, amount, base, net, ts: Date.now() })
-    DB_.notices.push({ id: uid6(), to: k.coach, type: 'pay', read: false, at: Date.now(), text: `お支払いがありました（あなたの受取額 ¥${net.toLocaleString()}）` })
+    DB_.payments.push({ id: uid6(), contractId, coach: k.coach, player: k.player, amount, base, net, ts: Date.now(), released: false, releaseAt: Date.now() + 7 * 864e5 })
+    DB_.notices.push({ id: uid6(), to: k.coach, type: 'pay', read: false, at: Date.now(), text: `謝金のお支払いがありました。指導の実施が確認されると送金されます（受取額 ¥${net.toLocaleString()}）` })
     save(); return null
   },
   connectPayout: async () => { await wait(); const u = DB_.auth ? DB_.users[DB_.auth] : null; if (u) { u.stripeAccountId = 'acct_demo'; u.stripeChargesEnabled = true; save() } return null },
@@ -244,6 +253,20 @@ export const demoBackend: Backend = {
     const list = DB_.reviews.filter(x => x.to === r.to), u = DB_.users[r.to]
     if (u) { const n = (u.ratingCount || 0) + 1; u.ratingAvg = Math.round((((u.ratingAvg || 0) * (u.ratingCount || 0)) + r.rating) / n * 10) / 10; u.ratingCount = n }
     void list; const k = DB_.contracts.find(x => x.id === r.contractId); if (k) k.reviewed = true
+    save()
+  },
+  releasePayment: async id => { await wait(); const p = DB_.payments.find(x => x.id === id); if (p) { p.released = true; save() } },
+  watchSub: (c, name, cb, onlyBy) => watch(() => cb(clone((DB_.subs[c + '/' + name] || []).filter(x => !onlyBy || x.by === onlyBy).sort((a, b) => (b.at || 0) - (a.at || 0))))),
+  addSub: async (c, name, data, id) => { await wait(); const k = c + '/' + name; const arr = (DB_.subs[k] ||= []); const nid = id || uid6(); const i = arr.findIndex(x => x.id === nid); if (i >= 0) arr[i] = { ...data, id: nid }; else arr.push({ ...data, id: nid }); save() },
+  updateSub: async (c, name, id, patch) => { await wait(); const x = (DB_.subs[c + '/' + name] || []).find(y => y.id === id); if (x) Object.assign(x, patch); save() },
+  addReport: async r => { await wait(); DB_.reports.push({ ...r, id: uid6() }); save() },
+  watchReports: cb => watch(() => cb(clone(DB_.reports.filter(r => r.status === 'new').sort((a, b) => b.at - a.at)))),
+  resolveReport: async id => { const r = DB_.reports.find(x => x.id === id); if (r) { r.status = 'done'; save() } },
+  moderate: async (type, id) => {
+    await wait()
+    if (type === 'user' && DB_.users[id]) DB_.users[id].photo = ''
+    if (type === 'club' && DB_.clubs[id]) DB_.clubs[id].photo = ''
+    if (type === 'post') { const p = DB_.posts.find(x => x.id === id); if (p) { p.photo = ''; p.status = 'closed' } }
     save()
   },
   listCoaches: async sport => { await wait(); return clone(Object.values(DB_.users).filter(u => u.role === 'coach' && (u.sports || []).includes(sport))) },

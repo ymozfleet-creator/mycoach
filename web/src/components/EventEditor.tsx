@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Field, inputCls, Sheet, cx } from './ui'
 import { useApp } from '../lib/store'
 import type { ClubEvent, Profile } from '../lib/types'
-import { addDays, iso, parseDate, today, uid6 } from '../lib/util'
+import { addDays, clashes, iso, parseDate, today, uid6 } from '../lib/util'
 
 export function useProfiles(uids: string[]) {
   const { be } = useApp()
@@ -16,7 +16,7 @@ export function useProfiles(uids: string[]) {
 }
 
 export function EventEditor({ open, onClose, event }: { open: boolean; onClose: () => void; event?: ClubEvent }) {
-  const { be, club, toast } = useApp()
+  const { be, club, events, toast } = useApp()
   const coaches = useProfiles(club?.coachUids || [])
   const blank = (): ClubEvent => ({ id: 'e' + uid6(), title: '通常練習', date: iso(addDays(today(), 1)), start: '09:00', minutes: 120, venue: club?.venues[0]?.name || '', indoor: club?.venues[0]?.indoor ?? true, status: 'scheduled', att: {} })
   const [e, setE] = useState<ClubEvent>(event || blank())
@@ -48,6 +48,7 @@ export function EventEditor({ open, onClose, event }: { open: boolean; onClose: 
       <Field label="場所"><select className={inputCls} value={e.venue} onChange={x => { const v = club.venues.find(v => v.name === x.target.value); set({ venue: x.target.value, indoor: v?.indoor ?? true }) }}>{club.venues.map(v => <option key={v.name} value={v.name}>{v.name}（{v.indoor ? '屋内' : '屋外'}）</option>)}</select></Field>
       <Field label="担当の指導者"><select className={inputCls} value={e.coachUid || ''} onChange={x => set({ coachUid: x.target.value || undefined, coachName: coaches[x.target.value]?.name })}><option value="">未定</option>{club.coachUids.map(u => <option key={u} value={u}>{coaches[u]?.name || '読み込み中…'}</option>)}</select></Field>
       <Field label="連絡事項（任意）"><input className={inputCls} value={e.note || ''} onChange={x => set({ note: x.target.value })} placeholder="例：水筒を多めに" /></Field>
+      {clashes(events, e).length > 0 && <div className="mb-3 rounded-2xl bg-amber-50 p-3 text-[13px] font-bold text-amber-800">同じ時間に「{clashes(events, e)[0].title}」（{clashes(events, e)[0].start}〜）が{e.venue}で入っています。場所か時間を確認してください。</div>}
       {!event && <Field label="くり返し"><div className="flex gap-1.5">{[1, 4, 8, 12].map(n => <button key={n} onClick={() => setRepeat(n)} className={cx('h-10 flex-1 rounded-xl border text-[13px] font-bold', repeat === n ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2')}>{n === 1 ? 'なし' : `毎週×${n}`}</button>)}</div></Field>}
     </Sheet>
   )

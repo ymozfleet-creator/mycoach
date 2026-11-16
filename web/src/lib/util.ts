@@ -246,3 +246,16 @@ export function matchFit(c: Profile, n: MatchNeed): MatchResult {
   if (!(c.sports || []).includes(n.sport)) { s *= 0.4; warn.unshift(`${n.sport}は登録外の種目`) }
   return { score: Math.max(0, Math.min(100, Math.round(s))), dist, good, warn }
 }
+
+/** 同じ場所・同じ日に時間が重なる予定を探す（ダブルブッキングの防止） */
+const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0) }
+export function clashes<T extends { id?: string; date: string; start: string; minutes: number; venue: string; status?: string }>(list: T[], x: { id?: string; date: string; start: string; minutes: number; venue: string }): T[] {
+  const a = toMin(x.start), b = a + x.minutes
+  return list.filter(e => e.id !== x.id && e.status !== 'canceled' && e.status !== 'declined' && e.venue === x.venue && e.date === x.date
+    && toMin(e.start) < b && a < toMin(e.start) + e.minutes)
+}
+
+/** 日付（YYYY-MM-DD）に年数を足す */
+export const addYears = (d: string, y: number) => `${+d.slice(0, 4) + y}${d.slice(4)}`
+/** 今日から何日後か（過ぎていればマイナス） */
+export const daysUntil = (d: string) => Math.round((parseDate(d).getTime() - today().getTime()) / 864e5)

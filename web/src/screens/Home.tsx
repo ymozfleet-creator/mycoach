@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, CalendarPlus, ChevronRight, ClipboardList, HeartPulse, Megaphone, Search, ShieldAlert, ShieldCheck, Sparkles, Thermometer, Wallet, Handshake } from 'lucide-react'
 import { useApp } from '../lib/store'
+import { useSub } from '../lib/useSub'
+import type { Consult, FacilityRequest, FeeRequest, StaffCheck } from '../lib/types'
 import { AttButtons, attCounts, EventCard, useEventWbgt } from '../components/parts'
 import { Avatar, Badge, Card, CountUp, Empty, Ring, Section, cx, stagger } from '../components/ui'
 import { GuidelineCard } from '../components/Guideline'
@@ -10,7 +12,7 @@ import { BulkAttendance, useUnanswered } from '../components/BulkAttendance'
 import { JobList } from './Jobs'
 import { ComposeSheet, ConditionSheet } from '../components/sheets'
 import type { ClubEvent } from '../lib/types'
-import { addDays, dateLabel, iso, loadStatus, relTime, today, wbgtFor, wbgtLevel, yen } from '../lib/util'
+import { addDays, dateLabel, daysUntil, iso, loadStatus, relTime, today, wbgtFor, wbgtLevel, yen } from '../lib/util'
 
 const greet = () => { const h = new Date().getHours(); return h < 11 ? 'おはようございます' : h < 18 ? 'こんにちは' : 'おつかれさまです' }
 
@@ -180,6 +182,11 @@ function CoachHome() {
 
 /* ---------- 運営 ---------- */
 function AdminHome() {
+  const feeReq = (useSub<FeeRequest>('feeRequests') || []).filter(r => r.status === 'pending').length
+  const consult = (useSub<Consult>('consults') || []).filter(r => r.status === 'new').length
+  const checks = useSub<StaffCheck>('staffChecks')
+  const { club: c0 } = useApp()
+  const dbsDue = checks === null ? 0 : (c0?.coachUids || []).filter(u => { const k = checks.find(x => x.id === u); return !k || daysUntil(k.nextDue) < 180 }).length
   const { club, players, fees, contracts, authUser, events, conditions } = useApp()
   const nav = useNavigate()
   const [compose, setCompose] = useState(false)
@@ -197,6 +204,9 @@ function AdminHome() {
   if (next && noAnswer) todo.push(<Alert i={todo.length} key="na" icon={<ClipboardList size={20} />} tone="info" title={`出欠の未回答 ${noAnswer}人`} text={`${dateLabel(next.date)} ${next.title}`} onClick={() => nav(`/event/${next.id}`)} />)
   if (risky) todo.push(<Alert i={todo.length} key="rk" icon={<HeartPulse size={20} />} tone="danger" title={`練習負荷が急増している選手 ${risky}人`} text="指導者と状況を確認しましょう" onClick={() => nav('/players')} />)
   if (apps.length) todo.push(<Alert i={todo.length} key="ap" icon={<Handshake size={20} />} tone="warn" title={`指導者からの応募 ${apps.length}件`} text={apps.map(r => r.coachName).join('、')} onClick={() => nav('/match?tab=list')} />)
+  if (feeReq) todo.push(<Alert i={todo.length} key="fr" icon={<Wallet size={20} />} tone="warn" title={`会費の減免の申請 ${feeReq}件`} text="内容を確認して承認・見送りを選びます" onClick={() => nav('/fee-requests')} />)
+  if (consult) todo.push(<Alert i={todo.length} key="cs" icon={<ShieldCheck size={20} />} tone="danger" title={`相談窓口に未対応の相談 ${consult}件`} text="こどもの安全にかかわる可能性があります" onClick={() => nav('/safeguard')} />)
+  if (dbsDue) todo.push(<Alert i={todo.length} key="db" icon={<ShieldCheck size={20} />} tone="warn" title={`犯罪事実確認の記録がない・期限が近い指導者 ${dbsDue}人`} text="こども性暴力防止法：2026年12月25日施行" onClick={() => nav('/safeguard')} />)
   if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/match?tab=list')} />)
   const thisMonth = events.filter(e => e.status !== 'canceled' && e.date.startsWith(iso(today()).slice(0, 7)) && e.date < iso(today()))
   return (
@@ -264,6 +274,7 @@ function AdminHome() {
 
 /* ---------- 学校・教育委員会 ---------- */
 function SchoolHome() {
+  const facReq = (useSub<FacilityRequest>('facilityRequests') || []).filter(r => r.status === 'pending')
   const { events, players, incidents, weather } = useApp()
   const nav = useNavigate()
   const t = iso(today())
@@ -277,7 +288,8 @@ function SchoolHome() {
   return (
     <>
       <Hello />
-      <p className="mt-1 text-[13px] text-ink-2">地域クラブでの生徒の活動状況を確認できます（閲覧のみ）。</p>
+      <p className="mt-1 text-[13px] text-ink-2">地域クラブでの生徒の活動状況を確認できます。施設の利用申請の確認もここからできます。</p>
+      {facReq.length > 0 && <div className="mt-3"><Alert icon={<ClipboardList size={20} />} tone="warn" title={`施設の利用申請 ${facReq.length}件`} text={facReq.slice(0, 2).map(r => `${r.venue} ${r.date.slice(5).replace('-', '/')}`).join('、')} onClick={() => nav('/facilities')} /></div>}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Card className="flex items-center gap-3 !p-3">
           <Ring value={rate} size={56}><span className="text-[13px] font-black"><CountUp value={rate * 100} />%</span></Ring>

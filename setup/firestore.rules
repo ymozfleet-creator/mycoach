@@ -229,6 +229,9 @@ service cloud.firestore {
     match /reports/{id} {
       allow create: if authed() && safeId(id)
         && request.resource.data.from == request.auth.uid
+        && request.resource.data.get('status', 'new') == 'new'
+        && request.resource.data.get('targetType', 'user') in ['user', 'post', 'club']
+        && request.resource.data.get('targetName', '').size() <= 80
         && request.resource.data.get('reason', '').size() <= 100
         && request.resource.data.get('detail', '').size() <= 2000;
       allow read, update: if isAdmin();
@@ -400,7 +403,9 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       // 運営は自由に更新。それ以外は「正しい招待コードで、自分を会員に加える」だけ許可。
       // 指導者（coachUids）への追加は、指導者用の招待コードの場合のみ
-      allow update: if (isClubAdmin(c) && photoOk(request.resource.data, 200000)
+      allow update: if (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photo']) && request.resource.data.photo == '')
+        || (isClubAdmin(c) && photoOk(request.resource.data, 200000)
+          && request.resource.data.get('dbs', {}).keys().hasOnly(['certified', 'allChecked', 'at'])
           && request.resource.data.get('insurance', {}).get('name', '').size() <= 40)
         || (authed()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'schoolUids', 'joinCode'])
@@ -454,6 +459,65 @@ service cloud.firestore {
         allow read: if isClubAdmin(c) || (isMember(c) && request.auth.uid in resource.data.guardianUids);
         allow write: if isClubAdmin(c);
       }
+      // 会費の減免の申請：保護者が自分の子どもについて申請し、運営が承認・却下する
+      match /feeRequests/{r} {
+        allow read: if isClubAdmin(c) || (isMember(c) && resource.data.by == request.auth.uid);
+        allow create: if isMember(c) && safeId(r)
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.discount in [50, 100]
+          && request.resource.data.reason is string && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 500
+          && request.resource.data.byName is string && request.resource.data.byName.size() <= 40
+          && request.resource.data.playerName is string && request.resource.data.playerName.size() <= 40
+          && request.auth.uid in get(/databases/$(database)/documents/clubs/$(c)/players/$(request.resource.data.playerId)).data.guardianUids;
+        allow update: if isClubAdmin(c)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'note'])
+          && request.resource.data.status in ['approved', 'declined']
+          && request.resource.data.get('note', '').size() <= 500;
+        allow delete: if false;
+      }
+      // 施設（学校の体育館など）の利用申請：運営が申請し、学校が承認する
+      match /facilityRequests/{r} {
+        allow read: if isStaff(c) || isSchool(c);
+        allow create: if isClubAdmin(c) && safeId(r)
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.venue is string && request.resource.data.venue.size() > 0 && request.resource.data.venue.size() <= 60
+          && request.resource.data.purpose is string && request.resource.data.purpose.size() <= 300
+          && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.start is string && request.resource.data.start.matches('^[0-9]{2}:[0-9]{2}$')
+          && request.resource.data.minutes is int && request.resource.data.minutes > 0 && request.resource.data.minutes <= 720;
+        allow update: if (isSchool(c) || isClubAdmin(c))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'note'])
+          && request.resource.data.status in (isSchool(c) ? ['approved', 'declined'] : ['declined'])
+          && request.resource.data.get('note', '').size() <= 300;
+        allow delete: if false;
+      }
+      // 犯罪事実確認（こども性暴力防止法）の「実施日と次回の期限」だけを記録する。
+      // 確認の結果は記録できない（項目を限定）。閲覧・記録は運営のみ
+      match /staffChecks/{s} {
+        allow read: if isClubAdmin(c);
+        allow create, update: if isClubAdmin(c) && safeId(s)
+          && request.resource.data.keys().hasOnly(['name', 'lastAt', 'nextDue'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 40
+          && request.resource.data.lastAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.nextDue.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+        allow delete: if isClubAdmin(c);
+      }
+      // 相談窓口：会員（保護者・生徒）が運営に相談する。匿名のときは送り主を記録しない
+      match /consults/{x} {
+        allow read: if isClubAdmin(c) || isAdmin();
+        allow create: if isMember(c) && safeId(x)
+          && request.resource.data.status == 'new'
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 2000
+          && request.resource.data.category is string && request.resource.data.category.size() <= 30
+          && ((request.resource.data.anonymous == true && request.resource.data.by == '' && request.resource.data.byName == '')
+            || (request.resource.data.anonymous == false && request.resource.data.by == request.auth.uid && request.resource.data.byName.size() <= 40));
+        allow update: if (isClubAdmin(c) || isAdmin())
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status == 'done';
+        allow delete: if false;
+      }
       match /incidents/{i} {
         allow read: if isStaff(c) || isSchool(c);
         allow create: if (isStaff(c) || isSchool(c))
@@ -481,9 +545,12 @@ service cloud.firestore {
       allow create: if isClubAdmin(request.resource.data.clubId)
         && request.resource.data.ownerUid == request.auth.uid
         && postOk(request.resource.data);
-      allow update: if isClubAdmin(resource.data.clubId)
+      allow update: if (isClubAdmin(resource.data.clubId)
         && request.resource.data.clubId == resource.data.clubId
-        && postOk(request.resource.data);
+        && postOk(request.resource.data))
+        // 事務局：通報を受けて写真を外し、募集を締め切る（それ以外は変えられない）
+        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photo', 'status'])
+          && request.resource.data.photo == '' && request.resource.data.status == 'closed');
       allow delete: if false;
     }
 

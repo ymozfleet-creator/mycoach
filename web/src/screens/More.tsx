@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Building2, ChevronRight, ClipboardList, CreditCard, GraduationCap, Handshake, IdCard, LogOut, Megaphone, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserCheck, UserRound, Users } from 'lucide-react'
+import { Bell, Building, Building2, FileText, HandCoins, LifeBuoy, ChevronRight, ClipboardList, CreditCard, GraduationCap, Handshake, IdCard, LogOut, Megaphone, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserCheck, UserRound, Users } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Field, inputCls, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { InviteCard } from './Players'
@@ -59,6 +59,11 @@ export default function More() {
           {coachMode && <Item icon={<GraduationCap size={18} />} label="安全研修" onClick={() => nav('/training')} badge={<Badge tone={profile.training ? 'ok' : 'none'}>{profile.training ? '修了' : '未受講'}</Badge>} />}
           {coachMode && <Item icon={<CreditCard size={18} />} label="謝金の受取口座" onClick={() => nav('/coach-profile#payout')} badge={<Badge tone={profile.stripeChargesEnabled ? 'ok' : 'none'}>{profile.stripeChargesEnabled ? '設定済み' : '未設定'}</Badge>} />}
           {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
+          {isAdmin && <Item icon={<HandCoins size={18} />} label="会費の減免の申請" onClick={() => nav('/fee-requests')} />}
+          {(isAdmin || isSchool) && <Item icon={<Building size={18} />} label={isSchool ? '施設の利用申請の確認' : '施設（学校の体育館など）の利用申請'} onClick={() => nav('/facilities')} />}
+          {isAdmin && <Item icon={<ShieldCheck size={18} />} label="こどもを守る体制（日本版DBS・相談窓口）" onClick={() => nav('/safeguard')} />}
+          {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<HandCoins size={18} />} label="会費の減免を申請する" onClick={() => nav('/fee-requests')} />}
+          {club && !isAdmin && !isSchool && <Item icon={<LifeBuoy size={18} />} label="相談窓口（匿名でも相談できます）" onClick={() => nav('/consult')} />}
           {isAdmin && <Item icon={<Users size={18} />} label="会員・指導者・学校を招待する" onClick={() => setSheet('invite')} />}
           {isAdmin && <Item icon={<Building2 size={18} />} label="クラブの設定" onClick={() => setSheet('club')} />}
         </Card>
@@ -75,6 +80,7 @@ export default function More() {
       <Section title="アプリ">
         <Card className="divide-y divide-line !py-0">
           <Item icon={<Smartphone size={18} />} label="ホーム画面に追加する方法" onClick={() => toast('iPhone：共有ボタン→「ホーム画面に追加」／Android：メニュー→「アプリをインストール」')} />
+          <Item icon={<FileText size={18} />} label="利用規約・プライバシー・特定商取引法" onClick={() => window.open('../legal.html', '_blank', 'noopener')} />
           <Item icon={<Plus size={18} />} label="ほかのクラブに参加する" onClick={() => { setJoinErr(''); setSheet('join') }} />
         </Card>
       </Section>

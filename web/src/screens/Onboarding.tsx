@@ -22,13 +22,14 @@ export default function Onboarding() {
   if (!authUser) return null
   const uid = authUser.uid
 
+  const [agree, setAgree] = useState(!!profile?.agreedAt)
   const finish = async () => {
     setErr(''); setBusy(true)
     try {
       if (!name.trim()) throw new Error('お名前を入力してください')
       if (role === 'admin') {
         if (!club.name.trim() || !club.venue.trim()) throw new Error('クラブ名と活動場所を入力してください')
-        await be.saveProfile({ uid, name: name.trim(), role, clubIds: profile?.clubIds || [] })
+        await be.saveProfile({ uid, name: name.trim(), role, clubIds: profile?.clubIds || [], agreedAt: Date.now() })
         const [lat, lon] = AREAS[club.area]
         await be.createClub({ name: club.name.trim(), sport: club.sport, areaLabel: club.area, lat, lon, venues: [{ name: club.venue.trim(), indoor: club.indoor }], fee: Number(club.fee) || 0, ownerUid: uid })
         toast('クラブを作成しました')
@@ -37,9 +38,9 @@ export default function Onboarding() {
         if (role === 'coach' && !coach.sports.length) throw new Error('指導できる種目を1つ以上選んでください')
         const [lat, lon] = AREAS[coach.area]
         await be.saveProfile(role === 'coach'
-          ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], sports: coach.sports, days: coach.days, license: coach.license, areaLabel: coach.area, lat, lon, verified: 'none', training: false }
-          : role === 'school' ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], org: org.trim() }
-          : { uid, name: name.trim(), role, clubIds: profile?.clubIds || [] })
+          ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], agreedAt: Date.now(), sports: coach.sports, days: coach.days, license: coach.license, areaLabel: coach.area, lat, lon, verified: 'none', training: false }
+          : role === 'school' ? { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], agreedAt: Date.now(), org: org.trim() }
+          : { uid, name: name.trim(), role, clubIds: profile?.clubIds || [], agreedAt: Date.now() })
         if (role === 'coach' && !code.trim()) { toast('登録しました。本人確認と安全研修を済ませると、クラブの募集に応募できます'); return }
         const clubId = await be.joinClub(code, uid)
         if (role === 'member') {
@@ -88,7 +89,8 @@ export default function Onboarding() {
             }[role]}
           </p>
           <Field label="お名前"><input className={cx(inputCls, 'mt-6')} value={name} onChange={e => setName(e.target.value)} placeholder="例：加藤 由美" /></Field>
-          <Button block size="lg" onClick={() => setStep(1)} disabled={!name.trim()}>次へ <ChevronRight size={18} /></Button>
+          <label className="mb-3 flex items-start gap-2 text-[13px] leading-relaxed text-ink-2"><input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-[#2563EB]" checked={agree} onChange={e => setAgree(e.target.checked)} /><span><a href="../legal.html#terms" target="_blank" rel="noopener" className="font-bold text-brand underline">利用規約</a>と<a href="../legal.html#privacy" target="_blank" rel="noopener" className="font-bold text-brand underline">プライバシーポリシー</a>に同意します</span></label>
+          <Button block size="lg" onClick={() => setStep(1)} disabled={!name.trim() || !agree}>次へ <ChevronRight size={18} /></Button>
         </div>
       ) : (
         <div className="animate-up">

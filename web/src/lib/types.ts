@@ -27,6 +27,7 @@ export interface Profile {
   levels?: string[] // 指導スタイル（LEVELS）
   years?: number // 指導歴（年）
   photo?: string // プロフィール写真（縮小したJPEGのdata URL。位置情報などは含まない）
+  agreedAt?: number // 利用規約・プライバシーポリシーに同意した日時
   eligibleAt?: number // 18歳以上・欠格事由に該当しないことを本人が申告した日時
   licenseVerified?: boolean // 資格の証明書を事務局が確認済み（本人は変更できない）
   trainingAt?: number
@@ -70,7 +71,7 @@ export interface VerifyDoc {
   at: number
 }
 
-export interface Payment { id: string; contractId: string; coach: string; player: string; amount: number; base: number; net: number; ts: number }
+export interface Payment { id: string; contractId: string; coach: string; player: string; amount: number; base: number; net: number; ts: number; released?: boolean; releaseAt?: number }
 export interface Review { id: string; from: string; to: string; contractId: string; rating: number; text: string; at: number }
 
 export interface Venue { name: string; indoor: boolean }
@@ -94,6 +95,7 @@ export interface Club {
   memberUids: string[]
   photo?: string // クラブの写真（ロゴ・活動場所。子どもの顔は不可）
   insurance?: { name: string; until: string } // 加入している保険（例：スポーツ安全保険・有効期限）
+  dbs?: { certified: boolean; allChecked: boolean; at: number } // こども性暴力防止法の認定・確認の体制（個人の結果は含めない）
 }
 
 export interface Player {
@@ -182,3 +184,20 @@ export interface Contract {
 export interface Message { id: string; from: string; fromName: string; text: string; at: number }
 
 export interface Notice { id: string; to: string; text: string; type: string; read: boolean; at: number }
+
+/** 会費の減免の申請（保護者 → 運営） */
+export interface FeeRequest { id: string; playerId: string; playerName: string; by: string; byName: string; discount: 50 | 100; reason: string; status: 'pending' | 'approved' | 'declined'; at: number; note?: string }
+
+/** 施設（学校の体育館・校庭など）の利用申請（運営 → 学校） */
+export interface FacilityRequest { id: string; venue: string; date: string; start: string; minutes: number; purpose: string; by: string; byName: string; status: 'pending' | 'approved' | 'declined'; at: number; note?: string }
+
+/** 指導者の犯罪事実確認（こども性暴力防止法）の「期限」の管理。結果は保存しない */
+export interface StaffCheck { id: string; name: string; lastAt: string; nextDue: string }
+
+/** 相談窓口（保護者・生徒 → 運営・事務局） */
+export interface Consult { id: string; by: string; byName: string; anonymous: boolean; category: string; text: string; status: 'new' | 'done'; at: number }
+
+/** 通報（不適切な写真・プロフィール・募集など） */
+export interface Report { id: string; from: string; targetType: 'user' | 'post' | 'club'; targetId: string; targetName: string; reason: string; detail: string; status: 'new' | 'done'; at: number }
+
+export type ClubSub = 'feeRequests' | 'facilityRequests' | 'staffChecks' | 'consults'

@@ -59,6 +59,12 @@ export default function Thread() {
     } catch (e) { toast((e as Error).message) }
     setBusy(false)
   }
+  const release = async (paymentId: string) => {
+    setBusy(true)
+    try { await be.releasePayment(paymentId); await be.notify(k.coach, `「${k.title}」の謝金が送金されます`, 'pay').catch(() => {}); toast('指導者に送金しました') }
+    catch (e) { toast((e as Error).message || '送金できませんでした') }
+    setBusy(false)
+  }
   const finish = async () => {
     setBusy(true)
     await be.setContractStatus(k.id, 'completed')
@@ -92,7 +98,16 @@ export default function Thread() {
             {pays.length > 0 && (
               <div className="rounded-2xl bg-canvas p-3">
                 <div className="mb-1 text-[12px] font-bold text-ink-2">支払いの記録</div>
-                {pays.map(p => <div key={p.id} className="flex justify-between py-0.5 text-[13px]"><span>{new Date(p.ts).toLocaleDateString('ja-JP')}</span><b>{meCoach ? `受取 ${yen(p.net)}` : `支払 ${yen(p.amount)}`}</b></div>)}
+                {pays.map(p => (
+                  <div key={p.id} className="py-1 text-[13px]">
+                    <div className="flex justify-between"><span>{new Date(p.ts).toLocaleDateString('ja-JP')}</span><b>{meCoach ? `受取 ${yen(p.net)}` : `支払 ${yen(p.amount)}`}</b></div>
+                    {p.released === false && <div className="mt-1 flex items-center justify-between gap-2 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[12px] font-bold text-amber-800">
+                      <span>{meCoach ? `指導の確認後に送金されます（${p.releaseAt ? new Date(p.releaseAt).toLocaleDateString('ja-JP') : '7日後'}までに自動）` : '事務局で預かり中。指導が終わったら送金してください'}</span>
+                      {!meCoach && <button disabled={busy} onClick={() => release(p.id)} className="shrink-0 rounded-lg bg-brand px-2.5 py-1 text-white">送金する</button>}
+                    </div>}
+                    {p.released === true && <div className="mt-0.5 text-right text-[11px] font-bold text-emerald-600">指導者に送金済み</div>}
+                  </div>
+                ))}
               </div>
             )}
             <button onClick={() => setSheet('end')} className="w-full py-1 text-center text-[13px] font-bold text-ink-2">指導を終了する</button>
@@ -128,7 +143,7 @@ export default function Thread() {
           <div className="flex justify-between py-1"><span>システム利用料（{PLAYER_RATE * 100}%）</span><b>{yen(total - base)}</b></div>
           <div className="mt-1 flex justify-between border-t border-line pt-2 text-[16px]"><span className="font-bold">お支払い合計</span><b>{yen(total)}</b></div>
         </div>
-        <p className="mt-3 text-[12px] leading-relaxed text-ink-2">{k.coachName}さんには、謝金から事務手数料（{COACH_RATE * 100}%）を差し引いた{yen(net)}が支払われます。カード情報は決済代行のStripeが管理し、このアプリには保存されません。</p>
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-2">{k.coachName}さんには、謝金から事務手数料（{COACH_RATE * 100}%）を差し引いた{yen(net)}が支払われます。お支払いはいったん事務局が預かり、指導の実施を確認してから送金します（確認がなくても7日後に自動で送金）。カード情報は決済代行のStripeが管理し、このアプリには保存されません。</p>
       </Sheet>
       <Sheet open={sheet === 'end'} onClose={() => setSheet('')} title="指導を終了しますか？" footer={<Button block size="lg" variant="ghost" loading={busy} onClick={finish}>終了する</Button>}>
         <p className="text-[14px] text-ink-2">終了すると、このやりとりでは支払いができなくなります。メッセージの記録は残ります。{meCoach ? '' : '終了後に指導者の評価をお願いします。'}</p>

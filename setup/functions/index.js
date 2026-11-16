@@ -137,7 +137,11 @@ exports.createCheckoutSession = onRequest(
         success_url: returnUrl ? safeReturn(returnUrl, `${APP_URL}?paid=1#contracts`) : `${safeReturn(origin, APP_URL)}?paid=1#contracts`,
         cancel_url: returnUrl ? safeReturn(returnUrl, APP_URL).replace('paid=1', 'paid=0') : `${safeReturn(origin, APP_URL)}#contracts`,
       };
-      if (useConnect) {
+      if (useConnect && isClub) {
+        // クラブの指導の謝金：いったん事務局が預かり、指導の実施を確認してから指導者へ送金する
+        // （運営の確認、または支払いから7日後に自動。releasePayout / autoReleasePayouts）
+        params.payment_intent_data = { transfer_group: `contract_${contractId}` };
+      } else if (useConnect) {
         params.payment_intent_data = {
           // プラットフォーム取り分 = 受講者10% + コーチ20%。残額(net)がコーチ口座へ自動送金される
           application_fee_amount: charge - net,
@@ -210,15 +214,19 @@ exports.stripeWebhook = onRequest(
         ts: Date.now(),
         method: 'stripe',
         stripeSessionId: s.id,
-        // Connect自動分配ならコーチへの送金は完了済み → 精算対象から除外
-        ...(viaConnect ? { payoutId: 'stripe_connect' } : {}),
+        // 個人レッスン：Connect自動分配ならコーチへの送金は完了済み → 精算対象から除外
+        // クラブの謝金：預かり。指導の確認後（または7日後）に送金する
+        ...(viaConnect && m.clubId ? { released: false, releaseAt: Date.now() + 7 * 864e5, paymentIntent: String(s.payment_intent || '') }
+          : viaConnect ? { payoutId: 'stripe_connect' } : {}),
       });
 
       if (m.coach) {
         const nid = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
         await admin.firestore().collection('notifications').doc(nid).set({
           id: nid, to: m.coach, type: 'pay',
-          text: `お支払いがありました（あなたの受取額 ¥${Number(net).toLocaleString()}）`,
+          text: m.clubId && viaConnect
+            ? `謝金のお支払いがありました。指導の実施が確認されると送金されます（受取額 ¥${Number(net).toLocaleString()}）`
+            : `お支払いがありました（あなたの受取額 ¥${Number(net).toLocaleString()}）`,
           link: '#contracts', ts: Date.now(), at: Date.now(), read: false,
         });
       }
@@ -244,6 +252,71 @@ exports.stripeWebhook = onRequest(
     res.json({ received: true });
   }
 );
+
+/* ---------- 2.2 預かっている謝金を指導者へ送金 ---------- */
+// 二重送金を防ぐため、トランザクションで「送金中」にしてから Stripe に依頼し、冪等キーも付ける
+async function releaseOne(stripe, paymentId) {
+  const ref = admin.firestore().collection('payments').doc(paymentId);
+  const claimed = await admin.firestore().runTransaction(async t => {
+    const d = await t.get(ref);
+    if (!d.exists) return null;
+    const p = d.data();
+    if (p.released !== false || p.releasing) return null;
+    t.update(ref, { releasing: true });
+    return p;
+  });
+  if (!claimed) return false;
+  try {
+    const coach = (await admin.firestore().collection('users').doc(claimed.coach).get()).data() || {};
+    if (!coach.stripeAccountId) throw new Error('no account');
+    const pi = await stripe.paymentIntents.retrieve(claimed.paymentIntent);
+    const tr = await stripe.transfers.create({
+      amount: claimed.net, currency: 'jpy', destination: coach.stripeAccountId,
+      transfer_group: `contract_${claimed.contractId}`, source_transaction: pi.latest_charge,
+      metadata: { paymentId, contractId: claimed.contractId },
+    }, { idempotencyKey: `release_${paymentId}` });
+    await ref.update({ released: true, releasing: false, releasedAt: Date.now(), payoutId: tr.id });
+    const nid = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    await admin.firestore().collection('notifications').doc(nid).set({
+      id: nid, to: claimed.coach, type: 'pay', text: `謝金 ¥${Number(claimed.net).toLocaleString()} を送金しました`,
+      link: '#contracts', ts: Date.now(), at: Date.now(), read: false,
+    });
+    return true;
+  } catch (e) {
+    console.error('release failed', paymentId, e.message);
+    await ref.update({ releasing: false });
+    return false;
+  }
+}
+
+exports.releasePayout = onRequest(
+  { region: REGION, secrets: [STRIPE_SECRET_KEY], cors: CORS_ORIGINS },
+  async (req, res) => {
+    if (req.method !== 'POST') { res.status(405).end(); return; }
+    const decoded = await requireAuth(req, res); if (!decoded) return;
+    const paymentId = String((req.body || {}).paymentId || '');
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(paymentId)) { res.status(400).json({ error: '入力が正しくありません' }); return; }
+    const d = await admin.firestore().collection('payments').doc(paymentId).get();
+    if (!d.exists) { res.status(404).json({ error: '見つかりません' }); return; }
+    const p = d.data();
+    // 送金を指示できるのは、支払ったクラブの運営者か事務局だけ（指導者本人は不可）
+    const me = (await admin.firestore().collection('users').doc(decoded.uid).get()).data() || {};
+    const club = p.clubId ? (await admin.firestore().collection('clubs').doc(p.clubId).get()).data() || {} : {};
+    const ok = me.isAdmin === true || (club.adminUids || []).includes(decoded.uid);
+    if (!ok) { res.status(403).json({ error: '権限がありません' }); return; }
+    const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
+    const done = await releaseOne(stripe, paymentId);
+    if (!done) { res.status(409).json({ error: 'すでに送金済みか、送金できませんでした' }); return; }
+    res.json({ ok: true });
+  }
+);
+
+// 運営が確認しなくても、支払いから7日たった謝金は自動で送金する（指導者が待たされないように）
+exports.autoReleasePayouts = onSchedule({ region: REGION, schedule: '0 10 * * *', timeZone: 'Asia/Tokyo', secrets: [STRIPE_SECRET_KEY] }, async () => {
+  const stripe = require('stripe')(STRIPE_SECRET_KEY.value());
+  const q = await admin.firestore().collection('payments').where('released', '==', false).where('releaseAt', '<=', Date.now()).limit(100).get();
+  for (const d of q.docs) await releaseOne(stripe, d.id);
+});
 
 /* ---------- 2.5 Stripe Connect：コーチの口座設定リンク作成 ---------- */
 exports.createConnectLink = onRequest(

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BadgeCheck, CalendarDays, Check, ChevronDown, GraduationCap, Handshake, Heart, MapPin, Megaphone, MessageCircle, PartyPopper, Search, SlidersHorizontal, Sparkles, Star, TriangleAlert, Wallet } from 'lucide-react'
 import { useApp } from '../lib/store'
+import { ReportButton } from '../components/ReportButton'
 import { Avatar, Badge, Button, Card, Empty, PageHeader, Ring, Segmented, Sheet, Skeleton, cx, stagger } from '../components/ui'
 import { SwipeDeck } from '../components/SwipeDeck'
 import { CoachSetup, coachReady } from '../components/CoachSetup'
@@ -272,7 +273,7 @@ function CoachMatch() {
         )}
       </div>
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.title}>
-        {info && <><div className="text-[13px] font-bold text-ink-2">{info.clubName}（{info.areaLabel}）</div><p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.note || '詳しい内容はまだ書かれていません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると応募できます。</p></>}
+        {info && <><div className="text-[13px] font-bold text-ink-2">{info.clubName}（{info.areaLabel}）</div><p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.note || '詳しい内容はまだ書かれていません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると応募できます。</p><div className="mt-3 text-right"><ReportButton type="post" id={info.id} name={info.title} /></div></>}
       </Sheet>
       <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach />
       {matched && <MatchModal a={profile.name} aPhoto={profile.photo} b={matched.club} bPhoto={matched.photo} sub={`${matched.club}の指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
@@ -419,7 +420,7 @@ function ClubMatch() {
         )}
       </div>
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.name}>
-        {info && <><div className="text-[13px] text-ink-2">{(info.sports || []).join('・')}／{info.areaLabel}／{km(club.lat, club.lon, info.lat ?? club.lat, info.lon ?? club.lon).toFixed(1)}km</div>{info.license && <p className="mt-2 text-[14px] font-bold">{info.license}</p>}<p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.bio || '自己紹介はまだありません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると、{openPost ? `募集「${openPost.title}」の条件で` : ''}依頼を送れます。送ったあとはメッセージで条件を相談できます。</p></>}
+        {info && <><div className="text-[13px] text-ink-2">{(info.sports || []).join('・')}／{info.areaLabel}／{km(club.lat, club.lon, info.lat ?? club.lat, info.lon ?? club.lon).toFixed(1)}km</div>{info.license && <p className="mt-2 text-[14px] font-bold">{info.license}</p>}<p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.bio || '自己紹介はまだありません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると、{openPost ? `募集「${openPost.title}」の条件で` : ''}依頼を送れます。送ったあとはメッセージで条件を相談できます。</p><div className="mt-3 text-right"><ReportButton type="user" id={info.uid} name={info.name} /></div></>}
       </Sheet>
       <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach={false} />
       {matched && <MatchModal a={club.name} aPhoto={club.photo} b={matched.name} bPhoto={matched.photo} sub={`${matched.name}さんがクラブの指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
