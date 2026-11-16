@@ -157,7 +157,7 @@ export interface Contract {
   message?: string
   title: string
   fee: number
-  status: 'proposed' | 'active' | 'declined' | 'completed'
+  status: 'proposed' | 'active' | 'declined' | 'completed' | 'withdrawn'
   by?: string // 依頼・応募を出した人（返事ができるのは相手側だけ）
   postId?: string
   reviewed?: boolean

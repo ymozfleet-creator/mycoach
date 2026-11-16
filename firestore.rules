@@ -153,6 +153,8 @@ service cloud.firestore {
           && (
             // 返事（引き受け・採用・お断り）は、依頼・応募を受けた側だけができる
             (a.status == 'proposed' && b.status in ['active', 'declined'] && request.auth.uid != a.get('by', a.player))
+            // 依頼・応募を出した本人は、返事が来る前なら取り下げられる
+            || (a.status == 'proposed' && b.status == 'withdrawn' && request.auth.uid == a.get('by', a.player))
             // 指導の終了は当事者のどちらでも
             || (a.status == 'active' && b.status == 'completed')
             // 評価済みの印は、終了後にクラブ側だけが付けられる

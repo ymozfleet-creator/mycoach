@@ -138,7 +138,7 @@ function CoachHome() {
       <Hello />
       <div className="mt-4 space-y-2">
         <CoachSetup compact />
-        {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`新しい指導の依頼（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/requests')} />}
+        {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`新しい指導の依頼（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/match?tab=list')} />}
       </div>
       <Section title="次の指導">
         {next ? (() => {
@@ -191,8 +191,8 @@ function AdminHome() {
   if (unpaid.length) todo.push(<Alert i={todo.length} key="up" icon={<Wallet size={20} />} tone="warn" title={`会費の未納 ${unpaid.length}件`} text={yen(unpaid.reduce((s, f) => s + f.amount, 0))} onClick={() => nav('/fees')} />)
   if (next && noAnswer) todo.push(<Alert i={todo.length} key="na" icon={<ClipboardList size={20} />} tone="info" title={`出欠の未回答 ${noAnswer}人`} text={`${dateLabel(next.date)} ${next.title}`} onClick={() => nav(`/event/${next.id}`)} />)
   if (risky) todo.push(<Alert i={todo.length} key="rk" icon={<HeartPulse size={20} />} tone="danger" title={`練習負荷が急増している選手 ${risky}人`} text="指導者と状況を確認しましょう" onClick={() => nav('/players')} />)
-  if (apps.length) todo.push(<Alert i={todo.length} key="ap" icon={<Handshake size={20} />} tone="warn" title={`指導者からの応募 ${apps.length}件`} text={apps.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
-  if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/requests')} />)
+  if (apps.length) todo.push(<Alert i={todo.length} key="ap" icon={<Handshake size={20} />} tone="warn" title={`指導者からの応募 ${apps.length}件`} text={apps.map(r => r.coachName).join('、')} onClick={() => nav('/match?tab=list')} />)
+  if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/match?tab=list')} />)
   const thisMonth = events.filter(e => e.status !== 'canceled' && e.date.startsWith(iso(today()).slice(0, 7)) && e.date < iso(today()))
   return (
     <>
@@ -201,7 +201,7 @@ function AdminHome() {
         {[
           { i: <CalendarPlus size={22} />, l: '予定を追加', f: () => nav('/schedule?new=1') },
           { i: <Megaphone size={22} />, l: 'お知らせ', f: () => setCompose(true) },
-          { i: <Search size={22} />, l: '指導者募集', f: () => nav('/requests') },
+          { i: <Search size={22} />, l: '指導者マッチング', f: () => nav('/match') },
           { i: <ClipboardList size={22} />, l: '実績報告', f: () => nav('/report') },
         ].map(a => (
           <button key={a.l} onClick={a.f} className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-3 text-[12px] font-bold shadow-card active:scale-95">
@@ -305,10 +305,15 @@ function CoachHub() {
     <>
       <Hello />
       <div className="mt-4 space-y-2">
-        {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`返事が必要なやりとり（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/requests')} />}
+        {offers.length > 0 && <Alert icon={<Handshake size={20} />} tone="warn" title={`返事が必要なやりとり（${offers.length}件）`} text={offers[0].clubName} onClick={() => nav('/match?tab=list')} />}
         <CoachSetup />
       </div>
-      <Section title="あなたに合う募集" action={<button onClick={() => nav('/requests')} className="text-[13px] font-bold text-brand">すべて見る</button>}>
+      <button onClick={() => nav('/match')} className="mt-4 flex w-full items-center gap-4 rounded-xl2 bg-gradient-to-br from-navy to-brand p-5 text-left text-white shadow-pop active:scale-[.99]">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15"><Handshake size={24} /></span>
+        <span className="flex-1"><span className="block text-[17px] font-black">スワイプで募集を探す</span><span className="block text-[12px] opacity-80">右にスワイプで応募。クラブも「いいね」ならマッチング成立</span></span>
+        <span className="text-[22px] text-lime">→</span>
+      </button>
+      <Section title="あなたに合う募集" action={<button onClick={() => nav('/match')} className="text-[13px] font-bold text-brand">スワイプで見る</button>}>
         <JobList />
       </Section>
     </>

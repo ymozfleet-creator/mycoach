@@ -23,7 +23,7 @@ interface DB {
   payments: Payment[]
   reviews: Review[]
 }
-const KEY = 'mcmt_demo_v7'
+const KEY = 'mcmt_demo_v8'
 export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
@@ -41,6 +41,9 @@ function seed(): DB {
     'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
     'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
     'c4': { uid: 'c4', name: '伊藤 さくら', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '杉並区', lat: 35.705, lon: 139.68, days: [6, 0, 5], license: 'JSPO公認コーチ3', verified: 'approved', training: true, ratingAvg: 4.7, ratingCount: 210, lessonCount: 210, bio: '小中学生の育成年代を15年指導。' },
+    'c6': { uid: 'c6', name: '中島 大和', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.71, lon: 139.67, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 31, lessonCount: 31, rate: 6000, bio: '中学校で外部指導員を5年。基礎のドリルと、声をかけ合うチームづくりを大切にしています。' },
+    'c7': { uid: 'c7', name: '小川 葵', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '豊島区', lat: 35.726, lon: 139.716, days: [6, 3], license: '元WJBLプレーヤー', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 54, lessonCount: 54, rate: 7000, bio: 'ポイントガード出身。パスとゲームの組み立て方を、中高生にもわかる言葉で教えます。' },
+    'c8': { uid: 'c8', name: '森田 健', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '渋谷区', lat: 35.664, lon: 139.698, days: [0], license: '中学校教諭（保健体育）', verified: 'approved', training: true, teacher: true, ratingAvg: 4.6, ratingCount: 18, lessonCount: 18, rate: 5000, bio: '現職の教員です（兼職兼業の許可あり）。体づくりとケガの予防を中心に指導します。' },
     'c5': { uid: 'c5', name: '高橋 翔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '練馬区', lat: 35.76, lon: 139.6, days: [0, 2], license: '', verified: 'pending', training: false, ratingAvg: 4.2, ratingCount: 12, lessonCount: 12, bio: '大学生。体力づくりが得意。' },
     'club-suginami-admin': { uid: 'club-suginami-admin', name: '森 由紀', role: 'admin', clubIds: [] },
     'club-nerima-admin': { uid: 'club-nerima-admin', name: '石井 亮', role: 'admin', clubIds: [] },
@@ -85,14 +88,23 @@ function seed(): DB {
   const contracts: Contract[] = [
     { id: 'k1', coach: 'c4', coachName: '伊藤 さくら', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土曜の指導（月2回）', fee: 6000, status: 'proposed', by: 'demo-admin', at: now - 864e5 },
     { id: 'k2', coach: 'demo-coach', coachName: '佐藤 健太', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土日の練習指導', fee: 6000, status: 'active', by: 'demo-admin', at: now - 60 * 864e5 },
+    { id: 'k3', coach: 'c6', coachName: '中島 大和', player: 'demo-admin', playerName: '田中 恵', clubId, clubName: club.name, title: '土曜午前の練習を担当できる方', fee: 6000, message: '中学校で外部指導員を5年務めています。土曜午前、ぜひ担当させてください。', status: 'proposed', by: 'c6', postId: 'post1', at: now - 3 * 3600e3 },
+    { id: 'k4', coach: 'demo-coach', coachName: '佐藤 健太', player: 'club-nerima-admin', playerName: '石井 亮', clubId: 'club-nerima', clubName: '練馬区 地域バスケットボールクラブ', clubCode: 'NERIMA01', title: '水曜夕方の体力づくり担当', fee: 5000, message: 'プロフィールを拝見しました。水曜夕方の体力づくりをお願いできませんか。', status: 'proposed', by: 'club-nerima-admin', postId: 'post3', at: now - 5 * 3600e3 },
   ]
-  const msgs: Record<string, Message[]> = { k1: [{ id: 'm1', from: 'demo-admin', fromName: '田中 恵', text: 'はじめまして。土曜午前の練習をご担当いただけないでしょうか。', at: now - 864e5 }] }
+  const msgs: Record<string, Message[]> = { k1: [{ id: 'm1', from: 'demo-admin', fromName: '田中 恵', text: 'はじめまして。土曜午前の練習をご担当いただけないでしょうか。', at: now - 864e5 }], k3: [{ id: 'm3', from: 'c6', fromName: '中島 大和', text: '中学校で外部指導員を5年務めています。土曜午前、ぜひ担当させてください。', at: now - 3 * 3600e3 }], k4: [{ id: 'm4', from: 'club-nerima-admin', fromName: '石井 亮', text: 'プロフィールを拝見しました。水曜夕方の体力づくりをお願いできませんか。', at: now - 5 * 3600e3 }] }
   const notices: Notice[] = [
     { id: 'n1', to: 'demo-member', text: '会費のお支払いをお願いします（加藤 陸さん・今月分）', type: 'pay', read: false, at: now - 3600e3 },
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 7, auth: null, users, clubs: { [clubId]: club }, invites: { NAKANO: clubId, COACH1: clubId + '#coach', SCHOOL: clubId + '#school' },
+    v: 8, auth: null, users,
+    clubs: {
+      [clubId]: club,
+      // 他地域のクラブ（募集・依頼のデモ用）
+      'club-nerima': { id: 'club-nerima', name: '練馬区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都練馬区', lat: 35.7356, lon: 139.6517, venues: [{ name: '練馬区立体育館', indoor: true }], fee: 2500, inviteCode: 'NERIMA', coachCode: 'NERIMAC', ownerUid: 'club-nerima-admin', adminUids: ['club-nerima-admin'], coachUids: [], memberUids: ['club-nerima-admin'] },
+      'club-suginami': { id: 'club-suginami', name: '杉並区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都杉並区', lat: 35.6995, lon: 139.6364, venues: [{ name: '杉並区立体育館', indoor: true }], fee: 3000, inviteCode: 'SUGINA', coachCode: 'SUGINAC', ownerUid: 'club-suginami-admin', adminUids: ['club-suginami-admin'], coachUids: [], memberUids: ['club-suginami-admin'] },
+    },
+    invites: { NAKANO: clubId, COACH1: clubId + '#coach', SCHOOL: clubId + '#school', NERIMA01: 'club-nerima#coach' },
     players: { [clubId]: players }, events: { [clubId]: events }, ann: { [clubId]: ann }, conds: { [clubId]: conds },
     fees: { [clubId]: fees }, inc: { [clubId]: [{ id: 'i1', date: iso(addDays(T, -20)), type: 'ヒヤリハット', who: '松本 湊', desc: '着地時に足首をひねりかけた。アイシングし練習は見学。', action: '保護者へ連絡済み' }] },
     contracts, msgs, notices,
@@ -108,7 +120,7 @@ function seed(): DB {
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 7) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 8) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()

@@ -48,9 +48,8 @@ export default function More() {
         <Card className="divide-y divide-line !py-0">
           <Item icon={<Bell size={18} />} label="お知らせ・通知" onClick={() => nav('/news')} badge={unread ? <Badge tone="danger">{unread}</Badge> : undefined} />
           {isOps && <Item icon={<UserCheck size={18} />} label="運営事務局：本人確認の審査" onClick={() => nav('/ops')} />}
-          {isAdmin && <Item icon={<Megaphone size={18} />} label="指導者の募集・応募" onClick={() => nav('/posts')} />}
-          {isAdmin && <Item icon={<Search size={18} />} label="指導者を探して依頼する" onClick={() => nav('/coaches')} />}
-          {(isAdmin || coachMode) && <Item icon={<Handshake size={18} />} label="依頼・応募のやりとり" onClick={() => nav('/requests')} />}
+          {(isAdmin || coachMode) && <Item icon={<Handshake size={18} />} label={isAdmin ? '指導者マッチング（スワイプ・やりとり）' : 'マッチング（募集を探す・やりとり）'} onClick={() => nav('/match')} />}
+          {isAdmin && <Item icon={<Megaphone size={18} />} label="指導者の募集を出す・管理する" onClick={() => nav('/posts')} />}
           {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
           {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
           {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}

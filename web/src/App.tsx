@@ -21,6 +21,7 @@ const Report = lazy(() => import('./screens/Report'))
 const Safety = lazy(() => import('./screens/Safety'))
 const More = lazy(() => import('./screens/More'))
 const Jobs = lazy(() => import('./screens/Jobs'))
+const Match = lazy(() => import('./screens/Match'))
 const Posts = lazy(() => import('./screens/Posts'))
 const CoachProfile = lazy(() => import('./screens/CoachProfile'))
 const Verify = lazy(() => import('./screens/Verify'))
@@ -36,7 +37,7 @@ function Tabs() {
   const tabs: { to: string; label: string; icon: ReactNode; badge?: number }[] = coachMode && !club
     ? [
         { to: '/', label: 'ホーム', icon: <House size={22} /> },
-        { to: '/requests', label: '募集・依頼', icon: <Handshake size={22} />, badge: pending },
+        { to: '/match', label: 'マッチング', icon: <Handshake size={22} />, badge: pending },
         { to: '/news', label: 'お知らせ', icon: <Bell size={22} />, badge: unread },
         { to: '/more', label: 'マイページ', icon: <UserRound size={22} /> },
       ]
@@ -53,7 +54,7 @@ function Tabs() {
           { to: '/', label: 'ホーム', icon: <House size={22} /> },
           { to: '/schedule', label: '予定', icon: <CalendarDays size={22} /> },
           { to: '/players', label: '選手', icon: <Users size={22} /> },
-          { to: '/requests', label: '募集・依頼', icon: <Handshake size={22} />, badge: pending },
+          { to: '/match', label: 'マッチング', icon: <Handshake size={22} />, badge: pending },
           { to: '/more', label: 'マイページ', icon: <UserRound size={22} />, badge: unread },
         ]
       : isSchool
@@ -124,6 +125,7 @@ function Shell() {
             <Route path="/safety" element={<Safety />} />
             <Route path="/more" element={<More />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/match" element={<Match />} />
             <Route path="/posts" element={<Posts />} />
             <Route path="/coach-profile" element={<CoachProfile />} />
             <Route path="/verify" element={<Verify />} />

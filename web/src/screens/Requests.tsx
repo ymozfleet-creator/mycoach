@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { Handshake, Megaphone, Search } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, PageHeader, Segmented, stagger } from '../components/ui'
@@ -14,9 +14,16 @@ export const contractBadge = (k: Contract, me?: string) =>
   k.status === 'proposed' ? (me && initiator(k) !== me ? <Badge tone="danger">返事をしてください</Badge> : <Badge tone="warn">返事待ち</Badge>)
     : k.status === 'active' ? <Badge tone="ok">指導中</Badge>
     : k.status === 'declined' ? <Badge tone="none">お断り</Badge>
+    : k.status === 'withdrawn' ? <Badge tone="none">取り下げ</Badge>
     : <Badge tone="none">終了</Badge>
 
 export default function Requests() {
+  const { isAdmin: adm, coachMode: cm } = useApp()
+  if (adm || cm) return <Navigate to="/match?tab=list" replace />
+  return <RequestsLegacy />
+}
+
+function RequestsLegacy() {
   const { contracts, authUser, isAdmin, coachMode } = useApp()
   const nav = useNavigate()
   const waiting = contracts.filter(k => k.status === 'proposed' && initiator(k) !== authUser?.uid).length

@@ -2,7 +2,7 @@
    - ページ(HTML)：ネットワーク優先で常に最新版を表示。3秒以内に返らない／オフライン時のみ保存版を表示
    - アイコン等の静的ファイル：保存版を即表示し、裏で更新
    - 版を上げると古いキャッシュはすべて削除される */
-const VERSION = 'mcmt-2026-11-16-1';
+const VERSION = 'mcmt-2026-11-16-2';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png'];
 
 self.addEventListener('install', e => {
