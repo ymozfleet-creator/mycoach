@@ -23,7 +23,7 @@ interface DB {
   payments: Payment[]
   reviews: Review[]
 }
-const KEY = 'mcmt_demo_v10'
+const KEY = 'mcmt_demo_v11'
 export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
@@ -52,7 +52,7 @@ function seed(): DB {
     'demo-admin': { uid: 'demo-admin', name: '田中 恵', role: 'admin', clubIds: [clubId], isAdmin: true },
     'demo-member': { uid: 'demo-member', name: '加藤 由美', role: 'member', clubIds: [clubId] },
     'demo-school': { uid: 'demo-school', name: '高橋 誠', role: 'school', clubIds: [clubId], org: '中野区立第五中学校' },
-    'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', photo: personArt('#DBEAFE', '#F2C9A5', '#2B2B2B', '#2563EB'), skills: ['基礎・ドリル', 'ディフェンス・守備', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 8, clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。', rate: 6000, trainingAt: Date.now() - 90 * 864e5 },
+    'demo-coach': { uid: 'demo-coach', licenseVerified: true, eligibleAt: Date.now() - 90 * 864e5, name: '佐藤 健太', role: 'coach', photo: personArt('#DBEAFE', '#F2C9A5', '#2B2B2B', '#2563EB'), skills: ['基礎・ドリル', 'ディフェンス・守備', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 8, clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。', rate: 6000, trainingAt: Date.now() - 90 * 864e5 },
     'demo-free': { uid: 'demo-free', name: '小林 拓也', role: 'coach', skills: ['基礎・ドリル', '体力づくり'], ages: ['小学生', '中学生'], levels: ['楽しむ・初心者中心'], years: 5, clubIds: [], sports: ['バスケットボール'], areaLabel: '東京都中野区', lat: 35.708, lon: 139.666, days: [6, 0], license: '', verified: 'none', training: false, bio: '', rate: 5000 },
     'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', photo: personArt('#FCE7F3', '#F5D0B5', '#4B2E1E', '#DB2777', true), skills: ['シュート・打撃', '戦術・試合運び'], ages: ['中学生', '高校生'], levels: ['大会で勝つことをめざす'], years: 6, clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
     'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', photo: personArt('#DCFCE7', '#E8B98F', '#1F1F1F', '#059669'), skills: ['基礎・ドリル', '体力づくり'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 4, clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
@@ -66,11 +66,11 @@ function seed(): DB {
   }
   const club: Club = {
     id: clubId, name: '中野区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: 35.7074, lon: 139.6638,
-    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, photo: courtArt('#0F2A4A', '#2563EB'), inviteCode: 'NAKANO', coachCode: 'COACH1', schoolCode: 'SCHOOL', schoolUids: ['demo-school'],
+    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, photo: courtArt('#0F2A4A', '#2563EB'), insurance: { name: 'スポーツ安全保険', until: '2027-03-31' }, inviteCode: 'NAKANO', coachCode: 'COACH1', schoolCode: 'SCHOOL', schoolUids: ['demo-school'],
     ownerUid: 'demo-admin', adminUids: ['demo-admin'], coachUids: ['demo-coach'], memberUids: ['demo-admin', 'demo-member', 'demo-coach', 'demo-school'],
   }
   const names = ['加藤 結衣', '加藤 陸', '田中 陽向', '吉田 蓮', '山口 葵', '松本 湊', '井上 凛', '木村 悠真', '林 心春', '清水 大和', '森 結菜', '池田 颯']
-  const players: Player[] = names.map((n, i) => ({ id: 'p' + (i + 1), name: n, grade: `中学${1 + (i % 3)}年`, guardianUids: i < 2 ? ['demo-member'] : [], discount: i === 4 ? 50 : i === 8 ? 100 : 0 }))
+  const players: Player[] = names.map((n, i) => ({ id: 'p' + (i + 1), name: n, grade: `中学${1 + (i % 3)}年`, guardianUids: i < 2 ? ['demo-member'] : [], discount: i === 4 ? 50 : i === 8 ? 100 : 0, insured: i !== 6 && i !== 10 }))
   const events: ClubEvent[] = []
   for (let d = -56; d <= 14; d++) {
     const day = addDays(T, d)
@@ -113,7 +113,7 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 10, auth: null, users,
+    v: 11, auth: null, users,
     clubs: {
       [clubId]: club,
       // 他地域のクラブ（募集・依頼のデモ用）
@@ -136,7 +136,7 @@ function seed(): DB {
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 10) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 11) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()
@@ -223,9 +223,9 @@ export const demoBackend: Backend = {
   submitVerification: async d => { await wait(); DB_.verify[d.uid] = d; const u = DB_.users[d.uid]; if (u) { u.verified = 'pending'; u.verifyNote = '' } save() },
   getVerifyDoc: async uid => clone(DB_.verify[uid] || null),
   watchPendingVerifications: cb => watch(() => cb(clone(Object.values(DB_.users).filter(u => u.verified === 'pending')))),
-  decideVerification: async (uid, ok, note) => {
+  decideVerification: async (uid, ok, note, licenseOk) => {
     await wait(); const u = DB_.users[uid]; if (!u) return
-    u.verified = ok ? 'approved' : 'none'; u.verifyNote = ok ? '' : note
+    u.verified = ok ? 'approved' : 'none'; u.verifyNote = ok ? '' : note; u.licenseVerified = !!(ok && licenseOk)
     DB_.notices.push({ id: uid6(), to: uid, type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}` })
     save()
   },

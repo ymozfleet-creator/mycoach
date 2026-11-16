@@ -123,6 +123,15 @@ nav ul{display:flex;gap:26px;list-style:none;font-size:14px;font-weight:500}nav 
 .mt-steps li{counter-increment:m;position:relative;background:#fff;border-radius:18px;padding:18px 18px 18px 62px;box-shadow:0 1px 0 var(--line)}
 .mt-steps li:before{content:counter(m);position:absolute;left:18px;top:18px;width:30px;height:30px;border-radius:50%;background:var(--navy);color:var(--lime);font-weight:900;display:grid;place-items:center;font-size:14px}
 .mt-steps b{display:block;font-size:16px}.mt-steps span{display:block;margin-top:4px;font-size:14px;color:var(--sub)}
+/* compare */
+.cmp{overflow-x:auto;max-width:1040px;margin:0 auto;border-radius:22px;box-shadow:0 20px 50px rgba(15,42,74,.08)}
+.cmp table{width:100%;min-width:720px;border-collapse:collapse;background:#fff;font-size:14px}
+.cmp th,.cmp td{padding:16px 18px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.cmp thead th{font-size:13px;color:var(--sub);background:var(--bg)}
+.cmp tbody th{font-weight:900;white-space:nowrap}
+.cmp td{color:var(--sub)}
+.cmp .me{background:rgba(37,99,235,.06);color:var(--ink);font-weight:700}
+.cmp thead .me{background:var(--navy);color:var(--lime);font-size:14px}
 /* heat */
 .heat{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
 .gauge{background:var(--navy);color:#fff;border-radius:28px;padding:30px;box-shadow:0 30px 60px rgba(15,42,74,.25)}
@@ -228,7 +237,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
 <header id="hd">
   <div class="wrap hd">
     <a class="logo" href="#">MyCOACH-<b>MyTEAM</b></a>
-    <nav><ul><li><a href="#ba">できること</a></li><li><a href="#matching">マッチング</a></li><li><a href="#roles">使う人</a></li><li><a href="#safety">安全</a></li><li><a href="#pricing">料金</a></li><li><a href="#faq">よくある質問</a></li></ul></nav>
+    <nav><ul><li><a href="#ba">できること</a></li><li><a href="#matching">マッチング</a></li><li><a href="#compare">比較</a></li><li><a href="#roles">使う人</a></li><li><a href="#safety">安全</a></li><li><a href="#pricing">料金</a></li><li><a href="#faq">よくある質問</a></li></ul></nav>
     <div class="hd-r"><a class="login" href="app/">ログイン</a><a class="btn btn-lime" href="#contact">導入のご相談</a></div>
   </div>
 </header>
@@ -319,7 +328,31 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="roles" class="sec">
+<section id="compare" class="sec">
+  <div class="wrap">
+    <div class="head rv">
+      <div class="en">COMPARISON</div>
+      <h2>ほかの方法と、<em>何が違う？</em></h2>
+      <p>都道府県の指導者バンクや、チーム向けの連絡アプリと組み合わせて使われている、いまの運営と比べました。</p>
+    </div>
+    <div class="cmp rv">
+      <table>
+        <thead><tr><th></th><th>都道府県などの<br>指導者バンク</th><th>チーム向けの<br>連絡アプリ</th><th class="me">MyCOACH-MyTEAM</th></tr></thead>
+        <tbody>
+          <tr><th>指導者探し</th><td>登録情報を見て照会し、連絡先の提供を受けてから交渉</td><td>—</td><td class="me">相性の高い順にスワイプ。お互いの「いいね」でその場で成立</td></tr>
+          <tr><th>指導者の安全確認</th><td>研修の受講などを登録の要件にしている例がある</td><td>—</td><td class="me">本人確認・安全研修を必須に。資格の証明書も事務局が確認</td></tr>
+          <tr><th>出欠・連絡</th><td>—</td><td>○</td><td class="me">○ きょうだい分もまとめて回答</td></tr>
+          <tr><th>会費・謝金</th><td>—</td><td>有料プランなどで対応する例がある</td><td class="me">カード決済・未納のお知らせ・減免・指導者への振込</td></tr>
+          <tr><th>暑さ・体調の管理</th><td>—</td><td>—</td><td class="me">予定ごとの暑さ指数、練習のやりすぎのお知らせ</td></tr>
+          <tr><th>学校・自治体への報告</th><td>—</td><td>—</td><td class="me">実績報告の自動集計、認定要件の確認、学校の閲覧画面</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="demo-note">※比較は一般的な仕組みの例で、個別のサービスや地域によって異なります。都道府県などの指導者バンクに登録している指導者も、そのままご利用いただけます。</p>
+  </div>
+</section>
+
+<section id="roles" class="sec bg">
   <div class="wrap">
     <div class="head rv">
       <div class="en">FOR EVERYONE</div>
@@ -388,7 +421,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="safety" class="sec bg">
+<section id="safety" class="sec">
   <div class="wrap">
     <div class="heat">
       <div class="rv">

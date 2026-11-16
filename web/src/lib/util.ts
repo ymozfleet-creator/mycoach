@@ -239,6 +239,7 @@ export function matchFit(c: Profile, n: MatchNeed): MatchResult {
   s += Math.min(c.years || 0, 10) / 10 * 5
   if ((c.years || 0) >= 5) good.push(`指導歴${c.years}年`)
   if (c.verified === 'approved' && c.training) s += 5
+  if (c.licenseVerified) { s += 5; good.push('資格を事務局が確認済み') }
   if (c.ratingCount) { s += Math.max(0, ((c.ratingAvg || 0) - 3.5) / 1.5) * 5; if ((c.ratingAvg || 0) >= 4.7 && c.ratingCount >= 10) good.push(`高評価（★${c.ratingAvg}）`) }
   // 謝金（加点なし。差が大きいときは注意として出す）
   if (n.fee && c.rate && c.rate > n.fee * 1.2) warn.push(`希望の謝金（${c.rate.toLocaleString()}円）が募集より高め`)

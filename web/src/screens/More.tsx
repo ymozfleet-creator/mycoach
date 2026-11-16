@@ -24,7 +24,7 @@ export default function More() {
   const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join' | 'invite'>('')
   const [code, setCode] = useState('')
   const [joinErr, setJoinErr] = useState('')
-  const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true, photo: club?.photo || '' })
+  const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true, photo: club?.photo || '', insName: club?.insurance?.name || 'スポーツ安全保険', insUntil: club?.insurance?.until || '' })
   const [kid, setKid] = useState({ name: '', grade: '中学1年' })
   const [name, setName] = useState(profile?.name || '')
   if (!profile || !authUser || (!club && !coachMode)) return null
@@ -51,6 +51,7 @@ export default function More() {
           {(isAdmin || coachMode) && <Item icon={<Handshake size={18} />} label={isAdmin ? '指導者マッチング（スワイプ・やりとり）' : 'マッチング（募集を探す・やりとり）'} onClick={() => nav('/match')} />}
           {isAdmin && <Item icon={<Megaphone size={18} />} label="指導者の募集を出す・管理する" onClick={() => nav('/posts')} />}
           {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
+          {(isAdmin || isSchool) && <Item icon={<ShieldCheck size={18} />} label="認定地域クラブの要件を確認する" onClick={() => nav('/report#cert')} />}
           {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
           {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
           {coachMode && <Item icon={<UserRound size={18} />} label="指導者プロフィール" onClick={() => nav('/coach-profile')} />}
@@ -109,7 +110,7 @@ export default function More() {
       {club && (
       <Sheet open={sheet === 'club'} onClose={() => setSheet('')} title="クラブの設定" footer={<Button block size="lg" onClick={async () => {
         const venues = clubForm.venue.trim() ? [...club.venues, { name: clubForm.venue.trim(), indoor: clubForm.indoor }] : club.venues
-        await be.updateClub(club.id, { name: (clubForm.name.trim() || club.name).slice(0, 60), fee: Number(clubForm.fee), venues, photo: clubForm.photo })
+        await be.updateClub(club.id, { name: (clubForm.name.trim() || club.name).slice(0, 60), fee: Number(clubForm.fee), venues, photo: clubForm.photo, ...(clubForm.insUntil ? { insurance: { name: clubForm.insName.trim().slice(0, 40) || 'スポーツ保険', until: clubForm.insUntil } } : {}) })
         // 募集中の募集にもクラブの写真を反映する
         if (clubForm.photo !== (club.photo || '')) { let done = false; const un = be.watchClubPosts(club.id, list => { if (done) return; done = true; list.filter(p => p.status === 'open').forEach(p => be.savePost({ ...p, photo: clubForm.photo }).catch(() => {})); setTimeout(() => un(), 0) }) }
         setSheet(''); toast('保存しました')
@@ -117,6 +118,10 @@ export default function More() {
         <PhotoPicker label="クラブの写真" value={clubForm.photo} onChange={v => setClubForm({ ...clubForm, photo: v })} hint="指導者がクラブを選ぶときに表示されます。ロゴ、活動場所、用具などの写真がおすすめです。子どもの顔が写った写真は使わないでください。" />
         <Field label="クラブ名"><input className={inputCls} value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} /></Field>
         <Field label="月会費（円）" hint="変更は次の請求から反映されます"><input type="number" className={inputCls} value={clubForm.fee} onChange={e => setClubForm({ ...clubForm, fee: Number(e.target.value) })} /></Field>
+        <div className="grid grid-cols-[1fr_9rem] gap-2">
+          <Field label="加入している保険"><input className={inputCls} maxLength={40} value={clubForm.insName} onChange={e => setClubForm({ ...clubForm, insName: e.target.value })} /></Field>
+          <Field label="有効期限"><input type="date" className={inputCls} value={clubForm.insUntil} onChange={e => setClubForm({ ...clubForm, insUntil: e.target.value })} /></Field>
+        </div>
         <Field label="活動場所">{club.venues.map(v => <div key={v.name} className="mb-1 text-[14px]">・{v.name}（{v.indoor ? '屋内' : '屋外'}）</div>)}</Field>
         <div className="grid grid-cols-[1fr_6rem] gap-2">
           <input className={inputCls} placeholder="場所を追加" value={clubForm.venue} onChange={e => setClubForm({ ...clubForm, venue: e.target.value })} />

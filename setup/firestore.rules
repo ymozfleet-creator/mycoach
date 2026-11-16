@@ -38,6 +38,7 @@ service cloud.firestore {
         && request.resource.data.get('ratingCount', 0) == 0
         && request.resource.data.get('suspended', false) == false
         && request.resource.data.get('training', false) == false
+        && request.resource.data.get('licenseVerified', false) == false
         && !('email' in request.resource.data) // メールアドレスは users_private に置く（公開プロフィールに載せない）
         && request.resource.data.get('name', '').size() <= 40
         && request.resource.data.get('bio', '').size() <= 1000
@@ -59,6 +60,8 @@ service cloud.firestore {
             // 差し戻し理由は事務局だけが書ける（本人は消すことのみ）
             && request.resource.data.get('verifyNote', '') in [resource.data.get('verifyNote', ''), '']
             && request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
+            // 資格の確認済みの印は事務局だけが付けられる
+            && request.resource.data.get('licenseVerified', false) == resource.data.get('licenseVerified', false)
             // 利用停止は事務局だけが解除できる。退会（deleted）は本人が付けることはできても外せない
             && request.resource.data.get('suspended', false) == resource.data.get('suspended', false)
             && (request.resource.data.get('deleted', false) == resource.data.get('deleted', false) || request.resource.data.get('deleted', false) == true)
@@ -215,7 +218,9 @@ service cloud.firestore {
       allow read: if authed() && (request.auth.uid == uid || isAdmin());
       allow create, update: if authed() && request.auth.uid == uid
         && request.resource.data.get('image', '') is string
-        && request.resource.data.get('image', '').size() <= 800000
+        && request.resource.data.get('image', '').size() <= 480000
+        && request.resource.data.get('licenseImage', '') is string
+        && request.resource.data.get('licenseImage', '').size() <= 480000
         && request.resource.data.get('docType', '').size() <= 40;
       allow delete: if isAdmin();
     }
@@ -395,7 +400,8 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       // 運営は自由に更新。それ以外は「正しい招待コードで、自分を会員に加える」だけ許可。
       // 指導者（coachUids）への追加は、指導者用の招待コードの場合のみ
-      allow update: if (isClubAdmin(c) && photoOk(request.resource.data, 200000))
+      allow update: if (isClubAdmin(c) && photoOk(request.resource.data, 200000)
+          && request.resource.data.get('insurance', {}).get('name', '').size() <= 40)
         || (authed()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'schoolUids', 'joinCode'])
             && exists(/databases/$(database)/documents/invites/$(request.resource.data.joinCode))

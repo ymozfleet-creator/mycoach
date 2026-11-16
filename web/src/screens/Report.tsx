@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react'
 import { Download, Printer } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Button, Card, PageHeader, Section, Segmented } from '../components/ui'
+import { Certification } from '../components/Certification'
 import { DOW, downloadCSV, iso, monthOf, parseDate, today, yen } from '../lib/util'
 
 export default function Report() {
   const { club, events, players, fees, incidents, month } = useApp()
   const prev = monthOf(new Date(today().getFullYear(), today().getMonth() - 1, 1))
   const [m, setM] = useState(prev)
+  const [tab, setTab] = useState<'report' | 'cert'>(location.hash.includes('cert') ? 'cert' : 'report')
   const t = iso(today())
   const ss = useMemo(() => events.filter(e => e.status !== 'canceled' && e.date.startsWith(m) && e.date < t).sort((a, b) => a.date.localeCompare(b.date)), [events, m, t])
   if (!club) return null
@@ -32,7 +34,9 @@ export default function Report() {
   ]
   return (
     <>
-      <PageHeader title="実績報告" back sub="自治体・補助金の報告用に自動で集計します" />
+      <PageHeader title={tab === 'cert' ? '認定要件の確認' : '実績報告'} back sub={tab === 'cert' ? '認定地域クラブ活動の申請前の確認に' : '自治体・補助金の報告用に自動で集計します'} />
+      <div className="no-print mb-3"><Segmented value={tab} onChange={setTab} options={[{ value: 'report', label: '月ごとの実績報告' }, { value: 'cert', label: '認定要件の確認' }]} /></div>
+      {tab === 'cert' ? <Certification /> : <>
       <div className="no-print"><Segmented value={m} onChange={setM} options={[{ value: prev, label: `${+prev.slice(5)}月` }, { value: month, label: `${+month.slice(5)}月（途中）` }]} /></div>
       <Card className="mt-3">
         <h2 className="text-[16px] font-black">地域クラブ活動 実績報告（{m.slice(0, 4)}年{+m.slice(5)}月）</h2>
@@ -54,6 +58,7 @@ export default function Report() {
         <Button variant="ghost" onClick={csv}><Download size={16} />CSVで保存</Button>
         <Button variant="ghost" onClick={() => print()}><Printer size={16} />印刷・PDF</Button>
       </div>
+      </>}
     </>
   )
 }

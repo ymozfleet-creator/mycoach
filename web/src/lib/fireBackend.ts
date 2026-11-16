@@ -103,8 +103,8 @@ export const fireBackend: Backend = {
   },
   getVerifyDoc: async uid => { const s = await getDoc(doc(db, 'verify_docs', uid)); return s.exists() ? (s.data() as VerifyDoc) : null },
   watchPendingVerifications: cb => onSnapshot(query(collection(db, 'users'), where('verified', '==', 'pending'), limit(100)), s => cb(s.docs.map(d => ({ uid: d.id, clubIds: [], ...d.data() }) as unknown as Profile)), () => cb([])),
-  decideVerification: async (uid, ok, note) => {
-    await updateDoc(doc(db, 'users', uid), { verified: ok ? 'approved' : 'none', verifyNote: ok ? '' : note.slice(0, 300) })
+  decideVerification: async (uid, ok, note, licenseOk) => {
+    await updateDoc(doc(db, 'users', uid), { verified: ok ? 'approved' : 'none', verifyNote: ok ? '' : note.slice(0, 300), licenseVerified: !!(ok && licenseOk) })
     // 承認後は身分証の画像を残さない（必要最小限の保管）
     if (ok) await deleteDoc(doc(db, 'verify_docs', uid)).catch(() => {})
     await addDoc(collection(db, 'audit_logs'), { action: ok ? 'verify_approve' : 'verify_reject', target: uid, by: auth.currentUser?.uid || '', note: note.slice(0, 300), at: Date.now() })

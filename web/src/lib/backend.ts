@@ -56,7 +56,7 @@ export interface Backend {
   submitVerification(d: VerifyDoc): Promise<void>
   getVerifyDoc(uid: string): Promise<VerifyDoc | null>
   watchPendingVerifications(cb: Cb<Profile[]>): Unsub
-  decideVerification(uid: string, ok: boolean, note: string): Promise<void>
+  decideVerification(uid: string, ok: boolean, note: string, licenseOk?: boolean): Promise<void>
 
   watchPayments(uid: string, cb: Cb<Payment[]>): Unsub
   /** 謝金のカード払い（デモでは即時に支払い済みにする） */

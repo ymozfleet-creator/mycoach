@@ -82,7 +82,7 @@ export default function Players() {
               <Avatar name={p.name} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-bold">{p.name}</div>
-                <div className="text-[12px] text-ink-2">{p.grade}{isAdmin && !p.guardianUids.length ? '・保護者未登録' : ''}{isAdmin && p.discount ? `・会費${p.discount === 100 ? '免除' : p.discount + '%減額'}` : ''}</div>
+                <div className="text-[12px] text-ink-2">{p.grade}{isAdmin && !p.guardianUids.length ? '・保護者未登録' : ''}{isAdmin && !p.insured ? '・保険未加入' : ''}{isAdmin && p.discount ? `・会費${p.discount === 100 ? '免除' : p.discount + '%減額'}` : ''}</div>
               </div>
               {schoolView
                 ? (() => { const n = past.filter(e => e.att[p.id] === 'yes').length; return <Badge tone={past.length && n / past.length < 0.5 ? 'warn' : 'ok'}>参加 {n}／{past.length}回</Badge> })()

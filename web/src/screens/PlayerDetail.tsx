@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { HeartPulse, Trash2 } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { Avatar, Badge, Button, Card, PageHeader, Section, Sheet, Segmented } from '../components/ui'
+import { Avatar, Badge, Button, Card, PageHeader, Section, Sheet, Segmented , cx } from '../components/ui'
 import { ConditionSheet } from '../components/sheets'
 import { dateLabel, loadStatus } from '../lib/util'
 
@@ -46,7 +46,7 @@ export default function PlayerDetail() {
             {s.weeks.map((v, i) => (
               <div key={i} className="flex flex-1 flex-col items-center gap-1">
                 <div className="text-[11px] text-ink-2">{v ? v.toLocaleString() : ''}</div>
-                <div className={`w-full origin-bottom animate-[up_.5s_both] rounded-t-xl ${i === 3 ? (s.tone === 'danger' ? 'bg-red-400' : s.tone === 'warn' ? 'bg-amber-400' : 'bg-brand') : 'bg-brand-100'}`} style={{ height: `${(v / max) * 100}%`, minHeight: 4 }} />
+                <div className={`w-full origin-bottom animate-[up_.5s_both] rounded-t-xl ${i === 3 ? (s.tone === 'danger' ? 'bg-red-400' : s.tone === 'warn' ? 'bg-amber-400' : 'bg-brand') : 'bg-brand-100'}`} style={{ height: `${Math.round((v / max) * 120)}px`, minHeight: 4 }} />
                 <div className="text-[11px] font-bold text-ink-2">{i === 3 ? '今週' : `${3 - i}週前`}</div>
               </div>
             ))}
@@ -66,6 +66,14 @@ export default function PlayerDetail() {
         </Card>
       </Section>
       </>}
+      {isAdmin && (
+        <Section title="スポーツ保険">
+          <Card className="flex items-center justify-between gap-3">
+            <div><div className="font-bold">{p.insured ? '加入済み' : '未加入'}</div><div className="text-[12px] text-ink-2">{club.insurance ? `${club.insurance.name}（${club.insurance.until}まで）` : 'クラブの保険は「その他 → クラブの設定」で登録できます'}</div></div>
+            <button onClick={() => { be.savePlayer(club.id, { ...p, insured: !p.insured }); toast(p.insured ? '未加入にしました' : '加入済みにしました') }} className={cx('h-9 shrink-0 rounded-full px-4 text-[13px] font-bold', p.insured ? 'bg-canvas text-ink-2' : 'bg-brand text-white')}>{p.insured ? '未加入にする' : '加入済みにする'}</button>
+          </Card>
+        </Section>
+      )}
       {isAdmin && (
         <Section title="会費">
           <Card>

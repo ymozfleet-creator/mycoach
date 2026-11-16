@@ -8,7 +8,7 @@ import type { Profile } from '../lib/types'
 export function coachSteps(p: Profile) {
   return [
     { key: 'profile', done: !!(p.sports?.length && p.areaLabel && p.days?.length && (p.bio || '').length >= 20), title: 'プロフィールを入力', text: '種目・地域・曜日・自己紹介（20文字以上）', icon: <UserRound size={18} />, to: '/coach-profile' },
-    { key: 'verify', done: p.verified === 'approved', pending: p.verified === 'pending', title: '本人確認', text: p.verified === 'pending' ? '事務局で確認中です（通常2営業日以内）' : p.verifyNote ? `再提出をお願いします：${p.verifyNote}` : '身分証の写真を提出', icon: <IdCard size={18} />, to: '/verify' },
+    { key: 'verify', done: p.verified === 'approved', pending: p.verified === 'pending', title: '本人確認', text: p.verified === 'pending' ? '事務局で確認中です（通常2営業日以内）' : p.verifyNote ? `再提出をお願いします：${p.verifyNote}` : '身分証の写真と、登録要件（18歳以上など）の申告', icon: <IdCard size={18} />, to: '/verify' },
     { key: 'training', done: !!p.training, title: '安全研修', text: '熱中症・ケガ・ハラスメント防止（約10分）', icon: <GraduationCap size={18} />, to: '/training' },
     { key: 'payout', done: !!p.stripeChargesEnabled, title: '謝金の受取口座', text: 'カード払いの謝金が自動で振り込まれます', icon: <CreditCard size={18} />, to: '/coach-profile#payout', optional: true },
   ]

@@ -15,13 +15,14 @@ export default function Ops() {
   const [docu, setDocu] = useState<VerifyDoc | null | undefined>(undefined)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [licOk, setLicOk] = useState(false)
   useEffect(() => (isOps ? be.watchPendingVerifications(setList) : undefined), [be, isOps])
-  useEffect(() => { setDocu(undefined); setNote(''); if (sel) be.getVerifyDoc(sel.uid).then(setDocu).catch(() => setDocu(null)) }, [be, sel?.uid])
+  useEffect(() => { setDocu(undefined); setNote(''); setLicOk(false); if (sel) be.getVerifyDoc(sel.uid).then(setDocu).catch(() => setDocu(null)) }, [be, sel?.uid])
   if (!isOps) return <><PageHeader title="運営事務局" back /><Empty icon={<ShieldX />} title="この画面は運営事務局専用です" /></>
   const decide = async (ok: boolean) => {
     if (!sel) return
     setBusy(true)
-    try { await be.decideVerification(sel.uid, ok, note.trim()); toast(ok ? `${sel.name}さんを承認しました` : '差し戻しました'); setSel(null) }
+    try { await be.decideVerification(sel.uid, ok, note.trim(), licOk); toast(ok ? `${sel.name}さんを承認しました` : '差し戻しました'); setSel(null) }
     catch { toast('更新できませんでした。権限をご確認ください') }
     setBusy(false)
   }
@@ -60,6 +61,14 @@ export default function Ops() {
               <div className="rounded-2xl border border-line p-3">
                 <div className="mb-2 flex items-center gap-2 text-[13px] font-bold"><IdCard size={16} />{docu.docType}<span className="ml-auto text-[11px] font-normal text-ink-3">{relTime(docu.at)}</span></div>
                 {docu.image ? <img src={docu.image} alt="提出された本人確認書類" className="w-full rounded-xl" /> : <p className="text-[12px] text-ink-3">（デモのため画像はありません）</p>}
+                {docu.licenseImage && (
+                  <div className="mt-3">
+                    <div className="mb-1 text-[13px] font-bold">指導者資格の証明（本人の記入：{sel.license || '未記入'}）</div>
+                    <img src={docu.licenseImage} alt="提出された資格の証明" className="w-full rounded-xl" />
+                    <label className="mt-2 flex items-center gap-2 text-[13px] font-bold"><input type="checkbox" className="h-5 w-5 accent-brand" checked={licOk} onChange={e => setLicOk(e.target.checked)} />資格も確認できた（プロフィールに「資格確認済み」を表示）</label>
+                  </div>
+                )}
+                <p className="mt-2 text-[12px] text-ink-2">{sel.eligibleAt ? `登録要件（18歳以上・処分歴なし）の申告：${new Date(sel.eligibleAt).toLocaleDateString('ja-JP')}` : '登録要件の申告がありません（差し戻してください）'}</p>
                 <div className="mt-3 flex items-center gap-3 rounded-xl bg-canvas p-2"><Avatar name={sel.name || '?'} size={56} photo={sel.photo} /><span className="text-[12px] text-ink-2">{sel.photo ? 'プロフィール写真：書類の顔写真と同じ人か確認してください' : 'プロフィール写真は未登録です'}</span></div>
                 <p className="mt-2 text-[12px] text-ink-2">確認すること：登録名「{docu.name}」と書類の氏名が一致／有効期限内／顔写真が鮮明</p>
               </div>

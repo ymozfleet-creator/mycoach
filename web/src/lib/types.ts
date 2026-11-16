@@ -27,6 +27,8 @@ export interface Profile {
   levels?: string[] // 指導スタイル（LEVELS）
   years?: number // 指導歴（年）
   photo?: string // プロフィール写真（縮小したJPEGのdata URL。位置情報などは含まない）
+  eligibleAt?: number // 18歳以上・欠格事由に該当しないことを本人が申告した日時
+  licenseVerified?: boolean // 資格の証明書を事務局が確認済み（本人は変更できない）
   trainingAt?: number
   verifyNote?: string // 事務局からの差し戻し理由
   isAdmin?: boolean // 運営事務局（審査担当）。Firestoreのルール上、本人は変更できない
@@ -64,6 +66,7 @@ export interface VerifyDoc {
   name: string
   docType: string
   image: string // 縮小したJPEG（data URL）
+  licenseImage?: string // 指導者資格の証明（任意）
   at: number
 }
 
@@ -90,6 +93,7 @@ export interface Club {
   coachUids: string[]
   memberUids: string[]
   photo?: string // クラブの写真（ロゴ・活動場所。子どもの顔は不可）
+  insurance?: { name: string; until: string } // 加入している保険（例：スポーツ安全保険・有効期限）
 }
 
 export interface Player {
@@ -98,6 +102,7 @@ export interface Player {
   grade: string
   guardianUids: string[]
   discount: number // 0 / 50 / 100（%）
+  insured?: boolean // スポーツ保険に加入済み
 }
 
 export interface ClubEvent {

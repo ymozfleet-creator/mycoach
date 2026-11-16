@@ -397,6 +397,7 @@ function ClubMatch() {
                     <div className="flex-1 space-y-2.5 overflow-hidden px-5 py-4">
                       <div className="flex flex-wrap gap-1.5">
                         <Badge tone="ok"><BadgeCheck size={12} />本人確認・<GraduationCap size={12} />安全研修 済み</Badge>
+                        {c.licenseVerified && <Badge tone="info"><BadgeCheck size={12} />資格確認済み</Badge>}
                         {c.teacher && <Badge tone="info">現職の教員</Badge>}
                         {c.ratingCount ? <Badge tone="warn"><Star size={12} />{c.ratingAvg}（{c.ratingCount}件）</Badge> : null}
                       </div>
