@@ -32,7 +32,7 @@ export default function Ops() {
         <div className="space-y-2">
           {list.map((p, i) => (
             <Card key={p.uid} style={stagger(i)} onClick={() => setSel(p)} className="flex animate-up items-center gap-3">
-              <Avatar name={p.name || '?'} size={44} />
+              <Avatar name={p.name || '?'} size={44} photo={p.photo} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-bold">{p.name || '（名前未設定）'}</div>
                 <div className="truncate text-[12px] text-ink-2">{(p.sports || []).join('・')}／{p.areaLabel || '地域未設定'}</div>
@@ -60,6 +60,7 @@ export default function Ops() {
               <div className="rounded-2xl border border-line p-3">
                 <div className="mb-2 flex items-center gap-2 text-[13px] font-bold"><IdCard size={16} />{docu.docType}<span className="ml-auto text-[11px] font-normal text-ink-3">{relTime(docu.at)}</span></div>
                 {docu.image ? <img src={docu.image} alt="提出された本人確認書類" className="w-full rounded-xl" /> : <p className="text-[12px] text-ink-3">（デモのため画像はありません）</p>}
+                <div className="mt-3 flex items-center gap-3 rounded-xl bg-canvas p-2"><Avatar name={sel.name || '?'} size={56} photo={sel.photo} /><span className="text-[12px] text-ink-2">{sel.photo ? 'プロフィール写真：書類の顔写真と同じ人か確認してください' : 'プロフィール写真は未登録です'}</span></div>
                 <p className="mt-2 text-[12px] text-ink-2">確認すること：登録名「{docu.name}」と書類の氏名が一致／有効期限内／顔写真が鮮明</p>
               </div>
             )}

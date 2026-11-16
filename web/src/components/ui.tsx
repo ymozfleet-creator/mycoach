@@ -1,3 +1,4 @@
+import { safePhoto } from '../lib/image'
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, X } from 'lucide-react'
@@ -58,7 +59,8 @@ export function Badge({ tone = 'none', children, className }: { tone?: Tone; chi
   return <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-bold', tones[tone], className)}>{children}</span>
 }
 
-export function Avatar({ name, size = 40, color }: { name: string; size?: number; color?: string }) {
+export function Avatar({ name, size = 40, color, photo }: { name: string; size?: number; color?: string; photo?: string }) {
+  if (photo && safePhoto(photo)) return <img src={photo} alt={`${name}の写真`} loading="lazy" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
   const palette = ['#2563EB', '#E5484D', '#10B981', '#F59E0B', '#8B5CF6', '#0EA5E9', '#EC4899', '#0F2A4A']
   const c = color || palette[[...name].reduce((s, ch) => s + ch.charCodeAt(0), 0) % palette.length]
   return <div className="grid shrink-0 place-items-center rounded-full font-bold text-white" style={{ width: size, height: size, background: c, fontSize: size * 0.4 }}>{name.slice(0, 1)}</div>

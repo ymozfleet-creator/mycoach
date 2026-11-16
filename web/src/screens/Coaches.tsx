@@ -60,7 +60,7 @@ export default function Coaches() {
       <div className="mt-3 space-y-2">
         {list === null ? [0, 1, 2].map(i => <Skeleton key={i} className="h-28" />) : !rows.length ? <Empty icon={<Search />} title="条件に合う指導者が見つかりません" text={onlyReady ? '「すべて」にすると、審査中の方も表示されます' : 'この種目の指導者はまだ登録されていません'} /> : rows.map(({ p, m }) => (
           <Card key={p.uid} onClick={() => open(p)} className="flex gap-3">
-            <Avatar name={p.name} size={48} />
+            <Avatar name={p.name} size={48} photo={p.photo} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5"><span className="truncate text-[16px] font-bold">{p.name}</span>{m.ready && <BadgeCheck size={17} className="shrink-0 text-brand" />}</div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12px] text-ink-2">

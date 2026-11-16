@@ -22,7 +22,7 @@ export default function Posts() {
   const create = async () => {
     setBusy(true)
     try {
-      await be.savePost({ id: 'post' + Date.now().toString(36) + uid6(), clubId: club.id, clubName: club.name, ownerUid: authUser.uid, ownerName: profile.name, sport: club.sport, areaLabel: club.areaLabel, lat: club.lat, lon: club.lon, title: f.title.trim().slice(0, 60), days: f.days, start: f.start, fee: Math.max(0, Math.round(f.fee)), note: f.note.trim().slice(0, 1000), skills: f.skills.slice(0, 8), ages: f.ages, level: f.level || undefined, status: 'open', at: Date.now() })
+      await be.savePost({ id: 'post' + Date.now().toString(36) + uid6(), clubId: club.id, clubName: club.name, ownerUid: authUser.uid, ownerName: profile.name, sport: club.sport, areaLabel: club.areaLabel, lat: club.lat, lon: club.lon, title: f.title.trim().slice(0, 60), days: f.days, start: f.start, fee: Math.max(0, Math.round(f.fee)), note: f.note.trim().slice(0, 1000), photo: club.photo || undefined, skills: f.skills.slice(0, 8), ages: f.ages, level: f.level || undefined, status: 'open', at: Date.now() })
       setOpen(false); setF({ ...f, title: '', note: '' }); toast('募集を公開しました。条件の合う指導者に表示されます')
     } catch { toast('公開できませんでした') }
     setBusy(false)

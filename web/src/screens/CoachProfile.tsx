@@ -3,6 +3,7 @@ import { CreditCard, ExternalLink } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { AGES, AREAS, LEVELS, SKILLS, SPORTS } from '../lib/places'
 import { Badge, Button, Card, Field, inputCls, PageHeader, Section, cx } from '../components/ui'
+import { PhotoPicker } from '../components/PhotoPicker'
 import { DOW, yen } from '../lib/util'
 
 const BIO_MAX = 800
@@ -12,7 +13,7 @@ export default function CoachProfile() {
   const [f, setF] = useState(() => ({
     name: profile?.name || '', sports: profile?.sports || [], area: profile?.areaLabel && AREAS[profile.areaLabel] ? profile.areaLabel : '東京都中野区',
     days: profile?.days || [], license: profile?.license || '', teacher: !!profile?.teacher, rate: profile?.rate || 6000, bio: profile?.bio || '',
-    skills: profile?.skills || [], ages: profile?.ages || [], levels: profile?.levels || [], years: profile?.years || 0,
+    skills: profile?.skills || [], ages: profile?.ages || [], levels: profile?.levels || [], years: profile?.years || 0, photo: profile?.photo || '',
   }))
   const [busy, setBusy] = useState(false)
   const [payBusy, setPayBusy] = useState(false)
@@ -25,7 +26,7 @@ export default function CoachProfile() {
   const save = async () => {
     setBusy(true)
     const [lat, lon] = AREAS[f.area]
-    await be.saveProfile({ uid: authUser.uid, name: f.name.trim().slice(0, 40), sports: f.sports, areaLabel: f.area, lat, lon, days: f.days, license: f.license.trim().slice(0, 100), teacher: f.teacher, skills: f.skills.slice(0, 8), ages: f.ages, levels: f.levels, years: Math.max(0, Math.min(60, Math.round(f.years))), rate: Math.round(f.rate), bio: f.bio.trim().slice(0, BIO_MAX) })
+    await be.saveProfile({ uid: authUser.uid, name: f.name.trim().slice(0, 40), sports: f.sports, areaLabel: f.area, lat, lon, days: f.days, license: f.license.trim().slice(0, 100), teacher: f.teacher, skills: f.skills.slice(0, 8), ages: f.ages, levels: f.levels, years: Math.max(0, Math.min(60, Math.round(f.years))), photo: f.photo, rate: Math.round(f.rate), bio: f.bio.trim().slice(0, BIO_MAX) })
     setBusy(false); toast('プロフィールを保存しました'); history.back()
   }
   const payout = async () => {
@@ -42,6 +43,7 @@ export default function CoachProfile() {
     <>
       <PageHeader title="指導者プロフィール" back sub="クラブが指導者を探すときに表示されます" />
       <Card>
+        <PhotoPicker round label="プロフィール写真" value={f.photo} onChange={v => setF({ ...f, photo: v })} hint="顔がはっきりわかる、あなた本人の写真を選んでください。写真があるとクラブからの依頼が届きやすくなります。お子さまや他の人が写った写真は使えません。" />
         <Field label="お名前"><input className={inputCls} value={f.name} maxLength={40} onChange={e => setF({ ...f, name: e.target.value })} /></Field>
         <Field label="指導できる種目"><div className="flex flex-wrap gap-2">{SPORTS.map(s => <button key={s} onClick={() => setF({ ...f, sports: toggle(f.sports, s) })} className={cx('rounded-full border px-3 py-1.5 text-[13px] font-bold transition active:scale-95', f.sports.includes(s) ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2')}>{s}</button>)}</div></Field>
         <Field label="活動できる地域" hint="クラブの活動場所からの距離を計算するのに使います"><select className={inputCls} value={f.area} onChange={e => setF({ ...f, area: e.target.value })}>{Object.keys(AREAS).map(a => <option key={a}>{a}</option>)}</select></Field>

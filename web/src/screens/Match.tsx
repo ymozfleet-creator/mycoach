@@ -8,6 +8,7 @@ import { CoachSetup, coachReady } from '../components/CoachSetup'
 import type { Contract, Post, Profile } from '../lib/types'
 import { DOW, km, matchFit, parseDate, relTime, yen, type MatchResult } from '../lib/util'
 import { SKILLS } from '../lib/places'
+import { safePhoto } from '../lib/image'
 import { contractBadge, initiator } from './Requests'
 
 /* ---------- 見送った候補の記憶（この端末・この人だけ。見た目の好みなので端末内に保存） ---------- */
@@ -52,7 +53,7 @@ function HowItWorks({ coach }: { coach: boolean }) {
 }
 
 /* ---------- マッチング成立の演出 ---------- */
-function MatchModal({ a, b, sub, onChat, onClose }: { a: string; b: string; sub: string; onChat: () => void; onClose: () => void }) {
+function MatchModal({ a, b, aPhoto, bPhoto, sub, onChat, onClose }: { a: string; b: string; aPhoto?: string; bPhoto?: string; sub: string; onChat: () => void; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center bg-navy/90 p-6 backdrop-blur-sm animate-fade" onClick={onClose}>
       <div className="w-full max-w-sm text-center text-white" onClick={e => e.stopPropagation()}>
@@ -60,9 +61,9 @@ function MatchModal({ a, b, sub, onChat, onClose }: { a: string; b: string; sub:
         <div className="mt-3 text-[30px] font-black tracking-wide animate-up">マッチング成立！</div>
         <p className="mt-1 text-[14px] opacity-80 animate-up" style={stagger(1)}>{sub}</p>
         <div className="my-8 flex items-center justify-center">
-          <div className="animate-[slideL_.5s_cubic-bezier(.2,.8,.2,1)_both] rounded-full ring-4 ring-white"><Avatar name={a} size={84} /></div>
+          <div className="animate-[slideL_.5s_cubic-bezier(.2,.8,.2,1)_both] rounded-full ring-4 ring-white"><Avatar name={a} size={84} photo={aPhoto} /></div>
           <Heart size={34} className="z-10 -mx-3 fill-lime text-lime animate-pop" />
-          <div className="animate-[slideR_.5s_cubic-bezier(.2,.8,.2,1)_both] rounded-full ring-4 ring-white"><Avatar name={b} size={84} /></div>
+          <div className="animate-[slideR_.5s_cubic-bezier(.2,.8,.2,1)_both] rounded-full ring-4 ring-white"><Avatar name={b} size={84} photo={bPhoto} /></div>
         </div>
         <Button block size="lg" className="!bg-lime !text-navy" onClick={onChat}><MessageCircle size={18} />メッセージを送る</Button>
         <button onClick={onClose} className="mt-3 w-full py-2 text-[14px] font-bold opacity-80">続けて探す</button>
@@ -169,7 +170,7 @@ function CoachMatch() {
   const passed = usePassed(authUser?.uid)
   const [last, setLast] = useState<{ kind: 'pass' | 'like'; id: string; contractId?: string } | null>(null)
   const [info, setInfo] = useState<Post | null>(null)
-  const [matched, setMatched] = useState<{ club: string; id: string } | null>(null)
+  const [matched, setMatched] = useState<{ club: string; id: string; photo?: string } | null>(null)
   const flt = useFilter(authUser?.uid)
   const [fOpen, setFOpen] = useState(false)
   useEffect(() => be.watchOpenPosts(setPosts), [be])
@@ -200,7 +201,7 @@ function CoachMatch() {
         if (p.offer.clubCode) await be.joinClub(p.offer.clubCode, me)
         await be.sendMessage(p.offer.id, { from: me, fromName: profile.name, text: 'お引き受けします。よろしくお願いします。', at: Date.now() })
         await be.notify(p.ownerUid, `【マッチング成立】${profile.name}さんが依頼を引き受けました`, 'contract').catch(() => {})
-        setMatched({ club: p.clubName, id: p.offer.id }); setLast(null)
+        setMatched({ club: p.clubName, id: p.offer.id, photo: p.photo }); setLast(null)
         return
       }
       const msg = `はじめまして、${profile.name}です。「${p.title}」に応募します。${profile.license ? `${profile.license}。` : ''}よろしくお願いいたします。`
@@ -242,10 +243,13 @@ function CoachMatch() {
                 empty={<Empty icon={<Megaphone />} title={flt.count ? '条件に合う募集はありません' : '新しい募集はすべて見ました'} text="あなたの種目・地域に新しい募集が出たらお知らせします" action={<div className="flex flex-col gap-2">{flt.count > 0 && <Button variant="soft" onClick={() => flt.save(NOF)}>絞り込みをクリア</Button>}{passed.ids.length > 0 && <Button variant="soft" onClick={passed.clear}>見送った募集をもう一度見る</Button>}</div>} />}
                 render={p => (
                   <div className="flex h-full flex-col">
-                    <div className="relative bg-gradient-to-br from-navy to-brand px-5 pb-5 pt-6 text-white">
-                      {p.offer ? <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />このクラブから依頼が届いています</div> : p.isNew ? <div className="mb-2 inline-flex rounded-full bg-white/20 px-3 py-1 text-[12px] font-black">NEW 新着の募集</div> : null}
+                    <div className={cx('relative bg-gradient-to-br from-navy to-brand px-5 pb-5 pt-6 text-white', safePhoto(p.photo) && 'flex min-h-[180px] flex-col justify-end')}>
+                      {safePhoto(p.photo) && <><img src={p.photo} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/20" /></>}
+                      <div className="relative">
+                      {p.offer ? <div className="mb-2 mr-16 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />このクラブから依頼が届いています</div> : p.isNew ? <div className="mb-2 inline-flex rounded-full bg-white/20 px-3 py-1 text-[12px] font-black">NEW 新着の募集</div> : null}
                       <div className="text-[13px] font-bold opacity-80">{p.clubName}</div>
                       <div className="mt-1 pr-16 text-[22px] font-black leading-snug">{p.title}</div>
+                      </div>
                       <div className="absolute right-4 top-6 rounded-full bg-white p-1"><Ring value={p.m.score} size={60} stroke={6}><div className="text-center leading-none text-ink"><div className="text-[17px] font-black">{p.m.score}</div><div className="text-[9px] text-ink-3">相性</div></div></Ring></div>
                     </div>
                     <div className="flex-1 space-y-3 overflow-hidden p-5">
@@ -271,7 +275,7 @@ function CoachMatch() {
         {info && <><div className="text-[13px] font-bold text-ink-2">{info.clubName}（{info.areaLabel}）</div><p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.note || '詳しい内容はまだ書かれていません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると応募できます。</p></>}
       </Sheet>
       <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach />
-      {matched && <MatchModal a={profile.name} b={matched.club} sub={`${matched.club}の指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
+      {matched && <MatchModal a={profile.name} aPhoto={profile.photo} b={matched.club} bPhoto={matched.photo} sub={`${matched.club}の指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
     </>
   )
 }
@@ -288,7 +292,7 @@ function ClubMatch() {
   const passed = usePassed(authUser?.uid)
   const [last, setLast] = useState<{ kind: 'pass' | 'like'; id: string; contractId?: string } | null>(null)
   const [info, setInfo] = useState<Cand | null>(null)
-  const [matched, setMatched] = useState<{ name: string; id: string } | null>(null)
+  const [matched, setMatched] = useState<{ name: string; id: string; photo?: string } | null>(null)
   const flt = useFilter(authUser?.uid)
   const [fOpen, setFOpen] = useState(false)
   useEffect(() => { if (club) be.listCoaches(club.sport).then(setList).catch(() => setList([])) }, [be, club?.sport, club?.coachUids.length])
@@ -329,7 +333,7 @@ function ClubMatch() {
         await be.addCoach(club.id, c.uid)
         await be.sendMessage(c.app.id, { from: me, fromName: profile.name, text: 'ぜひお願いします。クラブの予定や選手の情報はアプリから確認できます。', at: Date.now() })
         await be.notify(c.uid, `【マッチング成立】${club.name}に採用されました`, 'contract').catch(() => {})
-        setMatched({ name: c.name, id: c.app.id }); setLast(null)
+        setMatched({ name: c.name, id: c.app.id, photo: c.photo }); setLast(null)
         return
       }
       const code = await be.createCoachInvite(club.id)
@@ -384,7 +388,7 @@ function ClubMatch() {
                 render={c => (
                   <div className="flex h-full flex-col">
                     <div className="relative flex flex-col items-center bg-gradient-to-br from-navy to-brand px-5 pb-4 pt-5 text-white">
-                      <div className="rounded-full ring-4 ring-white/30"><Avatar name={c.name} size={60} /></div>
+                      <div className="rounded-full ring-4 ring-white/30"><Avatar name={c.name} size={c.photo ? 76 : 60} photo={c.photo} /></div>
                       <div className="mt-1.5 text-[21px] font-black">{c.name}</div>
                       <div className="text-[13px] opacity-80">{(c.sports || []).join('・')}・{c.areaLabel}</div>
                       {c.app && <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[12px] font-black text-navy"><Heart size={13} fill="currentColor" />あなたのクラブに応募しています</div>}
@@ -417,7 +421,7 @@ function ClubMatch() {
         {info && <><div className="text-[13px] text-ink-2">{(info.sports || []).join('・')}／{info.areaLabel}／{km(club.lat, club.lon, info.lat ?? club.lat, info.lon ?? club.lon).toFixed(1)}km</div>{info.license && <p className="mt-2 text-[14px] font-bold">{info.license}</p>}<p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed">{info.bio || '自己紹介はまだありません。'}</p><p className="mt-4 text-[12px] text-ink-3">カードを右にスワイプすると、{openPost ? `募集「${openPost.title}」の条件で` : ''}依頼を送れます。送ったあとはメッセージで条件を相談できます。</p></>}
       </Sheet>
       <FilterSheet open={fOpen} onClose={() => setFOpen(false)} f={flt.f} save={flt.save} coach={false} />
-      {matched && <MatchModal a={club.name} b={matched.name} sub={`${matched.name}さんがクラブの指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
+      {matched && <MatchModal a={club.name} aPhoto={club.photo} b={matched.name} bPhoto={matched.photo} sub={`${matched.name}さんがクラブの指導者になりました`} onChat={() => nav(`/requests/${matched.id}`)} onClose={() => setMatched(null)} />}
     </>
   )
 }

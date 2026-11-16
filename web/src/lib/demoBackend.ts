@@ -23,10 +23,26 @@ interface DB {
   payments: Payment[]
   reviews: Review[]
 }
-const KEY = 'mcmt_demo_v9'
+const KEY = 'mcmt_demo_v10'
 export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
+
+
+/* デモ用のイラスト（実在の人物の写真は使わない） */
+const svgUrl = (svg: string) => 'data:image/svg+xml;utf8,' + encodeURIComponent(svg)
+function personArt(bg: string, skin: string, hair: string, shirt: string, long = false) {
+  return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="${bg}"/>` +
+    (long ? `<path d="M30 62c0-26 12-40 30-40s30 14 30 40v34H30z" fill="${hair}"/>` : '') +
+    `<path d="M18 120c4-24 20-34 42-34s38 10 42 34z" fill="${shirt}"/><rect x="52" y="70" width="16" height="18" rx="6" fill="${skin}"/>` +
+    `<circle cx="60" cy="54" r="22" fill="${skin}"/><path d="M37 52c0-16 10-26 23-26s23 10 23 26c-6-8-14-12-23-12s-17 4-23 12z" fill="${hair}"/>` +
+    `<circle cx="52" cy="56" r="2.4" fill="#2b2b2b"/><circle cx="68" cy="56" r="2.4" fill="#2b2b2b"/><path d="M53 65q7 5 14 0" stroke="#b55" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`)
+}
+function courtArt(c1: string, c2: string) {
+  return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>` +
+    `<rect width="320" height="180" fill="url(#g)"/><rect x="20" y="30" width="280" height="130" rx="6" fill="#d9a066"/><g fill="none" stroke="#fff" stroke-width="3"><rect x="20" y="30" width="280" height="130" rx="6"/><line x1="160" y1="30" x2="160" y2="160"/><circle cx="160" cy="95" r="22"/><path d="M20 62h50v66H20M300 62h-50v66h50"/></g>` +
+    `<circle cx="226" cy="58" r="16" fill="#f07a2a"/><path d="M210 58h32M226 42v32M215 47q11 11 0 22M237 47q-11 11 0 22" stroke="#7a3a10" stroke-width="2" fill="none"/></svg>`)
+}
 
 function seed(): DB {
   const r = rng(7)
@@ -36,21 +52,21 @@ function seed(): DB {
     'demo-admin': { uid: 'demo-admin', name: '田中 恵', role: 'admin', clubIds: [clubId], isAdmin: true },
     'demo-member': { uid: 'demo-member', name: '加藤 由美', role: 'member', clubIds: [clubId] },
     'demo-school': { uid: 'demo-school', name: '高橋 誠', role: 'school', clubIds: [clubId], org: '中野区立第五中学校' },
-    'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', skills: ['基礎・ドリル', 'ディフェンス・守備', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 8, clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。', rate: 6000, trainingAt: Date.now() - 90 * 864e5 },
+    'demo-coach': { uid: 'demo-coach', name: '佐藤 健太', role: 'coach', photo: personArt('#DBEAFE', '#F2C9A5', '#2B2B2B', '#2563EB'), skills: ['基礎・ドリル', 'ディフェンス・守備', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 8, clubIds: [clubId], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.715, lon: 139.65, days: [6, 0, 3], license: 'JSPO公認コーチ1', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 126, lessonCount: 126, bio: '元実業団。基礎とディフェンスの指導が得意です。', rate: 6000, trainingAt: Date.now() - 90 * 864e5 },
     'demo-free': { uid: 'demo-free', name: '小林 拓也', role: 'coach', skills: ['基礎・ドリル', '体力づくり'], ages: ['小学生', '中学生'], levels: ['楽しむ・初心者中心'], years: 5, clubIds: [], sports: ['バスケットボール'], areaLabel: '東京都中野区', lat: 35.708, lon: 139.666, days: [6, 0], license: '', verified: 'none', training: false, bio: '', rate: 5000 },
-    'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', skills: ['シュート・打撃', '戦術・試合運び'], ages: ['中学生', '高校生'], levels: ['大会で勝つことをめざす'], years: 6, clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
-    'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', skills: ['基礎・ドリル', '体力づくり'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 4, clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
-    'c4': { uid: 'c4', name: '伊藤 さくら', role: 'coach', skills: ['基礎・ドリル', '初心者の指導', 'ケガ予防・コンディショニング'], ages: ['小学生', '中学生'], levels: ['楽しむ・初心者中心'], years: 12, clubIds: [], sports: ['バスケットボール'], areaLabel: '杉並区', lat: 35.705, lon: 139.68, days: [6, 0, 5], license: 'JSPO公認コーチ3', verified: 'approved', training: true, ratingAvg: 4.7, ratingCount: 210, lessonCount: 210, bio: '小中学生の育成年代を15年指導。' },
-    'c6': { uid: 'c6', name: '中島 大和', role: 'coach', skills: ['基礎・ドリル', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 5, clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.71, lon: 139.67, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 31, lessonCount: 31, rate: 6000, bio: '中学校で外部指導員を5年。基礎のドリルと、声をかけ合うチームづくりを大切にしています。' },
-    'c7': { uid: 'c7', name: '小川 葵', role: 'coach', skills: ['戦術・試合運び', 'シュート・打撃'], ages: ['中学生', '高校生'], levels: ['大会で勝つことをめざす'], years: 7, clubIds: [], sports: ['バスケットボール'], areaLabel: '豊島区', lat: 35.726, lon: 139.716, days: [6, 3], license: '元WJBLプレーヤー', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 54, lessonCount: 54, rate: 7000, bio: 'ポイントガード出身。パスとゲームの組み立て方を、中高生にもわかる言葉で教えます。' },
-    'c8': { uid: 'c8', name: '森田 健', role: 'coach', skills: ['体力づくり', 'ケガ予防・コンディショニング'], ages: ['中学生'], levels: ['楽しむ・初心者中心', '大会で勝つことをめざす'], years: 10, clubIds: [], sports: ['バスケットボール'], areaLabel: '渋谷区', lat: 35.664, lon: 139.698, days: [0], license: '中学校教諭（保健体育）', verified: 'approved', training: true, teacher: true, ratingAvg: 4.6, ratingCount: 18, lessonCount: 18, rate: 5000, bio: '現職の教員です（兼職兼業の許可あり）。体づくりとケガの予防を中心に指導します。' },
+    'c2': { uid: 'c2', name: '山田 美咲', role: 'coach', photo: personArt('#FCE7F3', '#F5D0B5', '#4B2E1E', '#DB2777', true), skills: ['シュート・打撃', '戦術・試合運び'], ages: ['中学生', '高校生'], levels: ['大会で勝つことをめざす'], years: 6, clubIds: [], sports: ['バスケットボール'], areaLabel: '新宿区', lat: 35.69, lon: 139.7, days: [6], license: '元実業団選手', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 88, lessonCount: 88, bio: 'シュート指導が専門です。' },
+    'c3': { uid: 'c3', name: '鈴木 大輔', role: 'coach', photo: personArt('#DCFCE7', '#E8B98F', '#1F1F1F', '#059669'), skills: ['基礎・ドリル', '体力づくり'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 4, clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.712, lon: 139.655, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: false, teacher: true, ratingAvg: 4.5, ratingCount: 40, lessonCount: 40, bio: '中学校教員（兼職兼業の許可済み）。' },
+    'c4': { uid: 'c4', name: '伊藤 さくら', role: 'coach', photo: personArt('#FEF3C7', '#F6D3B3', '#5B3A1E', '#D97706', true), skills: ['基礎・ドリル', '初心者の指導', 'ケガ予防・コンディショニング'], ages: ['小学生', '中学生'], levels: ['楽しむ・初心者中心'], years: 12, clubIds: [], sports: ['バスケットボール'], areaLabel: '杉並区', lat: 35.705, lon: 139.68, days: [6, 0, 5], license: 'JSPO公認コーチ3', verified: 'approved', training: true, ratingAvg: 4.7, ratingCount: 210, lessonCount: 210, bio: '小中学生の育成年代を15年指導。' },
+    'c6': { uid: 'c6', name: '中島 大和', role: 'coach', photo: personArt('#E0E7FF', '#EBC19B', '#262626', '#4F46E5'), skills: ['基礎・ドリル', '初心者の指導'], ages: ['中学生'], levels: ['楽しむ・初心者中心'], years: 5, clubIds: [], sports: ['バスケットボール'], areaLabel: '中野区', lat: 35.71, lon: 139.67, days: [6, 0], license: 'JSPO公認スタートコーチ', verified: 'approved', training: true, ratingAvg: 4.8, ratingCount: 31, lessonCount: 31, rate: 6000, bio: '中学校で外部指導員を5年。基礎のドリルと、声をかけ合うチームづくりを大切にしています。' },
+    'c7': { uid: 'c7', name: '小川 葵', role: 'coach', photo: personArt('#FFE4E6', '#F4CDB0', '#3A2416', '#E11D48', true), skills: ['戦術・試合運び', 'シュート・打撃'], ages: ['中学生', '高校生'], levels: ['大会で勝つことをめざす'], years: 7, clubIds: [], sports: ['バスケットボール'], areaLabel: '豊島区', lat: 35.726, lon: 139.716, days: [6, 3], license: '元WJBLプレーヤー', verified: 'approved', training: true, ratingAvg: 4.9, ratingCount: 54, lessonCount: 54, rate: 7000, bio: 'ポイントガード出身。パスとゲームの組み立て方を、中高生にもわかる言葉で教えます。' },
+    'c8': { uid: 'c8', name: '森田 健', role: 'coach', photo: personArt('#E2E8F0', '#DDAF86', '#3F3F46', '#0F2A4A'), skills: ['体力づくり', 'ケガ予防・コンディショニング'], ages: ['中学生'], levels: ['楽しむ・初心者中心', '大会で勝つことをめざす'], years: 10, clubIds: [], sports: ['バスケットボール'], areaLabel: '渋谷区', lat: 35.664, lon: 139.698, days: [0], license: '中学校教諭（保健体育）', verified: 'approved', training: true, teacher: true, ratingAvg: 4.6, ratingCount: 18, lessonCount: 18, rate: 5000, bio: '現職の教員です（兼職兼業の許可あり）。体づくりとケガの予防を中心に指導します。' },
     'c5': { uid: 'c5', name: '高橋 翔', role: 'coach', clubIds: [], sports: ['バスケットボール'], areaLabel: '練馬区', lat: 35.76, lon: 139.6, days: [0, 2], license: '', verified: 'pending', training: false, ratingAvg: 4.2, ratingCount: 12, lessonCount: 12, bio: '大学生。体力づくりが得意。' },
     'club-suginami-admin': { uid: 'club-suginami-admin', name: '森 由紀', role: 'admin', clubIds: [] },
     'club-nerima-admin': { uid: 'club-nerima-admin', name: '石井 亮', role: 'admin', clubIds: [] },
   }
   const club: Club = {
     id: clubId, name: '中野区 地域バスケットボールクラブ', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: 35.7074, lon: 139.6638,
-    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, inviteCode: 'NAKANO', coachCode: 'COACH1', schoolCode: 'SCHOOL', schoolUids: ['demo-school'],
+    venues: [{ name: '江原小学校 体育館', indoor: true }, { name: '富士見グラウンド', indoor: false }], fee: 3000, photo: courtArt('#0F2A4A', '#2563EB'), inviteCode: 'NAKANO', coachCode: 'COACH1', schoolCode: 'SCHOOL', schoolUids: ['demo-school'],
     ownerUid: 'demo-admin', adminUids: ['demo-admin'], coachUids: ['demo-coach'], memberUids: ['demo-admin', 'demo-member', 'demo-coach', 'demo-school'],
   }
   const names = ['加藤 結衣', '加藤 陸', '田中 陽向', '吉田 蓮', '山口 葵', '松本 湊', '井上 凛', '木村 悠真', '林 心春', '清水 大和', '森 結菜', '池田 颯']
@@ -97,7 +113,7 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 9, auth: null, users,
+    v: 10, auth: null, users,
     clubs: {
       [clubId]: club,
       // 他地域のクラブ（募集・依頼のデモ用）
@@ -109,9 +125,9 @@ function seed(): DB {
     fees: { [clubId]: fees }, inc: { [clubId]: [{ id: 'i1', date: iso(addDays(T, -20)), type: 'ヒヤリハット', who: '松本 湊', desc: '着地時に足首をひねりかけた。アイシングし練習は見学。', action: '保護者へ連絡済み' }] },
     contracts, msgs, notices,
     posts: [
-      { id: 'post1', clubId, clubName: club.name, ownerUid: 'demo-admin', ownerName: '田中 恵', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: club.lat, lon: club.lon, title: '土曜午前の練習を担当できる方', days: [6], start: '09:00', fee: 6000, note: '中学生12人。基礎練習と試合形式の指導をお願いします。', skills: ['基礎・ドリル', '戦術・試合運び'], ages: ['中学生'], level: '楽しむ・初心者中心', status: 'open', at: now - 2 * 864e5 },
-      { id: 'post2', clubId: 'club-suginami', clubName: '杉並区 地域バスケットボールクラブ', ownerUid: 'club-suginami-admin', ownerName: '森 由紀', sport: 'バスケットボール', areaLabel: '東京都杉並区', lat: 35.6995, lon: 139.6364, title: '日曜午後の指導者（月2回〜）', days: [0], start: '13:00', fee: 7000, note: '小学5年〜中学2年。初心者が多いクラブです。', skills: ['初心者の指導', '基礎・ドリル'], ages: ['小学生', '中学生'], level: '楽しむ・初心者中心', status: 'open', at: now - 864e5 },
-      { id: 'post3', clubId: 'club-nerima', clubName: '練馬区 地域バスケットボールクラブ', ownerUid: 'club-nerima-admin', ownerName: '石井 亮', sport: 'バスケットボール', areaLabel: '東京都練馬区', lat: 35.7356, lon: 139.6517, title: '水曜夕方の体力づくり担当', days: [3], start: '17:00', fee: 5000, note: '平日の短時間（90分）です。', skills: ['体力づくり', 'ケガ予防・コンディショニング'], ages: ['中学生'], status: 'open', at: now - 5 * 864e5 },
+      { id: 'post1', photo: courtArt('#0F2A4A', '#2563EB'), clubId, clubName: club.name, ownerUid: 'demo-admin', ownerName: '田中 恵', sport: 'バスケットボール', areaLabel: '東京都中野区', lat: club.lat, lon: club.lon, title: '土曜午前の練習を担当できる方', days: [6], start: '09:00', fee: 6000, note: '中学生12人。基礎練習と試合形式の指導をお願いします。', skills: ['基礎・ドリル', '戦術・試合運び'], ages: ['中学生'], level: '楽しむ・初心者中心', status: 'open', at: now - 2 * 864e5 },
+      { id: 'post2', photo: courtArt('#065F46', '#10B981'), clubId: 'club-suginami', clubName: '杉並区 地域バスケットボールクラブ', ownerUid: 'club-suginami-admin', ownerName: '森 由紀', sport: 'バスケットボール', areaLabel: '東京都杉並区', lat: 35.6995, lon: 139.6364, title: '日曜午後の指導者（月2回〜）', days: [0], start: '13:00', fee: 7000, note: '小学5年〜中学2年。初心者が多いクラブです。', skills: ['初心者の指導', '基礎・ドリル'], ages: ['小学生', '中学生'], level: '楽しむ・初心者中心', status: 'open', at: now - 864e5 },
+      { id: 'post3', photo: courtArt('#7C2D12', '#F97316'), clubId: 'club-nerima', clubName: '練馬区 地域バスケットボールクラブ', ownerUid: 'club-nerima-admin', ownerName: '石井 亮', sport: 'バスケットボール', areaLabel: '東京都練馬区', lat: 35.7356, lon: 139.6517, title: '水曜夕方の体力づくり担当', days: [3], start: '17:00', fee: 5000, note: '平日の短時間（90分）です。', skills: ['体力づくり', 'ケガ予防・コンディショニング'], ages: ['中学生'], status: 'open', at: now - 5 * 864e5 },
     ],
     verify: { c5: { uid: 'c5', name: '高橋 翔', docType: '運転免許証', image: '', at: now - 3600e3 } },
     payments: [], reviews: [],
@@ -120,7 +136,7 @@ function seed(): DB {
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 9) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 10) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()

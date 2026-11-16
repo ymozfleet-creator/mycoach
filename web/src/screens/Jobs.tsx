@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays, Clock, MapPin, Megaphone, Wallet } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { Badge, Button, Card, Empty, Field, inputCls, PageHeader, Ring, Sheet, Skeleton, cx, stagger } from '../components/ui'
+import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Ring, Sheet, Skeleton, cx, stagger } from '../components/ui'
 import { coachReady } from '../components/CoachSetup'
 import type { Post } from '../lib/types'
 import { DOW, matchFit, relTime, yen } from '../lib/util'
@@ -51,6 +51,7 @@ export function JobList() {
       <div className="mt-3 space-y-2">
         {posts === null ? [0, 1].map(i => <Skeleton key={i} className="h-28" />) : !rows.length ? <Empty icon={<Megaphone />} title="いま募集はありません" text="新しい募集が出るとここに表示されます" /> : rows.map(({ p, m }, i) => (
           <Card key={p.id} onClick={() => open(p)} style={stagger(i)} className="flex animate-up gap-3">
+            <Avatar name={p.clubName} size={44} photo={p.photo} />
             <div className="min-w-0 flex-1">
               <div className="text-[12px] font-bold text-ink-2">{p.clubName}</div>
               <div className="mt-0.5 text-[16px] font-black leading-snug">{p.title}</div>

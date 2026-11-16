@@ -4,6 +4,7 @@ import { Bell, Building2, ChevronRight, ClipboardList, CreditCard, GraduationCap
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Field, inputCls, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { InviteCard } from './Players'
+import { PhotoPicker } from '../components/PhotoPicker'
 import { DOW, uid6 } from '../lib/util'
 
 function Item({ icon, label, onClick, badge }: { icon: React.ReactNode; label: string; onClick: () => void; badge?: React.ReactNode }) {
@@ -23,7 +24,7 @@ export default function More() {
   const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join' | 'invite'>('')
   const [code, setCode] = useState('')
   const [joinErr, setJoinErr] = useState('')
-  const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true })
+  const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true, photo: club?.photo || '' })
   const [kid, setKid] = useState({ name: '', grade: '中学1年' })
   const [name, setName] = useState(profile?.name || '')
   if (!profile || !authUser || (!club && !coachMode)) return null
@@ -33,7 +34,7 @@ export default function More() {
     <>
       <PageHeader title={isAdmin ? 'その他' : 'マイページ'} />
       <Card className="flex items-center gap-4">
-        <Avatar name={profile.name} size={56} />
+        <Avatar name={profile.name} size={56} photo={profile.photo} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[18px] font-black">{profile.name}</div>
           <div className="text-[13px] text-ink-2">{roleLabel}{club ? `・${club.name}` : '（クラブ未所属）'}</div>
@@ -108,8 +109,12 @@ export default function More() {
       {club && (
       <Sheet open={sheet === 'club'} onClose={() => setSheet('')} title="クラブの設定" footer={<Button block size="lg" onClick={async () => {
         const venues = clubForm.venue.trim() ? [...club.venues, { name: clubForm.venue.trim(), indoor: clubForm.indoor }] : club.venues
-        await be.updateClub(club.id, { name: clubForm.name.trim() || club.name, fee: Number(clubForm.fee), venues }); setSheet(''); toast('保存しました')
+        await be.updateClub(club.id, { name: (clubForm.name.trim() || club.name).slice(0, 60), fee: Number(clubForm.fee), venues, photo: clubForm.photo })
+        // 募集中の募集にもクラブの写真を反映する
+        if (clubForm.photo !== (club.photo || '')) { let done = false; const un = be.watchClubPosts(club.id, list => { if (done) return; done = true; list.filter(p => p.status === 'open').forEach(p => be.savePost({ ...p, photo: clubForm.photo }).catch(() => {})); setTimeout(() => un(), 0) }) }
+        setSheet(''); toast('保存しました')
       }}>保存する</Button>}>
+        <PhotoPicker label="クラブの写真" value={clubForm.photo} onChange={v => setClubForm({ ...clubForm, photo: v })} hint="指導者がクラブを選ぶときに表示されます。ロゴ、活動場所、用具などの写真がおすすめです。子どもの顔が写った写真は使わないでください。" />
         <Field label="クラブ名"><input className={inputCls} value={clubForm.name} onChange={e => setClubForm({ ...clubForm, name: e.target.value })} /></Field>
         <Field label="月会費（円）" hint="変更は次の請求から反映されます"><input type="number" className={inputCls} value={clubForm.fee} onChange={e => setClubForm({ ...clubForm, fee: Number(e.target.value) })} /></Field>
         <Field label="活動場所">{club.venues.map(v => <div key={v.name} className="mb-1 text-[14px]">・{v.name}（{v.indoor ? '屋内' : '屋外'}）</div>)}</Field>

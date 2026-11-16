@@ -2,25 +2,9 @@ import { useRef, useState } from 'react'
 import { Camera, IdCard, Lock, ShieldCheck } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Badge, Button, Card, Field, inputCls, PageHeader, cx } from '../components/ui'
+import { shrinkImage } from '../lib/image'
 
 const TYPES = ['運転免許証', 'マイナンバーカード（表面のみ）', 'パスポート', '在留カード', '学生証（写真付き）']
-
-/** 画像を最大1200pxのJPEGに縮小（容量を抑え、撮影情報などのメタデータも取り除く） */
-async function shrink(file: File): Promise<string> {
-  if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(file.type)) throw new Error('写真（JPEG・PNG）を選んでください')
-  if (file.size > 15 * 1024 * 1024) throw new Error('写真の容量が大きすぎます（15MBまで）')
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((ok, ng) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ng(new Error('写真を読み込めませんでした')); i.src = url })
-    const k = Math.min(1, 1200 / Math.max(img.width, img.height))
-    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
-    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
-    let q = 0.75, out = c.toDataURL('image/jpeg', q)
-    while (out.length > 700_000 && q > 0.3) { q -= 0.1; out = c.toDataURL('image/jpeg', q) }
-    if (out.length > 700_000) throw new Error('写真の容量を小さくできませんでした。明るい場所で撮り直してください')
-    return out
-  } finally { URL.revokeObjectURL(url) }
-}
 
 export default function Verify() {
   const { be, profile, authUser, toast } = useApp()
@@ -31,7 +15,7 @@ export default function Verify() {
   const [err, setErr] = useState('')
   const input = useRef<HTMLInputElement>(null)
   if (!profile || !authUser) return null
-  const pick = async (f?: File) => { if (!f) return; setErr(''); try { setImg(await shrink(f)) } catch (e) { setErr((e as Error).message) } }
+  const pick = async (f?: File) => { if (!f) return; setErr(''); try { setImg(await shrinkImage(f, { max: 1200, maxLen: 700_000 })) } catch (e) { setErr((e as Error).message) } }
   const submit = async () => {
     setBusy(true)
     try { await be.submitVerification({ uid: authUser.uid, name: profile.name, docType: type, image: img, at: Date.now() }); toast('提出しました。確認が終わるとお知らせします'); history.back() }

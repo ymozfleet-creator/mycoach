@@ -26,6 +26,7 @@ export interface Profile {
   ages?: string[] // 指導したい年代（AGES）
   levels?: string[] // 指導スタイル（LEVELS）
   years?: number // 指導歴（年）
+  photo?: string // プロフィール写真（縮小したJPEGのdata URL。位置情報などは含まない）
   trainingAt?: number
   verifyNote?: string // 事務局からの差し戻し理由
   isAdmin?: boolean // 運営事務局（審査担当）。Firestoreのルール上、本人は変更できない
@@ -52,6 +53,7 @@ export interface Post {
   skills?: string[] // 求める指導内容
   ages?: string[] // 対象の年代
   level?: string // クラブの方針（LEVELS のどれか）
+  photo?: string // クラブの写真（募集を出した時点のもの）
   status: 'open' | 'closed'
   at: number
 }
@@ -87,6 +89,7 @@ export interface Club {
   adminUids: string[]
   coachUids: string[]
   memberUids: string[]
+  photo?: string // クラブの写真（ロゴ・活動場所。子どもの顔は不可）
 }
 
 export interface Player {

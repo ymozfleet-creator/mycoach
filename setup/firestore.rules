@@ -12,6 +12,11 @@ service cloud.firestore {
     function safeId(x) { return x is string && x.matches('^[A-Za-z0-9_-]{1,80}$'); }
     // 画面内リンクは「#英数字/_-」だけ
     function safeLink(x) { return x == null || (x is string && x.matches('^(#[A-Za-z0-9_/-]{0,80})?$')); }
+    // 写真：JPEGのdata URLだけ・容量の上限つき（それ以外の形式や巨大なデータは保存できない）
+    function photoOk(d, max) {
+      return !('photo' in d) || d.photo == ''
+        || (d.photo is string && d.photo.size() <= max && d.photo.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'));
+    }
     function isAdmin() {
       return authed() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
@@ -35,7 +40,8 @@ service cloud.firestore {
         && request.resource.data.get('training', false) == false
         && !('email' in request.resource.data) // メールアドレスは users_private に置く（公開プロフィールに載せない）
         && request.resource.data.get('name', '').size() <= 40
-        && request.resource.data.get('bio', '').size() <= 1000;
+        && request.resource.data.get('bio', '').size() <= 1000
+        && photoOk(request.resource.data, 100000);
       // 入力値の上限（大きなデータの書き込みや表示崩れを防ぐ）
       function profileSizeOk() {
         return request.resource.data.get('name', '').size() <= 40
@@ -43,7 +49,8 @@ service cloud.firestore {
           && request.resource.data.get('license', '').size() <= 100
           && request.resource.data.get('skills', []).size() <= 10
           && request.resource.data.get('ages', []).size() <= 5
-          && request.resource.data.get('levels', []).size() <= 5;
+          && request.resource.data.get('levels', []).size() <= 5
+          && photoOk(request.resource.data, 100000);
       }
       allow update: if isAdmin()
         || (authed() && request.auth.uid == uid
@@ -388,7 +395,7 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       // 運営は自由に更新。それ以外は「正しい招待コードで、自分を会員に加える」だけ許可。
       // 指導者（coachUids）への追加は、指導者用の招待コードの場合のみ
-      allow update: if isClubAdmin(c)
+      allow update: if (isClubAdmin(c) && photoOk(request.resource.data, 200000))
         || (authed()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'coachUids', 'schoolUids', 'joinCode'])
             && exists(/databases/$(database)/documents/invites/$(request.resource.data.joinCode))
@@ -461,7 +468,8 @@ service cloud.firestore {
           && d.days is list && d.days.size() <= 7
           && d.get('skills', []).size() <= 10
           && d.get('ages', []).size() <= 5
-          && d.get('level', '').size() <= 30;
+          && d.get('level', '').size() <= 30
+          && photoOk(d, 200000);
       }
       allow read: if authed();
       allow create: if isClubAdmin(request.resource.data.clubId)
