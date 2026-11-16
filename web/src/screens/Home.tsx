@@ -4,7 +4,7 @@ import { AlertTriangle, CalendarPlus, ChevronRight, ClipboardList, HeartPulse, M
 import { useApp } from '../lib/store'
 import { useSub } from '../lib/useSub'
 import type { Consult, FacilityRequest, FeeRequest, StaffCheck } from '../lib/types'
-import { AttButtons, attCounts, EventCard, useEventWbgt } from '../components/parts'
+import { AbsenceReason, AttButtons, attCounts, EventCard, useAttNotes, useEventWbgt } from '../components/parts'
 import { Avatar, Badge, Card, CountUp, Empty, Ring, Section, cx, stagger } from '../components/ui'
 import { GuidelineCard } from '../components/Guideline'
 import { CoachSetup } from '../components/CoachSetup'
@@ -55,7 +55,7 @@ function Alert({ icon, tone, title, text, onClick, i = 0 }: { icon: React.ReactN
 
 /* ---------- 保護者・生徒 ---------- */
 function MemberHome() {
-  const { be, club, myPlayers, fees, announcements, conditions } = useApp()
+  const { be, club, myPlayers, fees, announcements, conditions, events } = useApp()
   const nav = useNavigate()
   const up = useUpcoming()
   const next = up.find(e => e.status !== 'canceled') || up[0]
@@ -64,6 +64,7 @@ function MemberHome() {
   const [cond, setCond] = useState(false)
   const [bulk, setBulk] = useState(false)
   const unanswered = useUnanswered()
+  const notes = useAttNotes(next?.id, true)
   const t = iso(today())
   const needCond = myPlayers.some(p => !conditions.some(c => c.playerId === p.id && c.date === t))
   if (!club) return null
@@ -85,7 +86,7 @@ function MemberHome() {
                 {myPlayers.map(p => (
                   <div key={p.id}>
                     <div className="mb-1.5 text-[13px] font-bold">{p.name}さんの出欠</div>
-                    <AttButtons value={next.att[p.id]} onChange={a => be.setAttendance(club.id, next.id, p.id, a)} />
+                    <AttButtons value={next.att[p.id]} onChange={a => be.setAttendance(club.id, next.id, p.id, a)} />{next.att[p.id] === 'no' && <AbsenceReason eventId={next.id} playerId={p.id} notes={notes} />}
                   </div>
                 ))}
               </div>
@@ -100,6 +101,25 @@ function MemberHome() {
           <div className="flex-1"><div className="font-bold">今日の体調・練習を記録</div><div className="text-[12px] opacity-85">{needCond ? '10秒で終わります。けがの予防に役立ちます' : '今日の記録は済んでいます'}</div></div>
           <ChevronRight size={20} />
         </Card>
+      )}
+
+      {myPlayers.length > 0 && (
+        <Section title="お子さまのようす">
+          <Card className="divide-y divide-line !py-0">
+            {myPlayers.map(p => {
+              const st = loadStatus(conditions, p.id)
+              const done = events.filter(e => e.status !== 'canceled' && e.date < t && e.date >= iso(addDays(today(), -28)))
+              const went = done.filter(e => e.att[p.id] === 'yes').length
+              return (
+                <button key={p.id} onClick={() => nav('/player/' + p.id)} className="flex w-full items-center gap-3 py-3 text-left active:opacity-60">
+                  <Avatar name={p.name} size={40} />
+                  <div className="min-w-0 flex-1"><div className="text-[15px] font-bold">{p.name}</div><div className="truncate text-[12px] text-ink-2">4週間で{done.length}回中{went}回参加・{st.reason}</div></div>
+                  <Badge tone={st.tone === 'none' ? 'none' : st.tone}>{st.label}</Badge><ChevronRight size={18} className="text-ink-3" />
+                </button>
+              )
+            })}
+          </Card>
+        </Section>
       )}
 
       {up.length > 1 && (
@@ -207,7 +227,6 @@ function AdminHome() {
   if (feeReq) todo.push(<Alert i={todo.length} key="fr" icon={<Wallet size={20} />} tone="warn" title={`会費の減免の申請 ${feeReq}件`} text="内容を確認して承認・見送りを選びます" onClick={() => nav('/fee-requests')} />)
   if (consult) todo.push(<Alert i={todo.length} key="cs" icon={<ShieldCheck size={20} />} tone="danger" title={`相談窓口に未対応の相談 ${consult}件`} text="こどもの安全にかかわる可能性があります" onClick={() => nav('/safeguard')} />)
   if (dbsDue) todo.push(<Alert i={todo.length} key="db" icon={<ShieldCheck size={20} />} tone="warn" title={`犯罪事実確認の記録がない・期限が近い指導者 ${dbsDue}人`} text="こども性暴力防止法：2026年12月25日施行" onClick={() => nav('/safeguard')} />)
-  if (replies.length) todo.push(<Alert i={todo.length} key="rp" icon={<Handshake size={20} />} tone="info" title={`指導者の返事待ち ${replies.length}件`} text={replies.map(r => r.coachName).join('、')} onClick={() => nav('/match?tab=list')} />)
   const thisMonth = events.filter(e => e.status !== 'canceled' && e.date.startsWith(iso(today()).slice(0, 7)) && e.date < iso(today()))
   return (
     <>
@@ -275,7 +294,7 @@ function AdminHome() {
 /* ---------- 学校・教育委員会 ---------- */
 function SchoolHome() {
   const facReq = (useSub<FacilityRequest>('facilityRequests') || []).filter(r => r.status === 'pending')
-  const { events, players, incidents, weather } = useApp()
+  const { events, players, incidents, weather, weatherError } = useApp()
   const nav = useNavigate()
   const t = iso(today())
   const from = iso(addDays(today(), -28))
@@ -302,7 +321,7 @@ function SchoolHome() {
         </Card>
       </div>
       <Section title="今後1週間の暑さ">
-        {!weather ? <Card className="text-[14px] text-ink-2">気象データを取得しています…</Card> : hot.length ? (
+        {weatherError ? <Card className="text-[13px] text-ink-2">いまは気象データを取得できません。時間をおいて開き直してください。</Card> : !weather ? <Card className="text-[14px] text-ink-2">気象データを取得しています…</Card> : hot.length ? (
           <div className="space-y-2">{hot.map(({ e, w }, i) => { const L = wbgtLevel(w!.max); return <Alert key={e.id} i={i} icon={<Thermometer size={20} />} tone={L.lv >= 3 ? 'danger' : 'warn'} title={`${dateLabel(e.date)} ${L.label}（${w!.max}）`} text={`${e.start}〜 ${e.venue}`} onClick={() => nav(`/event/${e.id}`)} /> })}</div>
         ) : <Card className="flex items-center gap-3 text-[14px]"><span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><ShieldCheck size={20} /></span>今後1週間、熱中症の警戒が必要な活動はありません。</Card>}
       </Section>

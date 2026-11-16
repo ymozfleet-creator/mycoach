@@ -25,7 +25,7 @@ interface DB {
   payments: Payment[]
   reviews: Review[]
 }
-const KEY = 'mcmt_demo_v12'
+const KEY = 'mcmt_demo_v13'
 export const DEMO_USERS = { admin: 'demo-admin', coach: 'demo-coach', member: 'demo-member', school: 'demo-school', free: 'demo-free' } as const
 
 function rng(seed: number) { let s = seed; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646 } }
@@ -115,7 +115,7 @@ function seed(): DB {
     { id: 'n2', to: 'demo-coach', text: '田中 陽向さんの練習負荷が急に増えています', type: 'announce', read: false, at: now - 7200e3 },
   ]
   return {
-    v: 12, auth: null, users,
+    v: 13, auth: null, users,
     clubs: {
       [clubId]: club,
       // 他地域のクラブ（募集・依頼のデモ用）
@@ -132,7 +132,10 @@ function seed(): DB {
       { id: 'post3', photo: courtArt('#7C2D12', '#F97316'), clubId: 'club-nerima', clubName: '練馬区 地域バスケットボールクラブ', ownerUid: 'club-nerima-admin', ownerName: '石井 亮', sport: 'バスケットボール', areaLabel: '東京都練馬区', lat: 35.7356, lon: 139.6517, title: '水曜夕方の体力づくり担当', days: [3], start: '17:00', fee: 5000, note: '平日の短時間（90分）です。', skills: ['体力づくり', 'ケガ予防・コンディショニング'], ages: ['中学生'], status: 'open', at: now - 5 * 864e5 },
     ],
     verify: { c5: { uid: 'c5', name: '高橋 翔', docType: '運転免許証', image: '', at: now - 3600e3 } },
-    payments: [], reviews: [],
+    payments: [
+      { id: 'pay1', contractId: 'k2', coach: 'demo-coach', player: 'demo-admin', clubId, amount: 6600, base: 6000, net: 4800, ts: now - 21 * 864e5, released: true },
+      { id: 'pay2', contractId: 'k2', coach: 'demo-coach', player: 'demo-admin', clubId, amount: 6600, base: 6000, net: 4800, ts: now - 2 * 864e5, released: false, releaseAt: now + 5 * 864e5 },
+    ] as any, reviews: [],
     subs: {
       [clubId + '/feeRequests']: [{ id: 'fr1', playerId: 'p2', playerName: '加藤 陸', by: 'demo-member', byName: '加藤 由美', discount: 50, reason: 'きょうだい2人が在籍しているため', status: 'pending', at: now - 864e5 }],
       [clubId + '/facilityRequests']: [{ id: 'fa1', venue: '江原小学校 体育館', date: iso(addDays(today(), 12)), start: '09:00', minutes: 150, purpose: '通常練習（中学生12人）', by: 'demo-admin', byName: '田中 恵', status: 'pending', at: now - 2 * 864e5 }],
@@ -145,7 +148,7 @@ function seed(): DB {
 
 let DB_: DB
 function load(): DB {
-  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 12) return d } } catch { /* noop */ }
+  try { const s = localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d.v === 13) return d } } catch { /* noop */ }
   return seed()
 }
 const listeners = new Set<() => void>()
@@ -208,7 +211,7 @@ export const demoBackend: Backend = {
   watchAnnouncements: (c, cb) => watch(() => cb(clone((DB_.ann[c] || []).sort((a, b) => b.at - a.at)))),
   postAnnouncement: async (c, a) => { await wait(); (DB_.ann[c] ||= []).push({ ...a, id: uid6() }); save() },
 
-  watchConditions: (c, from, by, cb) => watch(() => cb(clone((DB_.conds[c] || []).filter(x => x.date >= from && (!by || x.by === by))))),
+  watchConditions: (c, from, by, cb) => watch(() => cb(clone((DB_.conds[c] || []).filter(x => x.date >= from && (!by || x.by === by || ((DB_.players[c] || []).find(p => p.id === x.playerId)?.guardianUids || []).includes(by)))))),
   addCondition: async (c, x) => { await wait(); (DB_.conds[c] ||= []).push({ ...x, id: uid6() }); save() },
 
   watchFees: (c, month, uid, isAdmin, cb) => watch(() => cb(clone((DB_.fees[c] || []).filter(f => f.month === month && (isAdmin || f.guardianUids.includes(uid)))))),
@@ -239,6 +242,7 @@ export const demoBackend: Backend = {
     save()
   },
 
+  watchClubPayments: (c, cb) => watch(() => cb(clone(DB_.payments.filter(p => (p as any).clubId === c || DB_.contracts.some(k => k.id === p.contractId && (k as any).clubId === c)).sort((a, b) => b.ts - a.ts)))),
   watchPayments: (uid, cb) => watch(() => cb(clone(DB_.payments.filter(p => p.coach === uid || p.player === uid).sort((a, b) => b.ts - a.ts)))),
   payContract: async contractId => {
     await wait(); const k = DB_.contracts.find(x => x.id === contractId); if (!k) return null
@@ -259,6 +263,8 @@ export const demoBackend: Backend = {
   watchSub: (c, name, cb, onlyBy) => watch(() => cb(clone((DB_.subs[c + '/' + name] || []).filter(x => !onlyBy || x.by === onlyBy).sort((a, b) => (b.at || 0) - (a.at || 0))))),
   addSub: async (c, name, data, id) => { await wait(); const k = c + '/' + name; const arr = (DB_.subs[k] ||= []); const nid = id || uid6(); const i = arr.findIndex(x => x.id === nid); if (i >= 0) arr[i] = { ...data, id: nid }; else arr.push({ ...data, id: nid }); save() },
   updateSub: async (c, name, id, patch) => { await wait(); const x = (DB_.subs[c + '/' + name] || []).find(y => y.id === id); if (x) Object.assign(x, patch); save() },
+  setAttNote: async (c, eid, pid, note) => { const k = c + '/attNotes'; const arr = (DB_.subs[k] ||= []); const id = `${eid}_${pid}`; const i = arr.findIndex(x => x.id === id); const v = { id, eventId: eid, playerId: pid, note: note.slice(0, 60), by: DB_.auth || '', at: Date.now() }; if (i >= 0) arr[i] = v; else arr.push(v); save() },
+  watchAttNotes: (c, eid, cb, onlyBy) => watch(() => cb(clone((DB_.subs[c + '/attNotes'] || []).filter(x => x.eventId === eid && (!onlyBy || x.by === onlyBy))))),
   addReport: async r => { await wait(); DB_.reports.push({ ...r, id: uid6() }); save() },
   watchReports: cb => watch(() => cb(clone(DB_.reports.filter(r => r.status === 'new').sort((a, b) => b.at - a.at)))),
   resolveReport: async id => { const r = DB_.reports.find(x => x.id === id); if (r) { r.status = 'done'; save() } },

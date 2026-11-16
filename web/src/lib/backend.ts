@@ -1,4 +1,4 @@
-import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Report, Review, VerifyDoc, ClubSub } from './types'
+import type { Announcement, Att, Club, ClubEvent, Condition, Contract, Fee, Incident, Message, Notice, Payment, Player, Post, Profile, Report, Review, VerifyDoc, ClubSub, AttNote } from './types'
 
 export type Unsub = () => void
 export type Cb<T> = (v: T) => void
@@ -59,6 +59,7 @@ export interface Backend {
   decideVerification(uid: string, ok: boolean, note: string, licenseOk?: boolean): Promise<void>
 
   watchPayments(uid: string, cb: Cb<Payment[]>): Unsub
+  watchClubPayments(clubId: string, cb: Cb<Payment[]>): Unsub
   /** 謝金のカード払い（デモでは即時に支払い済みにする） */
   payContract(contractId: string, returnUrl: string): Promise<string | null>
   /** 指導者の受取口座（Stripe）の設定ページURL */
@@ -72,6 +73,9 @@ export interface Backend {
   addSub(clubId: string, name: ClubSub, data: object, id?: string): Promise<void>
   updateSub(clubId: string, name: ClubSub, id: string, patch: object): Promise<void>
 
+  /** 欠席の理由：保護者が入力、運営・指導者が閲覧（onlyBy は保護者自身の分） */
+  setAttNote(clubId: string, eventId: string, playerId: string, note: string): Promise<void>
+  watchAttNotes(clubId: string, eventId: string, cb: Cb<AttNote[]>, onlyBy?: string): Unsub
   addReport(r: Omit<Report, 'id'>): Promise<void>
   watchReports(cb: Cb<Report[]>): Unsub
   resolveReport(id: string): Promise<void>

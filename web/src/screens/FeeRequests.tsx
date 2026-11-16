@@ -26,7 +26,7 @@ function MemberView() {
     setBusy(true)
     try {
       await be.addSub(club.id, 'feeRequests', { playerId: kid.id, playerName: kid.name, by: authUser.uid, byName: profile.name, discount: f.discount, reason: f.reason.trim().slice(0, 500), status: 'pending', at: Date.now() }, 'r' + uid6())
-      for (const u of club.adminUids) await be.notify(u, `会費の減免の申請が届きました（${kid.name}さん）`, 'fee').catch(() => {})
+      for (const u of club.adminUids) await be.notify(u, `会費の減免の申請が届きました（${kid.name}さん）`, 'announce').catch(() => {})
       setF(x => ({ ...x, reason: '' })); toast('申請しました。運営からの返事をお待ちください')
     } catch { toast('申請できませんでした') }
     setBusy(false)
@@ -66,7 +66,7 @@ function AdminView() {
       await be.updateSub(club.id, 'feeRequests', cur.id, { status: ok ? 'approved' : 'declined', note: note.trim().slice(0, 500) })
       const p = players.find(x => x.id === cur.playerId)
       if (ok && p) await be.savePlayer(club.id, { ...p, discount: cur.discount })
-      await be.notify(cur.by, `会費の減免の申請（${cur.playerName}さん）：${ok ? '承認されました。来月分の会費から反映されます' : '今回は見送りになりました'}`, 'fee').catch(() => {})
+      await be.notify(cur.by, `会費の減免の申請（${cur.playerName}さん）：${ok ? '承認されました。来月分の会費から反映されます' : '今回は見送りになりました'}`, 'announce').catch(() => {})
       toast(ok ? '承認し、会費に反映しました' : '見送りにしました'); setCur(null); setNote('')
     } catch { toast('処理できませんでした') }
     setBusy(false)

@@ -136,7 +136,9 @@ service cloud.firestore {
     // 契約：当事者と管理者のみ
     match /contracts/{id} {
       allow read: if authed() && (request.auth.uid == resource.data.coach
-                    || request.auth.uid == resource.data.player || isAdmin());
+                    || request.auth.uid == resource.data.player || isAdmin()
+                    // クラブの運営は、自分のクラブが支払った謝金の記録を読める
+                    || (resource.data.get('clubId', '') != '' && isClubAdmin(resource.data.clubId)));
       // MyCOACH-MyTEAM：クラブと指導者の依頼・応募（clubId を持つ契約）
       function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
       function clubContractCreateOk() {
@@ -439,6 +441,17 @@ service cloud.firestore {
           && request.resource.data.att[request.resource.data.attBy.p] in ['yes', 'no', 'maybe']
           && request.auth.uid in get(/databases/$(database)/documents/clubs/$(c)/players/$(request.resource.data.attBy.p)).data.guardianUids);
       }
+      // 欠席の理由：他の保護者には見せない（予定とは別に保存）。運営・指導者と、入力した保護者だけが読める
+      match /attNotes/{n} {
+        allow read: if isStaff(c) || (isMember(c) && resource.data.by == request.auth.uid);
+        allow create, update: if isMember(c)
+          && n == request.resource.data.eventId + '_' + request.resource.data.playerId
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.note is string && request.resource.data.note.size() <= 60
+          && request.resource.data.keys().hasOnly(['eventId', 'playerId', 'note', 'by', 'at'])
+          && (isStaff(c) || request.auth.uid in get(/databases/$(database)/documents/clubs/$(c)/players/$(request.resource.data.playerId)).data.guardianUids);
+        allow delete: if isClubAdmin(c);
+      }
       match /announcements/{a} {
         allow read: if isMember(c);
         allow create: if isStaff(c) && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
@@ -446,9 +459,12 @@ service cloud.firestore {
       }
       // 体調・練習記録：運営・指導者と、記録した本人だけが読める
       match /conditions/{x} {
-        allow read: if isStaff(c) || (isMember(c) && resource.data.by == request.auth.uid);
+        // 保護者は自分が記録したものと、自分の子どもの記録（guardianUids に自分が入っているもの）を読める
+        allow read: if isStaff(c) || (isMember(c) && (resource.data.by == request.auth.uid || request.auth.uid in resource.data.get('guardianUids', [])));
         allow create: if isMember(c) && request.resource.data.by == request.auth.uid
           && (isStaff(c) || request.auth.uid in get(/databases/$(database)/documents/clubs/$(c)/players/$(request.resource.data.playerId)).data.guardianUids)
+          // 読める保護者の一覧は、選手に登録されている保護者と同じでなければならない（他人に見せる細工を防ぐ）
+          && request.resource.data.get('guardianUids', []) == get(/databases/$(database)/documents/clubs/$(c)/players/$(request.resource.data.playerId)).data.get('guardianUids', [])
           && request.resource.data.rpe is number && request.resource.data.rpe >= 1 && request.resource.data.rpe <= 10
           && request.resource.data.minutes is number && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 600
           && request.resource.data.sleep is number && request.resource.data.sleep >= 0 && request.resource.data.sleep <= 24;

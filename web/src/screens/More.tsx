@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Building, Building2, FileText, HandCoins, LifeBuoy, ChevronRight, ClipboardList, CreditCard, GraduationCap, Handshake, IdCard, LogOut, Megaphone, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserCheck, UserRound, Users } from 'lucide-react'
+import { Wallet, Bell, Building, Building2, FileText, HandCoins, LifeBuoy, ChevronRight, ClipboardList, CreditCard, GraduationCap, Handshake, IdCard, LogOut, Megaphone, Plus, Search, ShieldCheck, Smartphone, Sparkles, UserCheck, UserRound, Users } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Field, inputCls, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { InviteCard } from './Players'
@@ -44,30 +44,42 @@ export default function More() {
       </Card>
 
 
-      <Section title="メニュー">
-        <Card className="divide-y divide-line !py-0">
+      <MenuGroup title="お知らせ">
           <Item icon={<Bell size={18} />} label="お知らせ・通知" onClick={() => nav('/news')} badge={unread ? <Badge tone="danger">{unread}</Badge> : undefined} />
-          {isOps && <Item icon={<UserCheck size={18} />} label="運営事務局：本人確認の審査" onClick={() => nav('/ops')} />}
+      </MenuGroup>
+      <MenuGroup title="毎日の運営">
+          {isAdmin && <Item icon={<Users size={18} />} label="会員・指導者・学校を招待する" onClick={() => setSheet('invite')} />}
+          {isAdmin && <Item icon={<HandCoins size={18} />} label="会費の減免の申請" onClick={() => nav('/fee-requests')} />}
+          {(isAdmin || isSchool) && <Item icon={<Building size={18} />} label={isSchool ? '施設の利用申請の確認' : '施設（学校の体育館など）の利用申請'} onClick={() => nav('/facilities')} />}
+          {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
+          {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
+      </MenuGroup>
+      <MenuGroup title="指導者を探す">
           {(isAdmin || coachMode) && <Item icon={<Handshake size={18} />} label={isAdmin ? '指導者マッチング（スワイプ・やりとり）' : 'マッチング（募集を探す・やりとり）'} onClick={() => nav('/match')} />}
           {isAdmin && <Item icon={<Megaphone size={18} />} label="指導者の募集を出す・管理する" onClick={() => nav('/posts')} />}
-          {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
-          {(isAdmin || isSchool) && <Item icon={<ShieldCheck size={18} />} label="認定地域クラブの要件を確認する" onClick={() => nav('/report#cert')} />}
-          {isCoach && <Item icon={<Sparkles size={18} />} label="練習メニューを作る" onClick={() => nav('/menu')} />}
-          {(isAdmin || isCoach || isSchool) && <Item icon={<ShieldCheck size={18} />} label="ケガ・ヒヤリハットの記録" onClick={() => nav('/safety')} />}
+          {isAdmin && <Item icon={<Wallet size={18} />} label="指導者への謝金の支払い記録" onClick={() => nav('/earnings')} />}
+      </MenuGroup>
+      <MenuGroup title="指導者として">
           {coachMode && <Item icon={<UserRound size={18} />} label="指導者プロフィール" onClick={() => nav('/coach-profile')} />}
           {coachMode && <Item icon={<IdCard size={18} />} label="本人確認" onClick={() => nav('/verify')} badge={<Badge tone={profile.verified === 'approved' ? 'ok' : profile.verified === 'pending' ? 'warn' : 'none'}>{profile.verified === 'approved' ? '完了' : profile.verified === 'pending' ? '確認中' : '未提出'}</Badge>} />}
           {coachMode && <Item icon={<GraduationCap size={18} />} label="安全研修" onClick={() => nav('/training')} badge={<Badge tone={profile.training ? 'ok' : 'none'}>{profile.training ? '修了' : '未受講'}</Badge>} />}
           {coachMode && <Item icon={<CreditCard size={18} />} label="謝金の受取口座" onClick={() => nav('/coach-profile#payout')} badge={<Badge tone={profile.stripeChargesEnabled ? 'ok' : 'none'}>{profile.stripeChargesEnabled ? '設定済み' : '未設定'}</Badge>} />}
+          {coachMode && <Item icon={<Wallet size={18} />} label="謝金の記録（預かり中・送金済み）" onClick={() => nav('/earnings')} />}
+      </MenuGroup>
+      <MenuGroup title="ご家庭・相談">
           {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
-          {isAdmin && <Item icon={<HandCoins size={18} />} label="会費の減免の申請" onClick={() => nav('/fee-requests')} />}
-          {(isAdmin || isSchool) && <Item icon={<Building size={18} />} label={isSchool ? '施設の利用申請の確認' : '施設（学校の体育館など）の利用申請'} onClick={() => nav('/facilities')} />}
-          {isAdmin && <Item icon={<ShieldCheck size={18} />} label="こどもを守る体制（日本版DBS・相談窓口）" onClick={() => nav('/safeguard')} />}
           {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<HandCoins size={18} />} label="会費の減免を申請する" onClick={() => nav('/fee-requests')} />}
           {club && !isAdmin && !isSchool && <Item icon={<LifeBuoy size={18} />} label="相談窓口（匿名でも相談できます）" onClick={() => nav('/consult')} />}
-          {isAdmin && <Item icon={<Users size={18} />} label="会員・指導者・学校を招待する" onClick={() => setSheet('invite')} />}
+      </MenuGroup>
+      <MenuGroup title="安全・報告">
+          {isAdmin && <Item icon={<ShieldCheck size={18} />} label="こどもを守る体制（日本版DBS・相談窓口）" onClick={() => nav('/safeguard')} />}
+          {(isAdmin || isSchool) && <Item icon={<ClipboardList size={18} />} label="実績報告（自治体・学校向け）" onClick={() => nav('/report')} />}
+          {(isAdmin || isSchool) && <Item icon={<ShieldCheck size={18} />} label="認定地域クラブの要件を確認する" onClick={() => nav('/report#cert')} />}
+      </MenuGroup>
+      <MenuGroup title="設定">
           {isAdmin && <Item icon={<Building2 size={18} />} label="クラブの設定" onClick={() => setSheet('club')} />}
-        </Card>
-      </Section>
+          {isOps && <Item icon={<UserCheck size={18} />} label="運営事務局：本人確認の審査" onClick={() => nav('/ops')} />}
+      </MenuGroup>
 
       {profile.clubIds.length > 1 && (
         <Section title="クラブの切り替え">
@@ -136,5 +148,16 @@ export default function More() {
       </Sheet>
       )}
     </>
+  )
+}
+
+/** メニューのまとまり：中身が1つもない立場では表示しない */
+function MenuGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  const kids = (Array.isArray(children) ? children : [children]).filter(Boolean)
+  if (!kids.length) return null
+  return (
+    <Section title={title || 'メニュー'}>
+      <Card className="divide-y divide-line !py-0">{kids}</Card>
+    </Section>
   )
 }

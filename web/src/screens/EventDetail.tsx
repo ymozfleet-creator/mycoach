@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Ban, CalendarX, Pencil, Sparkles, Thermometer } from 'lucide-react'
+import { Ban, CalendarX, Pencil, Send, Sparkles, Thermometer } from 'lucide-react'
 import { useApp } from '../lib/store'
-import { AttButtons, attCounts, EventMeta, useEventWbgt } from '../components/parts'
+import { AbsenceReason, AttButtons, attCounts, EventMeta, useAttNotes, useEventWbgt } from '../components/parts'
 import { EventEditor } from '../components/EventEditor'
 import { Avatar, Badge, Button, Card, Empty, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { dateLabel, estWBGT, wbgtLevel } from '../lib/util'
@@ -37,10 +37,22 @@ export default function EventDetail() {
   const { be, club, events, players, myPlayers, isAdmin, isCoach, isSchool, toast } = useApp()
   const e = events.find(x => x.id === id)
   const w = useEventWbgt(e || ({ date: '', start: '0', minutes: 0, indoor: true } as any))
+  const notes = useAttNotes(id, !(isAdmin || isCoach))
   const [edit, setEdit] = useState(false)
   const [cancel, setCancel] = useState(false)
   const [busy, setBusy] = useState(false)
   if (!e || !club) return <><PageHeader title="予定" back /><Empty icon={<CalendarX />} title="この予定は見つかりません" text="削除されたか、日程が変わった可能性があります" action={<Button onClick={() => nav('/schedule')}>予定の一覧を見る</Button>} /></>
+  const remind = async () => {
+    if (!e || !club) return
+    setBusy(true)
+    const pend = players.filter(p => !e.att[p.id] || e.att[p.id] === 'maybe')
+    const noApp = pend.filter(p => !(p.guardianUids || []).length).length
+    const targets = new Set(pend.flatMap(p => p.guardianUids || []))
+    let n = 0
+    for (const u of targets) { try { await be.notify(u, `${dateLabel(e.date)}「${e.title}」の出欠を教えてください`, 'announce'); n++ } catch { /* 個別の失敗は続行 */ } }
+    setBusy(false)
+    toast((n ? `${n}人の保護者にお知らせしました。` : '') + (noApp ? `保護者がアプリ未登録の${noApp}人には届きません（会員画面の「招待」から登録してもらえます）` : ''))
+  }
   const c = attCounts(e, players)
   const canEdit = isAdmin || isCoach
   const staff = canEdit || isSchool
@@ -62,7 +74,7 @@ export default function EventDetail() {
         {e.note && <p className="mt-3 rounded-2xl bg-canvas p-3 text-[14px]">📝 {e.note}</p>}
       </Card>
 
-      {e.status !== 'canceled' && (
+      {e.status !== 'canceled' && (w.state === 'ok' || w.state === 'loading') && (
         <Section title="暑さ指数（熱中症の危険度）">
           <Card>
             {w.state === 'ok' && (
@@ -80,7 +92,7 @@ export default function EventDetail() {
       {!staff && myPlayers.length > 0 && e.status !== 'canceled' && (
         <Section title="出欠">
           <Card className="space-y-3">
-            {myPlayers.map(p => <div key={p.id}><div className="mb-1.5 text-[13px] font-bold">{p.name}さん</div><AttButtons value={e.att[p.id]} onChange={a => be.setAttendance(club.id, e.id, p.id, a)} /></div>)}
+            {myPlayers.map(p => <div key={p.id}><div className="mb-1.5 text-[13px] font-bold">{p.name}さん</div><AttButtons value={e.att[p.id]} onChange={a => be.setAttendance(club.id, e.id, p.id, a)} />{e.att[p.id] === 'no' && <AbsenceReason eventId={e.id} playerId={p.id} notes={notes} />}</div>)}
           </Card>
         </Section>
       )}
@@ -93,7 +105,7 @@ export default function EventDetail() {
               return (
                 <div key={p.id} className="flex items-center gap-3 py-2.5">
                   <Avatar name={p.name} size={34} />
-                  <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-bold">{p.name}</div><div className="text-[12px] text-ink-3">{p.grade}</div></div>
+                  <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-bold">{p.name}</div><div className="text-[12px] text-ink-3">{p.grade}{a === 'no' && notes.find(n => n.playerId === p.id) ? <span className="ml-1.5 font-bold text-slate-600">・理由：{notes.find(n => n.playerId === p.id)!.note}</span> : null}</div></div>
                   <button disabled={!canEdit} onClick={() => be.setAttendance(club.id, e.id, p.id, cycle(a))} className={cx('h-8 w-16 rounded-xl text-[12px] font-bold', a === 'yes' ? 'bg-emerald-500 text-white' : a === 'no' ? 'bg-slate-500 text-white' : a === 'maybe' ? 'bg-amber-400 text-white' : 'border border-dashed border-slate-300 text-ink-3')}>
                     {a === 'yes' ? '参加' : a === 'no' ? '欠席' : a === 'maybe' ? '未定' : '未回答'}
                   </button>
@@ -101,6 +113,9 @@ export default function EventDetail() {
               )
             })}
           </Card>
+          {canEdit && e.status !== 'canceled' && e.date >= new Date().toISOString().slice(0, 10) && players.some(p => !e.att[p.id] || e.att[p.id] === 'maybe') && (
+            <Button block variant="soft" className="mt-2" loading={busy} onClick={remind}><Send size={16} />まだ答えていない保護者にお知らせ（{players.filter(p => !e.att[p.id] || e.att[p.id] === 'maybe').length}人）</Button>
+          )}
           {canEdit && <p className="mt-1 px-1 text-[11px] text-ink-3">ボタンをタップすると、参加→欠席→未定の順に切り替わります（当日の出席確認に使えます）。</p>}
         </Section>
       )}

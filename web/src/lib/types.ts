@@ -133,6 +133,7 @@ export interface Announcement {
 export interface Condition {
   id: string
   playerId: string
+  guardianUids?: string[] // 保護者が自分の子どもの記録を読めるように（記録時に選手からコピー）
   date: string
   rpe: number
   minutes: number
@@ -199,5 +200,8 @@ export interface Consult { id: string; by: string; byName: string; anonymous: bo
 
 /** 通報（不適切な写真・プロフィール・募集など） */
 export interface Report { id: string; from: string; targetType: 'user' | 'post' | 'club'; targetId: string; targetName: string; reason: string; detail: string; status: 'new' | 'done'; at: number }
+
+/** 欠席の理由（他の保護者には見えないよう予定とは別に保存） */
+export interface AttNote { id: string; eventId: string; playerId: string; note: string; by: string; at: number }
 
 export type ClubSub = 'feeRequests' | 'facilityRequests' | 'staffChecks' | 'consults'

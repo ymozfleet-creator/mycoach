@@ -27,6 +27,7 @@ const CoachProfile = lazy(() => import('./screens/CoachProfile'))
 const Verify = lazy(() => import('./screens/Verify'))
 const Training = lazy(() => import('./screens/Training'))
 const Ops = lazy(() => import('./screens/Ops'))
+const Earnings = lazy(() => import('./screens/Earnings'))
 const FeeRequests = lazy(() => import('./screens/FeeRequests'))
 const Facilities = lazy(() => import('./screens/Facilities'))
 const Safeguard = lazy(() => import('./screens/Safeguard'))
@@ -135,6 +136,7 @@ function Shell() {
             <Route path="/verify" element={<Verify />} />
             <Route path="/training" element={<Training />} />
             <Route path="/ops" element={<Ops />} />
+            <Route path="/earnings" element={<Earnings />} />
             <Route path="/fee-requests" element={<FeeRequests />} />
             <Route path="/facilities" element={<Facilities />} />
             <Route path="/safeguard" element={<Safeguard />} />

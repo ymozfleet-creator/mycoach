@@ -7,9 +7,10 @@ import { relTime } from '../lib/util'
 
 export default function News() {
   const { be, announcements, notices, isAdmin, club } = useApp()
-  const [tab, setTab] = useState<'club' | 'me'>(club ? 'club' : 'me')
-  const [compose, setCompose] = useState(false)
   const unread = notices.filter(n => !n.read)
+  // 未読の個別通知があれば、そちらを先に開く
+  const [tab, setTab] = useState<'club' | 'me'>(club && !unread.length ? 'club' : 'me')
+  const [compose, setCompose] = useState(false)
   useEffect(() => { if (tab === 'me' && unread.length) { const t = setTimeout(() => unread.forEach(n => be.markRead(n.id)), 1200); return () => clearTimeout(t) } }, [tab, unread.length])
   return (
     <>

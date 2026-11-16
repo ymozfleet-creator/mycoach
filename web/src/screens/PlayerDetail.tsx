@@ -66,6 +66,15 @@ export default function PlayerDetail() {
         </Card>
       </Section>
       </>}
+      {!isAdmin && !isCoach && (
+        <Section title="参加の記録（直近の活動）">
+          <Card className="divide-y divide-line !py-1">
+            {events.filter(e => e.status !== 'canceled' && e.date < new Date().toISOString().slice(0, 10)).slice(-8).reverse().map(e => (
+              <div key={e.id} className="flex items-center justify-between py-2.5 text-[14px]"><span><b>{dateLabel(e.date)}</b><span className="ml-2 text-[12px] text-ink-2">{e.title}</span></span><Badge tone={e.att[p.id] === 'yes' ? 'ok' : e.att[p.id] === 'no' ? 'none' : 'warn'}>{e.att[p.id] === 'yes' ? '参加' : e.att[p.id] === 'no' ? '欠席' : '未回答'}</Badge></div>
+            ))}
+          </Card>
+        </Section>
+      )}
       {isAdmin && (
         <Section title="スポーツ保険">
           <Card className="flex items-center justify-between gap-3">

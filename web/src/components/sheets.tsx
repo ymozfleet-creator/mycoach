@@ -19,7 +19,7 @@ export function ConditionSheet({ open, onClose, players, defaultPlayer }: { open
   const save = async () => {
     if (!pid) return
     setBusy(true)
-    await be.addCondition(club.id, { playerId: pid, date: iso(today()), rpe, minutes, sleep, at: Date.now(), by: authUser?.uid })
+    await be.addCondition(club.id, { playerId: pid, date: iso(today()), rpe, minutes, sleep, at: Date.now(), by: authUser?.uid, guardianUids: players.find(p => p.id === pid)?.guardianUids || [] })
     setBusy(false); onClose(); toast('記録しました。おつかれさまでした')
   }
   return (

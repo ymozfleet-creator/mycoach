@@ -1,6 +1,7 @@
 import { Clock, MapPin, Thermometer, UserRound } from 'lucide-react'
 import { useApp } from '../lib/store'
-import type { Att, ClubEvent, Player } from '../lib/types'
+import { useEffect, useState } from 'react'
+import type { Att, AttNote, ClubEvent, Player } from '../lib/types'
 import { dateLabel, endTime, wbgtFor, wbgtLevel } from '../lib/util'
 import { Badge, cx, Skeleton } from './ui'
 
@@ -16,7 +17,6 @@ export function useEventWbgt(e: ClubEvent) {
 export function WbgtBadge({ e }: { e: ClubEvent }) {
   const w = useEventWbgt(e)
   if (w.state === 'loading') return <Skeleton className="h-6 w-24" />
-  if (w.state === 'error') return <Badge tone="none"><Thermometer size={13} />暑さ指数を取得できません</Badge>
   if (w.state !== 'ok') return null
   return (
     <Badge tone={w.level.tone}>
@@ -74,4 +74,28 @@ export function EventCard({ e, onClick, children }: { e: ClubEvent; onClick?: ()
       {children}
     </div>
   )
+}
+
+const REASONS = ['体調不良', 'ケガ', '学校の行事', '家庭の用事', 'その他']
+/** 欠席を選んだときの理由（任意）。運営・指導者だけが見られる */
+export function AbsenceReason({ eventId, playerId, notes }: { eventId: string; playerId: string; notes: AttNote[] }) {
+  const { be, club, toast } = useApp()
+  const cur = notes.find(n => n.playerId === playerId)?.note
+  if (!club) return null
+  return (
+    <div className="mt-2 rounded-xl bg-canvas p-2.5">
+      <div className="mb-1.5 text-[12px] font-bold text-ink-2">欠席の理由（任意・運営と指導者だけに伝わります）</div>
+      <div className="flex flex-wrap gap-1.5">{REASONS.map(r => (
+        <button key={r} onClick={() => be.setAttNote(club.id, eventId, playerId, r).then(() => toast('理由を伝えました')).catch(() => toast('送れませんでした'))}
+          className={cx('rounded-full border px-3 py-1 text-[12px] font-bold', cur === r ? 'border-slate-500 bg-slate-500 text-white' : 'border-line bg-white text-ink-2')}>{r}</button>
+      ))}</div>
+    </div>
+  )
+}
+
+export function useAttNotes(eventId: string | undefined, onlyMine: boolean) {
+  const { be, club, authUser } = useApp()
+  const [n, setN] = useState<AttNote[]>([])
+  useEffect(() => (club && eventId && authUser ? be.watchAttNotes(club.id, eventId, setN, onlyMine ? authUser.uid : undefined) : undefined), [be, club?.id, eventId, onlyMine, authUser?.uid])
+  return n
 }

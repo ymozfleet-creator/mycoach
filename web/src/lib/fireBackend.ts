@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import type { Backend } from './backend'
-import type { Club, Contract, Payment, Profile, VerifyDoc } from './types'
+import type { Club, Condition, Contract, Payment, Profile, VerifyDoc } from './types'
 import { FUNCTIONS_BASE } from './config'
 import { inviteCode } from './util'
 
@@ -74,7 +74,15 @@ export const fireBackend: Backend = {
   watchAnnouncements: (c, cb) => onSnapshot(query(sub(c, 'announcements'), orderBy('at', 'desc'), limit(30)), s => cb(list(s)), () => cb([])),
   postAnnouncement: async (c, a) => { await addDoc(sub(c, 'announcements'), strip(a)) },
 
-  watchConditions: (c, from, by, cb) => onSnapshot(by ? query(sub(c, 'conditions'), where('by', '==', by), where('date', '>=', from)) : query(sub(c, 'conditions'), where('date', '>=', from)), s => cb(list(s)), () => cb([])),
+  watchConditions: (c, from, by, cb) => {
+    if (!by) return onSnapshot(query(sub(c, 'conditions'), where('date', '>=', from)), s => cb(list(s)), () => cb([]))
+    // 保護者：自分が記録したもの＋自分の子どもの記録（指導者・運営が記録したものも含む）を合わせて表示
+    let a: Condition[] = [], b: Condition[] = []
+    const emit = () => { const m = new Map<string, Condition>(); [...a, ...b].forEach(x => m.set(x.id, x)); cb([...m.values()]) }
+    const u1 = onSnapshot(query(sub(c, 'conditions'), where('by', '==', by), where('date', '>=', from)), s => { a = list(s); emit() }, () => {})
+    const u2 = onSnapshot(query(sub(c, 'conditions'), where('guardianUids', 'array-contains', by), where('date', '>=', from)), s => { b = list(s); emit() }, () => {})
+    return () => { u1(); u2() }
+  },
   addCondition: async (c, x) => { await addDoc(sub(c, 'conditions'), strip(x)) },
 
   watchFees: (c, month, uid, isAdmin, cb) => {
@@ -111,6 +119,7 @@ export const fireBackend: Backend = {
     await addDoc(collection(db, 'notifications'), { to: uid, from: auth.currentUser?.uid || '', type: 'verify', read: false, at: Date.now(), text: ok ? '本人確認が完了しました。クラブへの応募・依頼の受付ができます' : `本人確認の書類を再提出してください：${note}`.slice(0, 300) })
   },
 
+  watchClubPayments: (c, cb) => onSnapshot(query(collection(db, 'payments'), where('clubId', '==', c)), s => cb(list<Payment>(s).sort((x, y) => y.ts - x.ts)), () => cb([])),
   watchPayments: (uid, cb) => {
     let a: Payment[] = [], b: Payment[] = []
     const emit = () => cb([...a, ...b.filter(x => !a.find(y => y.id === x.id))].sort((x, y) => y.ts - x.ts))
@@ -134,6 +143,8 @@ export const fireBackend: Backend = {
   watchSub: (c, name, cb, onlyBy) => onSnapshot(onlyBy ? query(sub(c, name), where('by', '==', onlyBy)) : query(sub(c, name), limit(200)), s => cb(list<any>(s).sort((a, b) => (b.at || 0) - (a.at || 0))), () => cb([])),
   addSub: async (c, name, data, id) => { id ? await setDoc(doc(db, 'clubs', c, name, id), strip(data)) : await addDoc(sub(c, name), strip(data)) },
   updateSub: async (c, name, id, patch) => { await updateDoc(doc(db, 'clubs', c, name, id), strip(patch) as any) },
+  setAttNote: async (c, eid, pid, note) => { await setDoc(doc(db, 'clubs', c, 'attNotes', `${eid}_${pid}`), { eventId: eid, playerId: pid, note: note.slice(0, 60), by: auth.currentUser?.uid || '', at: Date.now() }) },
+  watchAttNotes: (c, eid, cb, onlyBy) => onSnapshot(onlyBy ? query(sub(c, 'attNotes'), where('eventId', '==', eid), where('by', '==', onlyBy)) : query(sub(c, 'attNotes'), where('eventId', '==', eid)), s => cb(list(s)), () => cb([])),
   addReport: async r => { await addDoc(collection(db, 'reports'), strip(r)) },
   watchReports: cb => onSnapshot(query(collection(db, 'reports'), where('status', '==', 'new'), limit(100)), s => cb(list<any>(s).sort((a, b) => b.at - a.at)), () => cb([])),
   resolveReport: async id => { await updateDoc(doc(db, 'reports', id), { status: 'done' }) },
