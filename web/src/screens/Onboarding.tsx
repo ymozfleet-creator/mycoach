@@ -69,7 +69,7 @@ export default function Onboarding() {
       {step === 0 ? (
         <div className="animate-up">
           <h1 className="text-[26px] font-black">ようこそ</h1>
-          <p className="mt-1 text-ink-2">あなたの立場を選んでください。あとから変更できます。</p>
+          <p className="mt-1 text-ink-2">あなたの立場を選んでください。立場に合わせて、使う画面が変わります。</p>
           <div className="mt-6 space-y-3">
             {roles.map(x => (
               <button key={x.r} onClick={() => setRole(x.r)} className={cx('flex w-full items-center gap-4 rounded-xl2 border-2 bg-white p-4 text-left shadow-card transition active:scale-[.99]', role === x.r ? 'border-brand' : 'border-transparent')}>
@@ -79,6 +79,14 @@ export default function Onboarding() {
               </button>
             ))}
           </div>
+          <p className="mt-4 rounded-2xl bg-brand-50 px-4 py-3 text-[13px] leading-relaxed text-ink-2 animate-fade" key={role}>
+            <b className="text-ink">次にやること：</b>{{
+              member: 'クラブから届いた招待コード（6〜8文字）と、お子さまの名前・学年を入力します。',
+              coach: '指導できる種目・曜日・地域を入力します。招待コードがなくても登録でき、そのあと本人確認と安全研修に進みます。',
+              admin: 'クラブ名・種目・活動場所・月会費を入力します。保護者・指導者・学校に送る招待コードが自動で発行されます。',
+              school: 'クラブの運営から届いた「学校用」の招待コードを入力します。生徒の活動状況を閲覧できるようになります。',
+            }[role]}
+          </p>
           <Field label="お名前"><input className={cx(inputCls, 'mt-6')} value={name} onChange={e => setName(e.target.value)} placeholder="例：加藤 由美" /></Field>
           <Button block size="lg" onClick={() => setStep(1)} disabled={!name.trim()}>次へ <ChevronRight size={18} /></Button>
         </div>
@@ -100,6 +108,7 @@ export default function Onboarding() {
               <h1 className="text-[24px] font-black">{role === 'coach' ? '指導者として登録' : 'クラブに参加'}</h1>
               <p className="mt-1 mb-6 text-ink-2">{role === 'coach' ? 'クラブに所属していなくても登録できます。登録後、地域のクラブの募集を探して応募できます。すでにクラブから「指導者用」の招待コードが届いている方は入力してください。' : role === 'school' ? '学校・教育委員会の方は、クラブの運営から届いた「学校用」のコードを入力してください。' : '運営の方から届いた招待コード（6文字）を入力してください。'}</p>
               <Field label={role === 'coach' ? '招待コード（クラブから届いている場合のみ）' : '招待コード'}><input className={cx(inputCls, 'text-center text-[22px] font-black uppercase tracking-[.3em]')} maxLength={10} value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ABC123" /></Field>
+              {role !== 'coach' && <p className="-mt-2 mb-4 text-[12px] text-ink-3">招待コードがわからない場合は、クラブの運営の方にご確認ください。</p>}
               {role === 'school' && <Field label="学校名・所属"><input className={inputCls} value={org} onChange={e => setOrg(e.target.value)} placeholder="例：中野区立第五中学校／中野区教育委員会" /></Field>}
               {role === 'member' && (
                 <div className="mb-4">

@@ -112,6 +112,17 @@ nav ul{display:flex;gap:26px;list-style:none;font-size:14px;font-weight:500}nav 
 @keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .demo-note{text-align:center;font-size:12px;color:var(--sub);margin-top:22px}
 
+/* matching */
+.mt-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;max-width:1040px;margin:0 auto}
+.mt-phones{display:flex;gap:20px;justify-content:center}
+.mt-phones figure{margin:0;text-align:center}
+.mt-phones .phone{position:relative;width:230px;border-radius:38px;box-shadow:0 30px 60px rgba(15,42,74,.25)}.mt-phones .phone img{border-radius:30px}
+.mt-phones figure:nth-child(2){margin-top:60px}
+.mt-phones figcaption{margin-top:14px;font-size:13px;font-weight:700;color:var(--sub)}
+.mt-steps{list-style:none;counter-reset:m;display:grid;gap:14px}
+.mt-steps li{counter-increment:m;position:relative;background:#fff;border-radius:18px;padding:18px 18px 18px 62px;box-shadow:0 1px 0 var(--line)}
+.mt-steps li:before{content:counter(m);position:absolute;left:18px;top:18px;width:30px;height:30px;border-radius:50%;background:var(--navy);color:var(--lime);font-weight:900;display:grid;place-items:center;font-size:14px}
+.mt-steps b{display:block;font-size:16px}.mt-steps span{display:block;margin-top:4px;font-size:14px;color:var(--sub)}
 /* heat */
 .heat{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
 .gauge{background:var(--navy);color:#fff;border-radius:28px;padding:30px;box-shadow:0 30px 60px rgba(15,42,74,.25)}
@@ -193,7 +204,8 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   .p2{left:-4%}.p3{right:-4%}
   .c1{left:0;top:120px}.c2{right:0;top:290px}.c3{left:2%;top:420px}.c4{display:none}
   .stats{grid-template-columns:1fr}.stats div{border-right:0;border-bottom:1px solid rgba(255,255,255,.08);text-align:center}
-  .ba,.heat,.cta{grid-template-columns:1fr}
+  .ba,.heat,.cta,.mt-grid{grid-template-columns:1fr}
+  .mt-phones .phone{width:170px;border-radius:30px;padding:8px}.mt-phones .phone img{border-radius:24px}.mt-phones{gap:12px}
   .role{grid-template-columns:1fr;gap:36px}.role .phone{width:260px}
   .trust,.prices{grid-template-columns:1fr}
   .flow{grid-template-columns:1fr 1fr}
@@ -216,7 +228,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
 <header id="hd">
   <div class="wrap hd">
     <a class="logo" href="#">MyCOACH-<b>MyTEAM</b></a>
-    <nav><ul><li><a href="#ba">できること</a></li><li><a href="#roles">使う人</a></li><li><a href="#safety">安全</a></li><li><a href="#pricing">料金</a></li><li><a href="#faq">よくある質問</a></li></ul></nav>
+    <nav><ul><li><a href="#ba">できること</a></li><li><a href="#matching">マッチング</a></li><li><a href="#roles">使う人</a></li><li><a href="#safety">安全</a></li><li><a href="#pricing">料金</a></li><li><a href="#faq">よくある質問</a></li></ul></nav>
     <div class="hd-r"><a class="login" href="app/">ログイン</a><a class="btn btn-lime" href="#contact">導入のご相談</a></div>
   </div>
 </header>
@@ -236,7 +248,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
     </div>
     <div class="stage" aria-hidden="true">
       <div class="phone p2"><img src="assets/lp/admin.webp" alt=""></div>
-      <div class="phone p3"><img src="assets/lp/jobs.webp" alt=""></div>
+      <div class="phone p3"><img src="assets/lp/swipe_coach.webp" alt=""></div>
       <div class="phone p1"><img src="assets/lp/member.webp" alt=""></div>
       <div class="chip c1"><span class="ic" style="background:#DCFCE7">✓</span><span>出欠を回答しました<small>11/21（土）通常練習・参加</small></span></div>
       <div class="chip c2"><span class="ic" style="background:#EAF2FF">🤝</span><span>指導者から応募が届きました<small>本人確認・安全研修 済み</small></span></div>
@@ -276,7 +288,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
         <h3>MyCOACH-MyTEAM なら</h3>
         <div class="ba-row"><span class="k">連絡</span><div><b>出欠はワンタップで集計</b><span>未回答の家庭がひと目でわかる</span></div></div>
         <div class="ba-row"><span class="k">会費</span><div><b>カードで自動決済</b><span>未納は自動でお知らせ。減免も設定できる</span></div></div>
-        <div class="ba-row"><span class="k">指導者</span><div><b>審査済みの指導者が応募</b><span>地域・曜日の相性順。本人確認と安全研修が必須</span></div></div>
+        <div class="ba-row"><span class="k">指導者</span><div><b>審査済みの指導者とスワイプでマッチング</b><span>写真と相性の理由を見て選べる。本人確認と安全研修が必須</span></div></div>
         <div class="ba-row"><span class="k">暑さ</span><div><b>暑さ指数で判断をそろえる</b><span>日本スポーツ協会の指針に沿って表示</span></div></div>
         <div class="ba-row"><span class="k">報告</span><div><b>実績は自動で集計</b><span>活動回数・参加者数・指導時間をCSVで出力</span></div></div>
       </div>
@@ -284,7 +296,30 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="roles" class="sec bg">
+<section id="matching" class="sec bg">
+  <div class="wrap">
+    <div class="head rv">
+      <div class="en">MATCHING</div>
+      <h2>指導者探しは、<em>スワイプで。</em></h2>
+      <p>本人確認と安全研修を終えた指導者と地域のクラブを、相性の高い順にカードで表示します。右にスワイプするだけで応募・依頼が届き、お互いが「いいね」なら、その場でマッチング成立です。</p>
+    </div>
+    <div class="mt-grid">
+      <div class="mt-phones rv">
+        <figure><div class="phone"><img src="assets/lp/swipe_admin.webp" alt="クラブが指導者をスワイプで選ぶ画面" loading="lazy"></div><figcaption>クラブ側：指導者を選ぶ</figcaption></figure>
+        <figure><div class="phone"><img src="assets/lp/swipe_coach.webp" alt="指導者がクラブの募集をスワイプで選ぶ画面" loading="lazy"></div><figcaption>指導者側：募集を選ぶ</figcaption></figure>
+      </div>
+      <ol class="mt-steps">
+        <li class="rv"><b>写真とプロフィールで選ぶ</b><span>指導者の顔写真・資格・指導歴・評価、クラブの写真と募集内容をカードで確認。</span></li>
+        <li class="rv"><b>「なぜ合うのか」がわかる</b><span>距離・曜日・得意分野・年代・方針から相性を100点満点で計算し、合う点と気をつける点を表示。距離や曜日での絞り込みもできます。</span></li>
+        <li class="rv"><b>お互いの「いいね」で成立</b><span>応募してきた指導者を右にスワイプすれば、その場で成立。間違えても、返事の前なら取り消せます。</span></li>
+        <li class="rv"><b>成立したら、そのまま指導スタート</b><span>指導者はクラブに加わり、予定や選手の状況を共有。謝金はアプリからカードで支払えます。</span></li>
+      </ol>
+    </div>
+    <p class="demo-note">新しい募集が出ると、条件の合う近くの指導者に自動でお知らせが届きます。※画面はデモ用の架空のデータとイラストです。</p>
+  </div>
+</section>
+
+<section id="roles" class="sec">
   <div class="wrap">
     <div class="head rv">
       <div class="en">FOR EVERYONE</div>
@@ -326,15 +361,15 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
     <div class="role" data-r="coach" hidden>
       <div>
         <div class="who">指導者</div>
-        <h3>近くのクラブの募集に、<br>スマホから応募。</h3>
-        <p class="d">地域・曜日の相性が高い順に募集が並びます。採用されるとそのままクラブの指導者として、予定や選手の状況を確認できます。</p>
+        <h3>近くのクラブの募集に、<br>スワイプで応募。</h3>
+        <p class="d">相性の高い順に募集がカードで並びます。採用されるとそのままクラブの指導者として、予定や選手の状況を確認できます。</p>
         <ul class="pts">
-          <li><i>🎯</i><div><b>相性スコアで探せる</b><span>活動場所までの距離、指導できる曜日をもとに算出</span></div></li>
+          <li><i>👉</i><div><b>右にスワイプで応募</b><span>クラブから依頼が届いていれば、その場でマッチング成立</span></div></li>
           <li><i>🪪</i><div><b>本人確認・安全研修で信頼を</b><span>熱中症・ケガ・ハラスメント防止の研修をアプリで受講</span></div></li>
           <li><i>💴</i><div><b>謝金はアプリで受け取り</b><span>クラブがカードで支払い、登録した口座に振り込まれる</span></div></li>
         </ul>
       </div>
-      <div class="phone"><img src="assets/lp/jobs.webp" alt="指導者の募集一覧画面" loading="lazy"></div>
+      <div class="phone"><img src="assets/lp/swipe_coach.webp" alt="指導者が募集をスワイプで選ぶ画面" loading="lazy"></div>
     </div>
     <div class="role" data-r="school" hidden>
       <div>
@@ -353,7 +388,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="safety" class="sec">
+<section id="safety" class="sec bg">
   <div class="wrap">
     <div class="heat">
       <div class="rv">
@@ -389,7 +424,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section class="sec bg">
+<section class="sec">
   <div class="wrap">
     <div class="head rv"><div class="en">FLOW</div><h2>小さく始めて、<em>地域に広げる。</em></h2></div>
     <div class="flow">
@@ -401,7 +436,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="pricing" class="sec">
+<section id="pricing" class="sec bg">
   <div class="wrap">
     <div class="head rv"><div class="en">PRICING</div><h2>初期費用・月額固定費は<em>0円</em>。</h2><p>お金が動いたときだけ、手数料をいただきます。</p></div>
     <div class="prices">
@@ -415,7 +450,7 @@ footer a{text-decoration:none;margin-right:14px}footer a:hover{text-decoration:u
   </div>
 </section>
 
-<section id="faq" class="sec bg">
+<section id="faq" class="sec">
   <div class="wrap">
     <div class="head rv"><div class="en">FAQ</div><h2>よくある質問</h2></div>
     <div class="faq rv">
