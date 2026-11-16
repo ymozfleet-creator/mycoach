@@ -146,7 +146,13 @@ export function loadStatus(conds: Condition[], playerId: string) {
   if (!acute) { tone = 'none'; label = '記録なし' }
   else if (ratio > 1.5 || (sleep !== null && sleep < 6)) { tone = 'danger'; label = '要注意' }
   else if (ratio > 1.3) { tone = 'warn'; label = '負荷が増加' }
-  return { acute, chronic, ratio, sleep, weeks, tone, label }
+  // 専門用語を使わない説明（保護者・指導者向け）
+  const why: string[] = []
+  if (chronic && ratio > 1.5) why.push(`練習量が普段の${ratio.toFixed(1)}倍`)
+  else if (chronic && ratio > 1.3) why.push('練習量が増えています')
+  if (sleep !== null && sleep < 6) why.push(`睡眠が短め（平均${sleep.toFixed(1)}時間）`)
+  const reason = !acute ? '直近1週間の記録がありません' : why.length ? why.join('・') : '練習量・睡眠とも安定しています'
+  return { acute, chronic, ratio, sleep, weeks, tone, label, reason }
 }
 
 /* ---------- 指導者マッチ度 ---------- */

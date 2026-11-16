@@ -3,12 +3,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarPlus, Plus } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { attCounts } from '../components/parts'
+import { BulkAttendance, useUnanswered } from '../components/BulkAttendance'
 import { EventEditor } from '../components/EventEditor'
 import { Badge, Empty, PageHeader, Segmented, cx, stagger } from '../components/ui'
 import { addDays, DOW, iso, parseDate, today, wbgtFor, wbgtLevel } from '../lib/util'
 
 export default function Schedule() {
   const { events, isAdmin, myPlayers, players, weather, isCoach } = useApp()
+  const unanswered = useUnanswered()
+  const [bulk, setBulk] = useState(false)
   const nav = useNavigate()
   const [sp, setSp] = useSearchParams()
   const [tab, setTab] = useState<'up' | 'past'>('up')
@@ -43,7 +46,8 @@ export default function Schedule() {
 
   return (
     <>
-      <PageHeader title="予定" right={isAdmin && <button onClick={() => setEdit(true)} aria-label="予定を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white active:scale-95"><Plus size={22} /></button>} />
+      <PageHeader title="予定" right={!isAdmin && myPlayers.length > 0 && unanswered.length > 0 ? <button onClick={() => setBulk(true)} className="flex h-10 items-center rounded-full bg-amber-400 px-4 text-[13px] font-bold text-white shadow-card active:scale-95">未回答 {unanswered.length}件に回答</button> : isAdmin && <button onClick={() => setEdit(true)} aria-label="予定を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white active:scale-95"><Plus size={22} /></button>} />
+      <BulkAttendance open={bulk} onClose={() => setBulk(false)} />
       <Segmented value={tab} onChange={setTab} options={[{ value: 'up', label: 'これから' }, { value: 'past', label: 'これまで' }]} />
       {tab === 'up' && (
         <div className="no-scrollbar -mx-4 mt-3 flex snap-x gap-2 overflow-x-auto px-4 pb-1">

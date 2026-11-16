@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Copy, Search, Share2, UserPlus, Users } from 'lucide-react'
+import { ChevronRight, Copy, Search, Share2, UserPlus, Users } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { Avatar, Badge, Button, Card, Empty, Field, inputCls, PageHeader, Sheet, stagger } from '../components/ui'
 import { addDays, iso, loadStatus, today, uid6 } from '../lib/util'
@@ -48,6 +48,8 @@ export default function Players() {
   const nav = useNavigate()
   const [q, setQ] = useState('')
   const [add, setAdd] = useState(false)
+  const [invite, setInvite] = useState(false)
+  const noGuardian = players.filter(p => !p.guardianUids.length).length
   const [np, setNp] = useState({ name: '', grade: '中学1年' })
   const rows = useMemo(() => players.filter(p => !q || p.name.includes(q)).map(p => ({ p, s: loadStatus(conditions, p.id) })).sort((a, b) => ({ danger: 0, warn: 1, ok: 2, none: 3 }[a.s.tone] - { danger: 0, warn: 1, ok: 2, none: 3 }[b.s.tone])), [players, conditions, q])
   if (!club) return null
@@ -57,8 +59,18 @@ export default function Players() {
   }
   return (
     <>
-      <PageHeader title={isAdmin ? '会員' : schoolView ? '生徒' : '選手'} sub={`${players.length}人`} right={isAdmin && <button onClick={() => setAdd(true)} aria-label="会員を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white"><UserPlus size={20} /></button>} />
-      {isAdmin && <InviteCard />}
+      <PageHeader title={isAdmin ? '会員' : schoolView ? '生徒' : '選手'} sub={`${players.length}人`} right={isAdmin && <div className="flex gap-2">
+        <button onClick={() => setInvite(true)} className="flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-bold text-brand shadow-card active:scale-95"><Share2 size={16} />招待</button>
+        <button onClick={() => setAdd(true)} aria-label="会員を追加" className="grid h-10 w-10 place-items-center rounded-full bg-navy text-white active:scale-95"><UserPlus size={20} /></button>
+      </div>} />
+      {isAdmin && noGuardian > 0 && (
+        <button onClick={() => setInvite(true)} className="mb-1 flex w-full animate-up items-center gap-3 rounded-xl2 bg-amber-50 p-3.5 text-left active:scale-[.99]">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><Share2 size={18} /></span>
+          <span className="flex-1"><b className="block text-[14px]">保護者が未登録の会員 {noGuardian}人</b><span className="block text-[12px] text-ink-2">招待コードを送ると、保護者がアプリで出欠・会費・体調記録を使えます</span></span>
+          <ChevronRight size={18} className="text-ink-3" />
+        </button>
+      )}
+      <Sheet open={invite} onClose={() => setInvite(false)} title="クラブに招待する"><InviteCard /><p className="mt-3 text-[12px] text-ink-3">コードは立場ごとに分かれています。指導者用・学校用のコードは、保護者には送らないでください。</p></Sheet>
       <div className="relative mt-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3" />
         <input className={`${inputCls} pl-11`} placeholder="名前で検索" value={q} onChange={e => setQ(e.target.value)} />
@@ -74,7 +86,7 @@ export default function Players() {
               </div>
               {schoolView
                 ? (() => { const n = past.filter(e => e.att[p.id] === 'yes').length; return <Badge tone={past.length && n / past.length < 0.5 ? 'warn' : 'ok'}>参加 {n}／{past.length}回</Badge> })()
-                : <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>}
+                : <Badge tone={s.tone === 'none' ? 'none' : s.tone}>体調 {s.label}</Badge>}
             </button>
           ))}
         </Card>

@@ -6,6 +6,7 @@ import { AttButtons, attCounts, EventCard, useEventWbgt } from '../components/pa
 import { Avatar, Badge, Card, CountUp, Empty, Ring, Section, cx, stagger } from '../components/ui'
 import { GuidelineCard } from '../components/Guideline'
 import { CoachSetup } from '../components/CoachSetup'
+import { BulkAttendance, useUnanswered } from '../components/BulkAttendance'
 import { JobList } from './Jobs'
 import { ComposeSheet, ConditionSheet } from '../components/sheets'
 import type { ClubEvent } from '../lib/types'
@@ -59,6 +60,8 @@ function MemberHome() {
   const unpaid = fees.filter(f => f.status === 'unpaid')
   const urgent = announcements.find(a => a.kind === 'urgent' && Date.now() - a.at < 3 * 864e5)
   const [cond, setCond] = useState(false)
+  const [bulk, setBulk] = useState(false)
+  const unanswered = useUnanswered()
   const t = iso(today())
   const needCond = myPlayers.some(p => !conditions.some(c => c.playerId === p.id && c.date === t))
   if (!club) return null
@@ -67,6 +70,7 @@ function MemberHome() {
       <Hello />
       <div className="mt-4 space-y-2">
         {urgent && <Alert icon={<Megaphone size={20} />} tone="danger" title="重要なお知らせ" text={urgent.text} onClick={() => nav('/news')} />}
+        {unanswered.length > 1 && <Alert icon={<ClipboardList size={20} />} tone="warn" title={`出欠の未回答 ${unanswered.length}件`} text="タップしてまとめて回答できます" onClick={() => setBulk(true)} />}
         {unpaid.length > 0 && <Alert icon={<Wallet size={20} />} tone="warn" title={`会費のお支払い（${unpaid.length}件）`} text={`${yen(unpaid.reduce((s, f) => s + f.amount, 0))}・タップしてお支払い`} onClick={() => nav('/fees')} />}
       </div>
 
@@ -97,7 +101,7 @@ function MemberHome() {
       )}
 
       {up.length > 1 && (
-        <Section title="この先の予定" action={<button onClick={() => nav('/schedule')} className="text-[13px] font-bold text-brand">すべて見る</button>}>
+        <Section title="この先の予定" action={<button onClick={() => (unanswered.length ? setBulk(true) : nav('/schedule'))} className="text-[13px] font-bold text-brand">{unanswered.length ? 'まとめて回答' : 'すべて見る'}</button>}>
           <Card className="divide-y divide-line !py-1">
             {up.slice(1, 4).map(e => (
               <button key={e.id} onClick={() => nav(`/event/${e.id}`)} className="flex w-full items-center gap-3 py-3 text-left">
@@ -119,6 +123,7 @@ function MemberHome() {
           </Card>
         </Section>
       )}
+      <BulkAttendance open={bulk} onClose={() => setBulk(false)} />
       <ConditionSheet open={cond} onClose={() => setCond(false)} players={myPlayers} />
     </>
   )
@@ -162,7 +167,7 @@ function CoachHome() {
             {watch.map(({ p, s }) => (
               <button key={p.id} onClick={() => nav(`/player/${p.id}`)} className="flex w-full items-center gap-3 py-3 text-left">
                 <Avatar name={p.name} size={36} />
-                <div className="min-w-0 flex-1"><div className="font-bold">{p.name}</div><div className="text-[12px] text-ink-2">負荷比 {s.ratio.toFixed(2)}{s.sleep ? `・睡眠 ${s.sleep.toFixed(1)}時間` : ''}</div></div>
+                <div className="min-w-0 flex-1"><div className="font-bold">{p.name}</div><div className="text-[12px] text-ink-2">{s.reason}</div></div>
                 <Badge tone={s.tone === 'danger' ? 'danger' : 'warn'}>{s.label}</Badge>
               </button>
             ))}
@@ -197,11 +202,36 @@ function AdminHome() {
   return (
     <>
       <Hello />
+      {(() => {
+        // はじめての運営者向け：最初にやること（すべて済むと表示されない）
+        const steps = [
+          { done: events.length > 0, t: '活動の予定を登録する', d: '毎週の練習はまとめて登録できます', f: () => nav('/schedule') },
+          { done: players.length > 0, t: '会員（子ども）を登録する', d: '名前と学年だけで登録できます', f: () => nav('/players') },
+          { done: players.some(p => p.guardianUids.length > 0), t: '保護者に招待コードを送る', d: 'LINEやメールで送れます', f: () => nav('/players') },
+          { done: (club?.coachUids.length || 0) > 0, t: '指導者を見つける', d: 'スワイプで探すか、募集を出します', f: () => nav('/match') },
+        ]
+        const left = steps.filter(x => !x.done).length
+        if (!left) return null
+        return (
+          <Card className="mt-4 !p-0 overflow-hidden">
+            <div className="flex items-center gap-3 bg-navy px-4 py-3 text-white"><Ring value={((4 - left) / 4) * 100} size={44} stroke={5} color="#B7F03C" track="rgba(255,255,255,.15)"><span className="text-[12px] font-black">{4 - left}/4</span></Ring><div><div className="font-black">はじめにやること</div><div className="text-[12px] opacity-75">4つ済むと、クラブの運営をアプリで回せます</div></div></div>
+            <div className="divide-y divide-line px-4">
+              {steps.map((x, k) => (
+                <button key={x.t} onClick={x.f} style={stagger(k)} className="flex w-full animate-up items-center gap-3 py-3 text-left">
+                  <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-black', x.done ? 'bg-emerald-500 text-white' : 'bg-brand-50 text-brand')}>{x.done ? '✓' : k + 1}</span>
+                  <span className="flex-1"><b className={cx('block text-[14px]', x.done && 'text-ink-3 line-through')}>{x.t}</b>{!x.done && <span className="text-[12px] text-ink-2">{x.d}</span>}</span>
+                  {!x.done && <ChevronRight size={18} className="text-ink-3" />}
+                </button>
+              ))}
+            </div>
+          </Card>
+        )
+      })()}
       <div className="mt-4 grid grid-cols-4 gap-2">
         {[
           { i: <CalendarPlus size={22} />, l: '予定を追加', f: () => nav('/schedule?new=1') },
           { i: <Megaphone size={22} />, l: 'お知らせ', f: () => setCompose(true) },
-          { i: <Search size={22} />, l: '指導者マッチング', f: () => nav('/match') },
+          { i: <Search size={22} />, l: 'マッチング', f: () => nav('/match') },
           { i: <ClipboardList size={22} />, l: '実績報告', f: () => nav('/report') },
         ].map(a => (
           <button key={a.l} onClick={a.f} className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-3 text-[12px] font-bold shadow-card active:scale-95">

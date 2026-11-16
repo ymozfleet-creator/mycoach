@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Ban, Pencil, Sparkles, Thermometer } from 'lucide-react'
+import { Ban, CalendarX, Pencil, Sparkles, Thermometer } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { AttButtons, attCounts, EventMeta, useEventWbgt } from '../components/parts'
 import { EventEditor } from '../components/EventEditor'
-import { Avatar, Badge, Button, Card, PageHeader, Section, Sheet, cx } from '../components/ui'
+import { Avatar, Badge, Button, Card, Empty, PageHeader, Section, Sheet, cx } from '../components/ui'
 import { dateLabel, estWBGT, wbgtLevel } from '../lib/util'
 import type { Att } from '../lib/types'
 
@@ -40,7 +40,7 @@ export default function EventDetail() {
   const [edit, setEdit] = useState(false)
   const [cancel, setCancel] = useState(false)
   const [busy, setBusy] = useState(false)
-  if (!e || !club) return <><PageHeader title="予定" back /><Card>予定が見つかりません。</Card></>
+  if (!e || !club) return <><PageHeader title="予定" back /><Empty icon={<CalendarX />} title="この予定は見つかりません" text="削除されたか、日程が変わった可能性があります" action={<Button onClick={() => nav('/schedule')}>予定の一覧を見る</Button>} /></>
   const c = attCounts(e, players)
   const canEdit = isAdmin || isCoach
   const staff = canEdit || isSchool

@@ -26,7 +26,7 @@ export default function PlayerDetail() {
         <Avatar name={p.name} size={56} />
         <div className="flex-1">
           {!schoolView && <Badge tone={s.tone === 'none' ? 'none' : s.tone}>{s.label}</Badge>}
-          {!schoolView && <div className="mt-1 text-[13px] text-ink-2">負荷比 {s.chronic ? s.ratio.toFixed(2) : '—'}・睡眠 {s.sleep ? `${s.sleep.toFixed(1)}時間` : '—'}</div>}
+          {!schoolView && <div className="mt-1 text-[13px] text-ink-2">{s.reason}</div>}
           {schoolView && <div className="text-[13px] text-ink-2">{p.grade}</div>}
         </div>
       </Card>

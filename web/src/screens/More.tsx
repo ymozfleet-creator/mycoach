@@ -20,7 +20,7 @@ function Item({ icon, label, onClick, badge }: { icon: React.ReactNode; label: s
 export default function More() {
   const { be, profile, club, isAdmin, isCoach, isSchool, coachMode, isOps, notices, myPlayers, authUser, toast, switchMode, selectClub } = useApp()
   const nav = useNavigate()
-  const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join'>('')
+  const [sheet, setSheet] = useState<'' | 'club' | 'coach' | 'kids' | 'name' | 'join' | 'invite'>('')
   const [code, setCode] = useState('')
   const [joinErr, setJoinErr] = useState('')
   const [clubForm, setClubForm] = useState({ name: club?.name || '', fee: club?.fee || 0, venue: '', indoor: true })
@@ -42,7 +42,6 @@ export default function More() {
         <button onClick={() => (coachMode ? nav('/coach-profile') : setSheet('name'))} className="text-[13px] font-bold text-brand">編集</button>
       </Card>
 
-      {isAdmin && <div className="mt-3"><InviteCard /></div>}
 
       <Section title="メニュー">
         <Card className="divide-y divide-line !py-0">
@@ -58,6 +57,7 @@ export default function More() {
           {coachMode && <Item icon={<GraduationCap size={18} />} label="安全研修" onClick={() => nav('/training')} badge={<Badge tone={profile.training ? 'ok' : 'none'}>{profile.training ? '修了' : '未受講'}</Badge>} />}
           {coachMode && <Item icon={<CreditCard size={18} />} label="謝金の受取口座" onClick={() => nav('/coach-profile#payout')} badge={<Badge tone={profile.stripeChargesEnabled ? 'ok' : 'none'}>{profile.stripeChargesEnabled ? '設定済み' : '未設定'}</Badge>} />}
           {club && !isAdmin && !isCoach && !isSchool && !coachMode && <Item icon={<Users size={18} />} label={`お子さまの登録（${myPlayers.length}人）`} onClick={() => setSheet('kids')} />}
+          {isAdmin && <Item icon={<Users size={18} />} label="会員・指導者・学校を招待する" onClick={() => setSheet('invite')} />}
           {isAdmin && <Item icon={<Building2 size={18} />} label="クラブの設定" onClick={() => setSheet('club')} />}
         </Card>
       </Section>
@@ -83,7 +83,6 @@ export default function More() {
         ) : (
           <Button block variant="ghost" onClick={() => be.signOut()}><LogOut size={18} />ログアウト</Button>
         )}
-        <a href="../mycoach-app.html" className="block py-2 text-center text-[12px] text-ink-3 underline">個人レッスンのマッチング（旧MyCOACH）はこちら</a>
       </div>
 
       <Sheet open={sheet === 'join'} onClose={() => setSheet('')} title="ほかのクラブに参加" footer={<Button block size="lg" disabled={code.length < 4} onClick={async () => {
@@ -105,6 +104,7 @@ export default function More() {
         </div>
       </Sheet>
 
+      <Sheet open={sheet === 'invite'} onClose={() => setSheet('')} title="クラブに招待する"><InviteCard /></Sheet>
       {club && (
       <Sheet open={sheet === 'club'} onClose={() => setSheet('')} title="クラブの設定" footer={<Button block size="lg" onClick={async () => {
         const venues = clubForm.venue.trim() ? [...club.venues, { name: clubForm.venue.trim(), indoor: clubForm.indoor }] : club.venues

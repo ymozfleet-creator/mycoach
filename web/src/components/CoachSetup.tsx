@@ -24,6 +24,14 @@ export function CoachSetup({ compact }: { compact?: boolean }) {
   const steps = coachSteps(profile)
   const done = steps.filter(s => s.done).length
   if (compact && done === steps.length) return null
+  // 応募できる状態なら、大きなカードは出さず、残りの任意の設定だけを小さく案内する
+  if (compact && coachReady(profile)) return (
+    <button onClick={() => nav('/coach-profile#payout')} className="flex w-full items-center gap-3 rounded-xl2 bg-white p-3 text-left shadow-card active:scale-[.99]">
+      <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-50 text-brand"><CreditCard size={18} /></span>
+      <span className="flex-1 text-[13px]"><b className="block text-[14px]">謝金の受取口座を設定しましょう</b>カード払いの謝金が自動で振り込まれます</span>
+      <ChevronRight size={18} className="text-ink-3" />
+    </button>
+  )
   return (
     <Card className="!p-0 overflow-hidden">
       <div className="flex items-center gap-4 bg-navy p-4 text-white">
