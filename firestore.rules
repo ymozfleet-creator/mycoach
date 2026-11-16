@@ -65,6 +65,12 @@ service cloud.firestore {
       allow delete: if false; // 退会は deleted フラグで論理削除
     }
 
+    // 紹介ページからのお問い合わせ：書き込みはサーバーのみ、閲覧は事務局だけ
+    match /inquiries/{id} {
+      allow read, update: if isAdmin();
+      allow create, delete: if false;
+    }
+
     // 非公開のユーザー情報（メールアドレス）：本人と事務局だけ
     match /users_private/{uid} {
       allow read: if authed() && (request.auth.uid == uid || isAdmin());

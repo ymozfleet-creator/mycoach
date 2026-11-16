@@ -359,6 +359,30 @@ exports.protectEmail = onDocumentWritten(
   }
 );
 
+/* 紹介ページのお問い合わせ（ログイン不要）。入力値を検証し、IPごとに回数を制限して保存、事務局にメールで知らせる */
+exports.submitInquiry = onRequest(
+  { region: REGION, cors: CORS_ORIGINS, maxInstances: 5 },
+  async (req, res) => {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'POSTのみ' }); return; }
+    try {
+      const b = req.body || {};
+      const str = (v, max) => String(v || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+      const d = { name: str(b.name, 40), org: str(b.org, 80), email: str(b.email, 120), role: str(b.role, 30), msg: String(b.msg || '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').trim().slice(0, 2000) };
+      if (!d.name || !d.org || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) { res.status(400).json({ error: '入力内容をご確認ください' }); return; }
+      const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+      const key = 'ip_' + require('crypto').createHash('sha256').update(ip).digest('hex').slice(0, 32); // IPそのものは保存しない
+      if (!(await rateOk(key, 5, 60 * 60e3))) { res.status(429).json({ error: '送信回数が多すぎます。時間をおいてお試しください' }); return; }
+      const ref = await admin.firestore().collection('inquiries').add({ ...d, at: Date.now(), status: 'new' });
+      const admins = await admin.firestore().collection('users').where('isAdmin', '==', true).limit(10).get();
+      for (const a of admins.docs) {
+        const to = await emailOf(a.id);
+        if (to) await admin.firestore().collection('mail').add({ to, message: { subject: `【MyCOACH-MyTEAM】導入のご相談：${d.org}`, text: `紹介ページからご相談が届きました（受付番号 ${ref.id}）。\n\nお名前：${d.name}\n団体名：${d.org}\nご立場：${d.role}\nメール：${d.email}\n\n${d.msg}` } });
+      }
+      res.json({ ok: true });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'エラーが発生しました。時間をおいてお試しください' }); }
+  }
+);
+
 /* 毎朝9時(JST)：翌日にレッスン予定（予約確定済み）がある契約の両者へリマインド通知。
    通知ドキュメントは notifyMail がメール転送するため、Trigger Email 導入済みならメールも届く */
 exports.lessonReminder = onSchedule({ region: REGION, schedule: '0 9 * * *', timeZone: 'Asia/Tokyo' }, async () => {
